@@ -1,0 +1,29 @@
+# Example: Check your R package against latest GDAL
+#
+# Copy this file to your package's .github/workflows/ directory
+# and customize as needed.
+
+name: Check GDAL Latest
+
+on:
+  # Run weekly on Sunday at 3am UTC
+  schedule:
+    - cron: '0 3 * * 0'
+  
+  # Allow manual trigger from Actions tab
+  workflow_dispatch:
+  
+  # Optionally also run on PRs that modify C/C++ code
+  # pull_request:
+  #   paths:
+  #     - 'src/**'
+  #     - 'configure*'
+
+jobs:
+  gdal-latest:
+    uses: hypertidy/gdal-r-ci/.github/workflows/check-gdal-latest.yml@main
+    # with:
+    #   # Uncomment and customize as needed:
+    #   extra-deps: 'libudunits2-dev libnetcdf-dev'
+    #   r-extra-packages: 'tinytest'
+    #   check-args: '--no-manual --no-vignettes'

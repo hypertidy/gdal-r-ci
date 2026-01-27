@@ -1,0 +1,232 @@
+# Scheduled CI to test key R geospatial packages against latest GDAL
+# Runs fortnightly and can be triggered manually
+
+name: Scheduled GDAL Compatibility Check
+
+on:
+  schedule:
+    # Run at 02:00 UTC on the 1st and 15th of each month (fortnightly-ish)
+    - cron: '0 2 1,15 * *'
+  workflow_dispatch:
+    inputs:
+      packages:
+        description: 'Packages to test (comma-separated, or "all")'
+        required: false
+        default: 'all'
+        type: string
+
+env:
+  # All packages to test when running scheduled or "all"
+  ALL_PACKAGES: 'sf,terra,gdalraster,vapour,gdalcubes,stars'
+
+jobs:
+  setup:
+    name: Determine packages to test
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+    steps:
+      - id: set-matrix
+        run: |
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ] && [ "${{ inputs.packages }}" != "all" ]; then
+            PKGS="${{ inputs.packages }}"
+          else
+            PKGS="${{ env.ALL_PACKAGES }}"
+          fi
+          # Convert comma-separated list to JSON array
+          JSON=$(echo "$PKGS" | tr ',' '\n' | jq -R . | jq -s -c '.')
+          echo "matrix={\"package\":$JSON}" >> $GITHUB_OUTPUT
+
+  check:
+    name: Check ${{ matrix.package }}
+    needs: setup
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/osgeo/gdal:ubuntu-full-latest
+
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.setup.outputs.matrix) }}
+
+    steps:
+      - name: Install system dependencies
+        run: |
+          apt-get update -qq
+          apt-get install -y --no-install-recommends \
+            software-properties-common \
+            dirmngr \
+            wget \
+            ca-certificates \
+            gnupg \
+            git \
+            libcurl4-openssl-dev \
+            libssl-dev \
+            libxml2-dev \
+            libfontconfig1-dev \
+            libfreetype6-dev \
+            libpng-dev \
+            libtiff5-dev \
+            libjpeg-dev \
+            libharfbuzz-dev \
+            libfribidi-dev \
+            libsqlite3-dev \
+            libudunits2-dev \
+            libnetcdf-dev \
+            netcdf-bin \
+            pandoc \
+            qpdf \
+            lsb-release \
+            cmake
+
+      - name: Install R from CRAN
+        run: |
+          wget -qO- https://cloud.r-project.org/bin/linux/ubuntu/marutter_pubkey.asc \
+            | tee -a /etc/apt/trusted.gpg.d/cran_ubuntu_key.asc
+          add-apt-repository "deb https://cloud.r-project.org/bin/linux/ubuntu $(lsb_release -cs)-cran40/"
+          apt-get update -qq
+          apt-get install -y --no-install-recommends r-base r-base-dev
+
+      - name: Print version info
+        run: |
+          echo "=== Testing: ${{ matrix.package }} ==="
+          echo ""
+          echo "=== GDAL Version ==="
+          gdalinfo --version
+          echo ""
+          echo "=== PROJ Version ==="
+          proj 2>&1 | head -1 || true
+          echo ""
+          echo "=== R Version ==="
+          R --version | head -3
+
+      - name: Clone package repository
+        run: |
+          case "${{ matrix.package }}" in
+            gdalraster)
+              git clone --depth 1 https://github.com/firelab/gdalraster.git pkg
+              ;;
+            sf)
+              git clone --depth 1 https://github.com/r-spatial/sf.git pkg
+              ;;
+            terra)
+              git clone --depth 1 https://github.com/rspatial/terra.git pkg
+              ;;
+            vapour)
+              git clone --depth 1 https://github.com/hypertidy/vapour.git pkg
+              ;;
+            gdalcubes)
+              git clone --depth 1 https://github.com/appelmar/gdalcubes.git pkg
+              # gdalcubes R package is in a subdirectory
+              if [ -d "pkg/R-package" ]; then
+                mv pkg/R-package pkg-r
+                rm -rf pkg
+                mv pkg-r pkg
+              fi
+              ;;
+            stars)
+              git clone --depth 1 https://github.com/r-spatial/stars.git pkg
+              ;;
+            *)
+              echo "Unknown package: ${{ matrix.package }}"
+              exit 1
+              ;;
+          esac
+
+      - name: Install R dependencies
+        working-directory: pkg
+        run: |
+          Rscript -e "
+            options(repos = c(CRAN = 'https://cloud.r-project.org'))
+            options(Ncpus = 2L)
+            install.packages('remotes')
+
+            # For sf/stars we need units
+            if ('${{ matrix.package }}' %in% c('sf', 'stars')) {
+              install.packages('units')
+            }
+
+            # terra needs Rcpp
+            if ('${{ matrix.package }}' == 'terra') {
+              install.packages('Rcpp')
+            }
+
+            # Install all dependencies
+            remotes::install_deps(dependencies = TRUE, upgrade = 'never')
+          "
+
+      - name: Build package
+        working-directory: pkg
+        run: R CMD build .
+
+      - name: Check package
+        working-directory: pkg
+        run: |
+          pkg=$(ls -1 *.tar.gz | head -1)
+          # Use --no-manual to skip PDF manual building
+          # Stars has some vignette issues, use --ignore-vignettes for it
+          if [ "${{ matrix.package }}" == "stars" ]; then
+            R CMD check --no-manual --ignore-vignettes "${pkg}"
+          else
+            R CMD check --no-manual "${pkg}"
+          fi
+
+      - name: Show check log on failure
+        if: failure()
+        working-directory: pkg
+        run: |
+          for f in *.Rcheck/00check.log *.Rcheck/00install.out; do
+            if [ -f "$f" ]; then
+              echo "=== $f ==="
+              cat "$f"
+              echo ""
+            fi
+          done
+
+      - name: Upload check results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: check-results-${{ matrix.package }}
+          path: pkg/*.Rcheck
+          retention-days: 30
+
+  summary:
+    name: Summary
+    needs: check
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Check results
+        run: |
+          echo "## GDAL Compatibility Check Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Package | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|---------|--------|" >> $GITHUB_STEP_SUMMARY
+
+          # This will show the overall job status
+          if [ "${{ needs.check.result }}" == "success" ]; then
+            echo "All packages passed! ✅" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "Some packages failed - check individual job logs" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Create issue on failure
+        if: failure() && github.event_name == 'schedule'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const date = new Date().toISOString().split('T')[0];
+            const title = `GDAL compatibility check failed - ${date}`;
+            const body = `The scheduled GDAL compatibility check has detected failures.
+
+            Please check the [workflow run](${process.env.GITHUB_SERVER_URL}/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID}) for details.
+
+            This may indicate API changes in the latest GDAL that affect R packages.`;
+
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: title,
+              body: body,
+              labels: ['gdal-compatibility', 'automated']
+            });
