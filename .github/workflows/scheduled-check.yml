@@ -216,7 +216,7 @@ jobs:
           fi
 
       - name: Create issue on failure
-        if: failure() && github.event_name == 'schedule'
+        if: needs.check.result == 'failure'
         uses: actions/github-script@v7
         with:
           script: |
