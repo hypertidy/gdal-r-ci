@@ -42,7 +42,7 @@ jobs:
     needs: setup
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/osgeo/gdal:ubuntu-full-latest
+      image: ghcr.io/osgeo/gdal:ubuntu-full-3.12.1 ## ghcr.io/osgeo/gdal:ubuntu-full-latest
 
     strategy:
       fail-fast: false
@@ -85,10 +85,12 @@ jobs:
 
       - name: Fix PROJ library symlink
         run: |
-          # The GDAL image has internal PROJ with renamed symbols (internal_proj_*)
-          # R packages need standard libproj.so, so link to system PROJ
-          ln -sf /lib/x86_64-linux-gnu/libproj.so.25 /lib/x86_64-linux-gnu/libproj.so
-          ldconfig
+        # Ensure libproj.so symlink exists (needed for R packages to link)
+        # Some GDAL images only have libproj.so.25
+        if [ ! -e "/lib/x86_64-linux-gnu/libproj.so" ]; then
+         ln -sf /lib/x86_64-linux-gnu/libproj.so.25 /lib/x86_64-linux-gnu/libproj.so
+         ldconfig
+        fi
 
       - name: Install R from CRAN
         run: |
@@ -121,8 +123,9 @@ jobs:
               git clone --depth 1 https://github.com/firelab/gdalraster.git pkg
               ;;
             sf)
-              git clone https://github.com/mdsumner/sf.git pkg
-              cd pkg/ && git checkout patch-1 && cd ..
+              git clone --depth 1https://github.com/r-spatial/sf.git pkg
+              #git clone https://github.com/mdsumner/sf.git pkg
+              #cd pkg/ && git checkout patch-1 && cd ..
               ;;
             terra)
               git clone --depth 1 https://github.com/rspatial/terra.git pkg
