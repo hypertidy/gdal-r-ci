@@ -17,12 +17,13 @@ Catching these issues early—before they hit CRAN—helps maintainers prepare f
 
 The scheduled workflow runs on the 1st and 15th of each month at 02:00 UTC, testing these packages:
 
-- [sf](https://github.com/r-spatial/sf)
-- [terra](https://github.com/rspatial/terra)
-- [gdalraster](https://github.com/firelab/gdalraster)
-- [vapour](https://github.com/hypertidy/vapour)
 - [gdalcubes](https://github.com/appelmar/gdalcubes)
+- [gdalraster](https://github.com/firelab/gdalraster)
+- [raster](https://github.com/rspatial/raster)
+- [sf](https://github.com/r-spatial/sf)
 - [stars](https://github.com/r-spatial/stars)
+- [terra](https://github.com/rspatial/terra)
+- [vapour](https://github.com/hypertidy/vapour)
 
 If any check fails, an issue is automatically created in this repository.
 
@@ -72,7 +73,7 @@ jobs:
       ref: 'main'
       
       # Additional apt packages to install
-      extra-deps: 'libnetcdf-dev libudunits2-dev'
+      extra-deps: 'libnetcdf-dev'
       
       # Additional R packages to install
       r-extra-packages: 'tinytest, wk'
@@ -94,9 +95,54 @@ jobs:
 
 ### Environment
 
-- **Container**: `ghcr.io/osgeo/gdal:ubuntu-full-latest` (Ubuntu Noble 24.04)
+- **Container**: `ghcr.io/osgeo/gdal:ubuntu-full-latest` (Ubuntu Noble 24.04 as at January 2026)
 - **R**: Latest from CRAN repository
 - **GDAL**: Whatever is in the `:latest` tag (typically nightly builds)
+
+### The GDAL Docker Image and PROJ
+
+The `ghcr.io/osgeo/gdal:ubuntu-full-latest` image has an interesting architecture worth understanding:
+
+**GDAL** is installed to system paths (`/usr/bin/gdalinfo`, `/usr/bin/gdal-config`, `/usr/lib/...`). This means `gdal-config --cflags` and `gdal-config --libs` work as expected, and R packages using GDAL link correctly.
+
+**PROJ** is more complex. The image contains two PROJ installations:
+
+1. **Internal PROJ** at `/usr/local/gdal-internal/` - This is a bleeding-edge version (e.g., 9.8.0) that GDAL itself uses. Crucially, all symbols are renamed to `internal_proj_*` (e.g., `internal_proj_context_create` instead of `proj_context_create`) to avoid conflicts. The `proj` command-line tool comes from here.
+
+2. **System PROJ** at `/lib/x86_64-linux-gnu/` - This is Ubuntu's packaged version (e.g., 9.4.0) with standard symbol names. However, only `libproj.so.25` exists—no `libproj.so` symlink is provided.
+
+This design lets GDAL use cutting-edge PROJ internally while avoiding symbol conflicts with system libraries. However, it creates challenges for R packages:
+
+- Packages like `terra` and `sf` that link directly to PROJ expect standard `-lproj` with standard symbols
+- The internal PROJ's renamed symbols won't resolve
+- Without the `.so` symlink, the linker can't find system PROJ either
+
+### Our Workaround
+
+The workflow creates the missing symlink:
+
+```bash
+ln -sf /lib/x86_64-linux-gnu/libproj.so.25 /lib/x86_64-linux-gnu/libproj.so
+ldconfig
+```
+
+This means R packages link against **system PROJ** (9.4.0) while **GDAL uses internal PROJ** (9.8.0). For our purposes—catching GDAL API changes—this is fine. We're testing GDAL compatibility, not PROJ compatibility.
+
+### How R Packages Find GDAL and PROJ
+
+Different packages use different detection strategies:
+
+| Package | GDAL detection | PROJ detection |
+|---------|---------------|----------------|
+| gdalraster | `gdal-config` | `gdal-config` (doesn't link PROJ directly) |
+| vapour | `gdal-config` | `gdal-config` (doesn't link PROJ directly) |
+| sf | `gdal-config` | `pkg-config proj` |
+| terra | `gdal-config` | `pkg-config proj` + hardcoded `-lproj` |
+| stars | via sf | via sf |
+
+Packages that only use `gdal-config` (like `gdalraster` and `vapour`) work out of the box. Packages that link PROJ directly need the symlink fix.
+
+Note: `terra`'s configure script uses `pkg-config` to find PROJ's version and include path, but then hardcodes `-lproj` rather than using `pkg-config --libs proj`. This is why simply setting `PKG_CONFIG_PATH` to the internal PROJ doesn't work—even though pkg-config would return `-linternalproj`, terra ignores that and uses `-lproj` anyway.
 
 ### R Installation
 
@@ -105,7 +151,7 @@ R is installed from the official CRAN Ubuntu repository following [CRAN's instru
 ```bash
 wget -qO- https://cloud.r-project.org/bin/linux/ubuntu/marutter_pubkey.asc \
   | tee -a /etc/apt/trusted.gpg.d/cran_ubuntu_key.asc
-add-apt-repository "deb https://cloud.r-project.org/bin/linux/ubuntu $(lsb_release -cs)-cran40/"
+add-apt-repository -y "deb https://cloud.r-project.org/bin/linux/ubuntu $(lsb_release -cs)-cran40/"
 apt-get install -y r-base r-base-dev
 ```
 
@@ -113,10 +159,13 @@ apt-get install -y r-base r-base-dev
 
 The workflow installs common dependencies needed by R geospatial packages:
 
+- `pkg-config` (not in the GDAL image by default!)
 - `libcurl4-openssl-dev`, `libssl-dev`, `libxml2-dev`
 - `libfontconfig1-dev`, `libfreetype6-dev`, `libharfbuzz-dev`, `libfribidi-dev`
-- `libpng-dev`, `libtiff5-dev`, `libjpeg-dev`
+- `libpng-dev`, `libtiff-dev`, `libjpeg-dev`
 - `libsqlite3-dev`, `libudunits2-dev`, `libnetcdf-dev`
+- `libproj-dev`, `libgeos-dev` (for packages linking these directly)
+- `libpq-dev`, `unixodbc-dev` (for database connectivity)
 - `pandoc`, `qpdf`
 
 ## Adding More Packages
@@ -142,6 +191,40 @@ Common GDAL API changes that cause issues:
 - New/removed function parameters
 - Struct field changes
 - Deprecated function removal
+
+### Example: CSLConstList
+
+In GDAL 3.13+, `GetMetadata()` returns `CSLConstList` (a `const char* const*`) instead of `char**`. Code like this fails:
+
+```cpp
+char **m = poDataset->GetMetadata();  // Error: invalid conversion from CSLConstList
+```
+
+The fix is straightforward:
+
+```cpp
+CSLConstList m = poDataset->GetMetadata();  // Or: const char* const* m = ...
+```
+
+## Debugging Locally
+
+To reproduce the CI environment locally:
+
+```bash
+docker run -it --rm ghcr.io/osgeo/gdal:ubuntu-full-latest bash
+
+# Then inside the container:
+apt-get update && apt-get install -y pkg-config libproj-dev libgeos-dev
+ln -sf /lib/x86_64-linux-gnu/libproj.so.25 /lib/x86_64-linux-gnu/libproj.so
+ldconfig
+
+# Check versions
+gdalinfo --version          # GDAL (bleeding edge)
+pkg-config --modversion proj  # System PROJ
+proj 2>&1 | head -1          # Internal PROJ (used by GDAL)
+
+# Install R and test your package...
+```
 
 ## Related Projects
 
