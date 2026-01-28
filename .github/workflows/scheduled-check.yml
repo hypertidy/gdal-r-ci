@@ -172,7 +172,7 @@ jobs:
           pkg=$(ls -1 *.tar.gz | head -1)
           # Use --no-manual to skip PDF manual building
           # and Suggests is too high a bar
-          R CMD check --no-manual --no-suggests --ignore-vignettes --no-tests "${pkg}"
+          R CMD check --no-manual --no-suggests --ignore-vignettes "${pkg}"
 
 
       - name: Show check log on failure
