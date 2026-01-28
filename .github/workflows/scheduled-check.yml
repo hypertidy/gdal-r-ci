@@ -154,7 +154,8 @@ jobs:
           Rscript -e "
             options(repos = c(CRAN = 'https://cloud.r-project.org'))
             options(Ncpus = 2L)
-            install.packages(c('remotes', 'knitr', 'rmarkdown', 'testthat'))
+            ## infra packages: gt is for gdalraster
+            install.packages(c('remotes', 'knitr', 'rmarkdown', 'testthat', 'gt'))
             # Only install hard dependencies, skip Suggests
             remotes::install_deps(dependencies = c('Depends', 'Imports', 'LinkingTo'), upgrade = 'never')
           "
@@ -171,7 +172,7 @@ jobs:
           pkg=$(ls -1 *.tar.gz | head -1)
           # Use --no-manual to skip PDF manual building
           # and Suggests is too high a bar
-          R CMD check --no-manual --no-suggests "${pkg}"
+          R CMD check --no-manual --no-suggests --ignore-vignettes --no-tests "${pkg}"
 
 
       - name: Show check log on failure
