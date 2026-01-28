@@ -121,7 +121,7 @@ jobs:
               git clone --depth 1 https://github.com/firelab/gdalraster.git pkg
               ;;
             sf)
-              git clone --depth 1 https://github.com/mdsumner/sf.git pkg
+              git clone https://github.com/mdsumner/sf.git pkg
               cd pkg/ && git checkout patch-1 && cd ..
               ;;
             terra)
