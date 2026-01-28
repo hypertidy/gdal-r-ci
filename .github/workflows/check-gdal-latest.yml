@@ -1,29 +1,168 @@
-# Example: Check your R package against latest GDAL
+# Reusable workflow for checking R packages against latest GDAL
+# Other repos can call this with:
 #
-# Copy this file to your package's .github/workflows/ directory
-# and customize as needed.
+# jobs:
+#   gdal-latest:
+#     uses: hypertidy/gdal-r-ci/.github/workflows/check-gdal-latest.yml@main
+#     with:
+#       ref: main  # optional, defaults to calling repo's default branch
 
-name: Check GDAL Latest
+name: Check R Package Against Latest GDAL
 
 on:
-  # Run weekly on Sunday at 3am UTC
-  schedule:
-    - cron: '0 3 * * 0'
-  
-  # Allow manual trigger from Actions tab
-  workflow_dispatch:
-  
-  # Optionally also run on PRs that modify C/C++ code
-  # pull_request:
-  #   paths:
-  #     - 'src/**'
-  #     - 'configure*'
+  workflow_call:
+    inputs:
+      ref:
+        description: 'Git ref to checkout (branch, tag, or SHA)'
+        required: false
+        type: string
+        default: ''
+      extra-deps:
+        description: 'Additional system dependencies (space-separated apt packages)'
+        required: false
+        type: string
+        default: ''
+      r-extra-packages:
+        description: 'Additional R packages to install (comma-separated)'
+        required: false
+        type: string
+        default: ''
+      check-args:
+        description: 'Additional arguments to R CMD check'
+        required: false
+        type: string
+        default: '--no-manual'
 
 jobs:
-  gdal-latest:
-    uses: hypertidy/gdal-r-ci/.github/workflows/check-gdal-latest.yml@main
-    # with:
-    #   # Uncomment and customize as needed:
-    #   extra-deps: 'libudunits2-dev libnetcdf-dev'
-    #   r-extra-packages: 'tinytest'
-    #   check-args: '--no-manual --no-vignettes'
+  check:
+    name: R CMD check (GDAL latest)
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/osgeo/gdal:ubuntu-full-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
+
+      - name: Install system dependencies
+        run: |
+          apt-get update -qq
+          
+          # Core build tools and libraries
+          apt-get install -y --no-install-recommends \
+            software-properties-common \
+            dirmngr \
+            wget \
+            ca-certificates \
+            gnupg \
+            git \
+            pkg-config \
+            libcurl4-openssl-dev \
+            libssl-dev \
+            libxml2-dev \
+            libfontconfig1-dev \
+            libfreetype6-dev \
+            libpng-dev \
+            libtiff-dev \
+            libjpeg-dev \
+            libharfbuzz-dev \
+            libfribidi-dev \
+            libsqlite3-dev \
+            libudunits2-dev \
+            libnetcdf-dev \
+            libproj-dev \
+            libgeos-dev \
+            libpq-dev \
+            unixodbc-dev \
+            pandoc \
+            qpdf \
+            lsb-release
+          
+          # Extra dependencies if specified
+          if [ -n "${{ inputs.extra-deps }}" ]; then
+            apt-get install -y --no-install-recommends ${{ inputs.extra-deps }}
+          fi
+
+      - name: Fix PROJ library symlink
+        run: |
+          # Ensure libproj.so symlink exists (needed for R packages to link)
+          # Some GDAL images only have libproj.so.25
+          if [ ! -e "/lib/x86_64-linux-gnu/libproj.so" ]; then
+            ln -sf /lib/x86_64-linux-gnu/libproj.so.25 /lib/x86_64-linux-gnu/libproj.so
+            ldconfig
+          fi
+
+      - name: Install R from CRAN
+        run: |
+          # Add CRAN GPG key
+          wget -qO- https://cloud.r-project.org/bin/linux/ubuntu/marutter_pubkey.asc \
+            | tee -a /etc/apt/trusted.gpg.d/cran_ubuntu_key.asc
+          
+          # Add CRAN repository
+          add-apt-repository -y "deb https://cloud.r-project.org/bin/linux/ubuntu $(lsb_release -cs)-cran40/"
+          
+          # Install R
+          apt-get update -qq
+          apt-get install -y --no-install-recommends r-base r-base-dev
+
+      - name: Print version info
+        run: |
+          echo "=== GDAL Version ==="
+          gdalinfo --version
+          echo ""
+          echo "=== System PROJ Version (used by R packages) ==="
+          pkg-config --modversion proj || true
+          echo ""
+          echo "=== Internal PROJ Version (used by GDAL) ==="
+          proj 2>&1 | head -1 || true
+          echo ""
+          echo "=== R Version ==="
+          R --version | head -3
+          echo ""
+          echo "=== R Session Info ==="
+          Rscript -e "sessionInfo()"
+
+      - name: Install R dependencies
+        run: |
+          Rscript -e "
+            options(repos = c(CRAN = 'https://cloud.r-project.org'))
+            install.packages('remotes')
+            remotes::install_deps(dependencies = TRUE)
+          "
+          
+          # Install extra R packages if specified
+          if [ -n "${{ inputs.r-extra-packages }}" ]; then
+            Rscript -e "
+              pkgs <- strsplit('${{ inputs.r-extra-packages }}', ',')[[1]]
+              pkgs <- trimws(pkgs)
+              install.packages(pkgs)
+            "
+          fi
+
+      - name: Build package
+        run: R CMD build .
+
+      - name: Check package
+        run: |
+          pkg=$(ls -1 *.tar.gz | head -1)
+          R CMD check ${{ inputs.check-args }} "${pkg}"
+
+      - name: Show check results on failure
+        if: failure()
+        run: |
+          for log in *.Rcheck/*.log *.Rcheck/*.out *.Rcheck/*.fail; do
+            if [ -f "$log" ]; then
+              echo "=== $log ==="
+              cat "$log"
+              echo ""
+            fi
+          done
+
+      - name: Upload check results
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: check-results-gdal-latest
+          path: '*.Rcheck'
