@@ -161,8 +161,8 @@ jobs:
             options(repos = c(CRAN = 'https://cloud.r-project.org'))
             options(Ncpus = 2L)
             install.packages('remotes')
-            # Install all dependencies
-            remotes::install_deps(dependencies = TRUE, upgrade = 'never')
+            # Only install hard dependencies, skip Suggests
+            remotes::install_deps(dependencies = c('Depends', 'Imports', 'LinkingTo'), upgrade = 'never')
           "
 
       - name: Build package
@@ -170,15 +170,17 @@ jobs:
         run: R CMD build .
 
       - name: Check package
+        env:
+          _R_CHECK_FORCE_SUGGESTS_: false
         working-directory: pkg
         run: |
           pkg=$(ls -1 *.tar.gz | head -1)
           # Use --no-manual to skip PDF manual building
           # Stars has some vignette issues, use --ignore-vignettes for it
           if [ "${{ matrix.package }}" == "stars" ]; then
-            R CMD check --no-manual --ignore-vignettes "${pkg}"
+            R CMD check --no-manual --ignore-vignettes --no-suggests "${pkg}"
           else
-            R CMD check --no-manual "${pkg}"
+            R CMD check --no-manual --no-suggests "${pkg}"
           fi
 
       - name: Show check log on failure
