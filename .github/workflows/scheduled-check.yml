@@ -17,7 +17,7 @@ on:
 
 env:
   # All packages to test when running scheduled or "all"
-  ALL_PACKAGES: 'sf,terra,gdalraster,vapour,gdalcubes,stars'
+  ALL_PACKAGES: 'gdalcubes,gdalraster,raster,sf,stars,terra,vapour'
 
 jobs:
   setup:
@@ -59,13 +59,14 @@ jobs:
             ca-certificates \
             gnupg \
             git \
+            pkg-config \
             libcurl4-openssl-dev \
             libssl-dev \
             libxml2-dev \
             libfontconfig1-dev \
             libfreetype6-dev \
             libpng-dev \
-            libtiff5-dev \
+            libtiff-dev \
             libjpeg-dev \
             libharfbuzz-dev \
             libfribidi-dev \
@@ -73,16 +74,27 @@ jobs:
             libudunits2-dev \
             libnetcdf-dev \
             netcdf-bin \
+            libproj-dev \
+            libgeos-dev \
+            libpq-dev \
+            unixodbc-dev \
             pandoc \
             qpdf \
             lsb-release \
             cmake
 
+      - name: Fix PROJ library symlink
+        run: |
+          # The GDAL image has internal PROJ with renamed symbols (internal_proj_*)
+          # R packages need standard libproj.so, so link to system PROJ
+          ln -sf /lib/x86_64-linux-gnu/libproj.so.25 /lib/x86_64-linux-gnu/libproj.so
+          ldconfig
+
       - name: Install R from CRAN
         run: |
           wget -qO- https://cloud.r-project.org/bin/linux/ubuntu/marutter_pubkey.asc \
             | tee -a /etc/apt/trusted.gpg.d/cran_ubuntu_key.asc
-          add-apt-repository "deb https://cloud.r-project.org/bin/linux/ubuntu $(lsb_release -cs)-cran40/"
+          add-apt-repository -y "deb https://cloud.r-project.org/bin/linux/ubuntu $(lsb_release -cs)-cran40/"
           apt-get update -qq
           apt-get install -y --no-install-recommends r-base r-base-dev
 
@@ -93,7 +105,10 @@ jobs:
           echo "=== GDAL Version ==="
           gdalinfo --version
           echo ""
-          echo "=== PROJ Version ==="
+          echo "=== System PROJ Version (used by R packages) ==="
+          pkg-config --modversion proj || true
+          echo ""
+          echo "=== Internal PROJ Version (used by GDAL) ==="
           proj 2>&1 | head -1 || true
           echo ""
           echo "=== R Version ==="
@@ -110,6 +125,9 @@ jobs:
               ;;
             terra)
               git clone --depth 1 https://github.com/rspatial/terra.git pkg
+              ;;
+            raster)
+              git clone --depth 1 https://github.com/rspatial/raster.git pkg
               ;;
             vapour)
               git clone --depth 1 https://github.com/hypertidy/vapour.git pkg
@@ -139,17 +157,6 @@ jobs:
             options(repos = c(CRAN = 'https://cloud.r-project.org'))
             options(Ncpus = 2L)
             install.packages('remotes')
-
-            # For sf/stars we need units
-            if ('${{ matrix.package }}' %in% c('sf', 'stars')) {
-              install.packages('units')
-            }
-
-            # terra needs Rcpp
-            if ('${{ matrix.package }}' == 'terra') {
-              install.packages('Rcpp')
-            }
-
             # Install all dependencies
             remotes::install_deps(dependencies = TRUE, upgrade = 'never')
           "
