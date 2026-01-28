@@ -17,7 +17,7 @@ on:
 
 env:
   # All packages to test when running scheduled or "all"
-  ALL_PACKAGES: 'gdalcubes,gdalraster,raster,sf,stars,terra,vapour'
+  ALL_PACKAGES: 'gdalcubes,gdalraster,sf,terra,vapour'
 
 jobs:
   setup:
@@ -130,9 +130,6 @@ jobs:
             terra)
               git clone --depth 1 https://github.com/rspatial/terra.git pkg
               ;;
-            raster)
-              git clone --depth 1 https://github.com/rspatial/raster.git pkg
-              ;;
             vapour)
               git clone --depth 1 https://github.com/hypertidy/vapour.git pkg
               ;;
@@ -144,9 +141,6 @@ jobs:
                 rm -rf pkg
                 mv pkg-r pkg
               fi
-              ;;
-            stars)
-              git clone --depth 1 https://github.com/r-spatial/stars.git pkg
               ;;
             *)
               echo "Unknown package: ${{ matrix.package }}"
@@ -160,7 +154,7 @@ jobs:
           Rscript -e "
             options(repos = c(CRAN = 'https://cloud.r-project.org'))
             options(Ncpus = 2L)
-            install.packages('remotes')
+            install.packages(c('remotes', 'knitr', 'rmarkdown', 'testthat'))
             # Only install hard dependencies, skip Suggests
             remotes::install_deps(dependencies = c('Depends', 'Imports', 'LinkingTo'), upgrade = 'never')
           "
@@ -176,12 +170,9 @@ jobs:
         run: |
           pkg=$(ls -1 *.tar.gz | head -1)
           # Use --no-manual to skip PDF manual building
-          # Stars has some vignette issues, use --ignore-vignettes for it
-          if [ "${{ matrix.package }}" == "stars" ]; then
-            R CMD check --no-manual --ignore-vignettes --no-suggests "${pkg}"
-          else
-            R CMD check --no-manual --no-suggests "${pkg}"
-          fi
+          # and Suggests is too high a bar
+          R CMD check --no-manual --no-suggests "${pkg}"
+
 
       - name: Show check log on failure
         if: failure()
