@@ -163,6 +163,8 @@ jobs:
             options(repos = c(CRAN = 'https://cloud.r-project.org'))
             options(Ncpus = 2L)
             install.packages(c('remotes', 'knitr', 'rmarkdown', 'testthat'))
+            # Install paper-over dependencies e.g. gdalraster: #886
+            install.packages(c("vctrs")) ## remove me
             # Only install hard dependencies, skip Suggests to avoid circular deps
             remotes::install_deps(dependencies = c('Depends', 'Imports', 'LinkingTo'), upgrade = 'never')
           "
