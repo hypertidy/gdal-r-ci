@@ -106,6 +106,38 @@ This means:
 
 For our purposes (testing GDAL API compatibility), this is fine. We're primarily testing GDAL, and PROJ 9.4 vs 9.8 differences are usually minor.
 
+### Linux Shared Library Versioning (sonames)
+
+Understanding Linux library versioning helps debug linking issues:
+
+```
+libproj.so.25.9.8.0
+    │     │  │ │ │
+    │     │  └─┴─┴── minor/patch (API-compatible changes)
+    │     └────────── soname/ABI version (increments on incompatible changes)
+    └──────────────── library name
+
+Symlink chain:
+libproj.so      → libproj.so.25        (linker uses: -lproj)
+libproj.so.25   → libproj.so.25.9.8.0  (runtime loader uses)
+libproj.so.25.9.8.0                    (actual file)
+```
+
+The **soname** (e.g., `25`) changes when the library breaks ABI compatibility:
+
+| PROJ version | soname |
+|--------------|--------|
+| 6.x | 15 |
+| 7.x | 19 |
+| 8.x | 22 |
+| 9.0–9.4+ | 25 |
+
+When PROJ 10 ships, expect soname 26+. The symlink fix in Dockerfile.gdal-r currently hardcodes `libproj.so.25` - this will need updating. A future improvement would detect dynamically:
+
+```bash
+ln -sf $(ls /lib/x86_64-linux-gnu/libproj.so.* 2>/dev/null | head -1) /lib/x86_64-linux-gnu/libproj.so
+```
+
 ### The Missing Symlink
 
 System PROJ only provides `libproj.so.25`, not the standard `libproj.so` symlink. Packages that link with `-lproj` fail to find it. Our fix:
