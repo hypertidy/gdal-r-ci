@@ -32,7 +32,7 @@ ghcr.io/osgeo/gdal:ubuntu-full-latest    # GDAL team maintains
 ghcr.io/hypertidy/gdal-r:latest          # + R, system libs, PROJ fix
            │                              # + minimal R packages (explicit)
            ▼
-ghcr.io/hypertidy/gdal-r-full:latest     # + terra, sf, gdalraster, vapour, stars
+ghcr.io/hypertidy/gdal-r-full:latest     # + gdalraster, gdalcubes, sf, terra, vapour
            │                              # Use this for package CI
            ▼
 ghcr.io/hypertidy/gdal-r-python:latest   # + Python geo stack

@@ -1,8 +1,8 @@
 # ghcr.io/hypertidy/gdal-r-full:latest
 # R with core GDAL-dependent packages installed
 #
-# This is the the GDAL-5 can use for CI
-# Includes: gdalraster, gdalcubes, sf, terra, vapour
+# This is the image the GDAL-5 can use for CI
+# Includes: gdalraster (required), + gdalcubes, sf, terra, vapour (optional)
 #
 # CRITICAL: All packages are built from source against the same GDAL/PROJ/GEOS.
 # We do NOT use pak, r2u, or any binary packages that might have version skew.
@@ -16,28 +16,60 @@ LABEL org.opencontainers.image.description="R with core GDAL packages (gdalraste
 # Copy version check script
 COPY scripts/check-r-versions.R /opt/scripts/check-r-versions.R
 
-# Install core GDAL-dependent packages FROM SOURCE
-# Order: gdalraster first (doesn't link PROJ directly), then others
-# Using install.packages() ensures source build against system libraries
-COPY config/r-packages-geo.txt /tmp/r-packages-geo.txt
+# Copy package lists
+COPY config/r-packages-required.txt /tmp/r-packages-required.txt
+COPY config/r-packages-optional.txt /tmp/r-packages-optional.txt
+
+# Install SET A: Required packages (build FAILS if these fail)
+# These are GitHub repos: owner/repo format
 RUN Rscript -e "\
-    pkgs <- readLines('/tmp/r-packages-geo.txt'); \
+    pkgs <- readLines('/tmp/r-packages-required.txt'); \
     pkgs <- pkgs[!grepl('^#', pkgs) & nchar(trimws(pkgs)) > 0]; \
     for (pkg in pkgs) { \
         message('========================================'); \
-        message('Installing from source: ', pkg); \
+        message('REQUIRED: Installing ', pkg); \
         message('========================================'); \
-        install.packages(pkg, type = 'source', Ncpus = parallel::detectCores()); \
+        remotes::install_github(pkg, upgrade = 'never'); \
     }"
 
-# Verify packages load and report GDAL version
+# Install SET B: Optional packages (build CONTINUES if these fail)
+# We try each one individually and report status
+RUN Rscript -e "\
+    pkgs <- readLines('/tmp/r-packages-optional.txt'); \
+    pkgs <- pkgs[!grepl('^#', pkgs) & nchar(trimws(pkgs)) > 0]; \
+    results <- list(); \
+    for (pkg in pkgs) { \
+        message('========================================'); \
+        message('OPTIONAL: Installing ', pkg); \
+        message('========================================'); \
+        success <- tryCatch({ \
+            remotes::install_github(pkg, upgrade = 'never'); \
+            TRUE \
+        }, error = function(e) { \
+            message('FAILED: ', pkg, ' - ', conditionMessage(e)); \
+            FALSE \
+        }); \
+        results[[pkg]] <- success; \
+    }; \
+    message(''); \
+    message('========================================'); \
+    message('Optional package summary:'); \
+    message('========================================'); \
+    for (pkg in names(results)) { \
+        status <- if (results[[pkg]]) 'OK' else 'FAILED'; \
+        message(sprintf('  %-25s [%s]', pkg, status)); \
+    }"
+
+# Verify required packages load and report GDAL version
 RUN Rscript -e "\
     library(gdalraster); \
-    cat('gdalraster GDAL:', gdal_version()[[1]], '\n'); \
-    library(terra); \
-    cat('terra GDAL:', terra::gdal(), '\n'); \
-    library(sf); \
-    cat('sf GDAL:', sf::sf_extSoftVersion()['GDAL'], '\n')"
+    cat('gdalraster GDAL:', gdal_version()[4], '\n'); \
+    if (requireNamespace('terra', quietly = TRUE)) { \
+        cat('terra GDAL:', terra::libVersion('gdal'), '\n'); \
+    }; \
+    if (requireNamespace('sf', quietly = TRUE)) { \
+        cat('sf GDAL:', sf::sf_extSoftVersion()['GDAL'], '\n'); \
+    }"
 
 # Run version alignment check - FAIL BUILD if misaligned
 RUN Rscript /opt/scripts/check-r-versions.R
