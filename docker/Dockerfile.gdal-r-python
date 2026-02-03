@@ -1,0 +1,74 @@
+# ghcr.io/hypertidy/gdal-r-python:latest
+# R + Python geo stack, all aligned to the same GDAL
+#
+# This replaces gdal-builds:rocker-gdal-dev-python for most use cases
+#
+# CRITICAL NOTES ON PYTHON GDAL BINDINGS:
+# ========================================
+# The osgeo.gdal, osgeo.ogr, osgeo.osr bindings are ALREADY INSTALLED
+# in the osgeo/gdal base image. They were built WITH GDAL itself.
+# 
+# DO NOT `pip install GDAL` - this would install a DIFFERENT build
+# that may not match the system GDAL version.
+#
+# We install rasterio, fiona, etc. with --no-binary to ensure they
+# build against the SAME GDAL/PROJ/GEOS as the osgeo bindings.
+
+ARG BASE_IMAGE=ghcr.io/hypertidy/gdal-r-full:latest
+FROM ${BASE_IMAGE}
+
+LABEL org.opencontainers.image.source="https://github.com/hypertidy/gdal-r-ci"
+LABEL org.opencontainers.image.description="R + Python with aligned GDAL stack"
+
+# Copy version check script
+COPY scripts/check-python-versions.py /opt/scripts/check-python-versions.py
+
+# Python is already in the osgeo/gdal image, just need pip and build deps
+RUN apt-get update -qq && apt-get install -y --no-install-recommends \
+    python3-pip \
+    python3-dev \
+    # Build dependencies for source compilation
+    cython3 \
+    && rm -rf /var/lib/apt/lists/*
+
+# Verify osgeo bindings are present and match system GDAL
+RUN python3 -c "\
+from osgeo import gdal; \
+import subprocess; \
+osgeo_ver = gdal.VersionInfo('RELEASE_NAME'); \
+system_ver = subprocess.check_output(['gdal-config', '--version']).decode().strip(); \
+print(f'osgeo.gdal version: {osgeo_ver}'); \
+print(f'System GDAL version: {system_ver}'); \
+assert osgeo_ver.startswith(system_ver.split('-')[0].split('dev')[0][:5]), \
+    f'osgeo.gdal ({osgeo_ver}) does not match system GDAL ({system_ver})!'"
+
+# Install Python geo packages FROM SOURCE
+# CRITICAL: --no-binary for GDAL-linking packages ensures they build
+# against our system GDAL, not bundled wheels with different versions
+COPY config/python-packages.txt /tmp/python-packages.txt
+RUN pip3 install --break-system-packages --no-cache-dir \
+    --no-binary rasterio,fiona,pyproj,shapely \
+    -r /tmp/python-packages.txt
+
+# Verify basic imports work
+RUN python3 -c "\
+from osgeo import gdal; \
+import rasterio; \
+import fiona; \
+import geopandas; \
+print('All imports successful')"
+
+# Run version alignment check - FAIL BUILD if misaligned
+RUN python3 /opt/scripts/check-python-versions.py
+
+# reticulate for R-Python interop (from source)
+RUN Rscript -e "install.packages('reticulate', type = 'source')"
+
+# Verify R can see Python and the geo stack
+RUN Rscript -e "\
+    library(reticulate); \
+    py_available(initialize = TRUE); \
+    gdal <- import('osgeo.gdal'); \
+    cat('R/reticulate sees osgeo.gdal version:', gdal\$VersionInfo('RELEASE_NAME'), '\n')"
+
+CMD ["R"]

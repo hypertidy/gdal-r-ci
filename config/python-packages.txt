@@ -1,0 +1,32 @@
+# Python packages for ghcr.io/hypertidy/gdal-r-python image
+# Core geo stack aligned to GDAL
+#
+# CRITICAL: DO NOT ADD 'GDAL' HERE
+# The osgeo.gdal bindings come from the GDAL build itself (in osgeo/gdal image).
+# pip installing GDAL would install a DIFFERENT version that doesn't match.
+#
+# Packages that link GDAL/PROJ/GEOS are installed with --no-binary to ensure
+# they compile against our system libraries (see Dockerfile).
+
+# Core geo stack - these link GDAL/PROJ/GEOS
+rasterio
+fiona
+pyproj
+shapely
+geopandas
+
+# These use the above under the hood (no direct GDAL linkage)
+pyogrio
+
+# Array/raster workflows
+xarray
+rioxarray
+netCDF4
+h5netcdf
+zarr
+dask
+
+# Utilities
+numpy
+pandas
+scipy

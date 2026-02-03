@@ -1,0 +1,152 @@
+# Build and publish Docker images to GHCR
+# Triggered on push to main or manually
+# Images are layered: gdal-r -> gdal-r-full -> gdal-r-python
+#
+# CRITICAL: All images enforce library version alignment.
+# If GDAL/PROJ/GEOS versions don't match across packages, builds FAIL.
+
+name: Build Docker Images
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'docker/**'
+      - 'config/**'
+      - 'scripts/**'
+      - '.github/workflows/build-images.yml'
+  schedule:
+    # Weekly on Monday 3am UTC - pick up new osgeo/gdal:latest
+    - cron: '0 3 * * 1'
+  workflow_dispatch:
+    inputs:
+      force_rebuild:
+        description: 'Force rebuild all images'
+        required: false
+        default: 'false'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_PREFIX: hypertidy
+
+jobs:
+  build-gdal-r:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      contents: read
+      packages: write
+    
+    outputs:
+      image_tag: ${{ steps.meta.outputs.tags }}
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/gdal-r
+          tags: |
+            type=raw,value=latest
+            type=sha,prefix=
+      
+      - name: Build and push gdal-r
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: docker/Dockerfile.gdal-r
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+
+  build-gdal-r-full:
+    needs: build-gdal-r
+    runs-on: ubuntu-latest
+    timeout-minutes: 90  # Longer for package compilation
+    permissions:
+      contents: read
+      packages: write
+    
+    outputs:
+      image_tag: ${{ steps.meta.outputs.tags }}
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/gdal-r-full
+          tags: |
+            type=raw,value=latest
+            type=sha,prefix=
+      
+      - name: Build and push gdal-r-full
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: docker/Dockerfile.gdal-r-full
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            BASE_IMAGE=${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/gdal-r:latest
+
+  build-gdal-r-python:
+    needs: build-gdal-r-full
+    runs-on: ubuntu-latest
+    timeout-minutes: 90  # Longer for package compilation
+    permissions:
+      contents: read
+      packages: write
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/gdal-r-python
+          tags: |
+            type=raw,value=latest
+            type=sha,prefix=
+      
+      - name: Build and push gdal-r-python
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: docker/Dockerfile.gdal-r-python
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            BASE_IMAGE=${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/gdal-r-full:latest

@@ -1,0 +1,108 @@
+# ghcr.io/hypertidy/gdal-r:latest
+# Base R environment on top of osgeo/gdal:ubuntu-full-latest
+#
+# This image provides:
+# - Bleeding-edge GDAL from osgeo
+# - R from CRAN Ubuntu repository
+# - System libraries needed by R geospatial packages
+# - PROJ symlink fix for packages that link PROJ directly
+# - Minimal R packages (explicit, no kitchen sink)
+#
+# PHILOSOPHY: All R packages are built FROM SOURCE against system libraries.
+# We do NOT use pak, r2u, RSPM binaries, or any other mechanism that might
+# introduce version skew. This is slower but guarantees alignment.
+# See docs/library-alignment.md for rationale.
+
+ARG GDAL_IMAGE=ghcr.io/osgeo/gdal:ubuntu-full-latest
+FROM ${GDAL_IMAGE}
+
+LABEL org.opencontainers.image.source="https://github.com/hypertidy/gdal-r-ci"
+LABEL org.opencontainers.image.description="R environment with bleeding-edge GDAL"
+
+ENV DEBIAN_FRONTEND=noninteractive
+ENV TZ=UTC
+
+# System libraries needed by R and geospatial packages
+RUN apt-get update -qq && apt-get install -y --no-install-recommends \
+    software-properties-common \
+    dirmngr \
+    wget \
+    ca-certificates \
+    gnupg \
+    git \
+    lsb-release \
+    # Build essentials
+    pkg-config \
+    cmake \
+    # R package dependencies
+    libcurl4-openssl-dev \
+    libssl-dev \
+    libxml2-dev \
+    # Text rendering (ragg, textshaping)
+    libfontconfig1-dev \
+    libfreetype6-dev \
+    libharfbuzz-dev \
+    libfribidi-dev \
+    # Image formats
+    libpng-dev \
+    libtiff-dev \
+    libjpeg-dev \
+    # Geo libraries (for packages linking directly)
+    libsqlite3-dev \
+    libudunits2-dev \
+    libnetcdf-dev \
+    netcdf-bin \
+    libproj-dev \
+    libgeos-dev \
+    # Database connectivity
+    libpq-dev \
+    unixodbc-dev \
+    # s2 geometry (for sf)
+    libabsl-dev \
+    # Documentation
+    pandoc \
+    qpdf \
+    && rm -rf /var/lib/apt/lists/*
+
+# CRITICAL: Create PROJ symlink
+# The osgeo/gdal image has internal PROJ with renamed symbols, but system PROJ
+# only has libproj.so.25 without the .so symlink. Packages like terra/sf that
+# link PROJ directly need this symlink.
+RUN ln -sf /lib/x86_64-linux-gnu/libproj.so.25 /lib/x86_64-linux-gnu/libproj.so \
+    && ldconfig
+
+# Install R from CRAN Ubuntu repository
+RUN wget -qO- https://cloud.r-project.org/bin/linux/ubuntu/marutter_pubkey.asc \
+    | tee -a /etc/apt/trusted.gpg.d/cran_ubuntu_key.asc \
+    && add-apt-repository -y "deb https://cloud.r-project.org/bin/linux/ubuntu $(lsb_release -cs)-cran40/" \
+    && apt-get update -qq \
+    && apt-get install -y --no-install-recommends \
+        r-base \
+        r-base-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Set CRAN mirror - use source packages only (no binaries)
+RUN echo 'options(repos = c(CRAN = "https://cloud.r-project.org"))' >> /etc/R/Rprofile.site \
+    && echo 'options(pkgType = "source")' >> /etc/R/Rprofile.site
+
+# Create scripts directory
+RUN mkdir -p /opt/scripts
+
+# Install EXPLICIT set of R packages FROM SOURCE
+# This list is intentionally minimal and documented
+COPY config/r-packages-base.txt /tmp/r-packages-base.txt
+RUN Rscript -e "\
+    pkgs <- readLines('/tmp/r-packages-base.txt'); \
+    pkgs <- pkgs[!grepl('^#', pkgs) & nchar(trimws(pkgs)) > 0]; \
+    install.packages(pkgs, type = 'source', Ncpus = parallel::detectCores())"
+
+# Verify GDAL/PROJ/GEOS versions
+RUN echo "=== Environment versions ===" \
+    && gdalinfo --version \
+    && pkg-config --modversion proj \
+    && geos-config --version \
+    && R --version | head -1
+
+WORKDIR /workspace
+
+CMD ["R"]

@@ -1,0 +1,45 @@
+# ghcr.io/hypertidy/gdal-r-full:latest
+# R with core GDAL-dependent packages installed
+#
+# This is the image Chris Toney and others can use for gdalraster CI
+# Includes: gdalraster, terra, sf, vapour, stars, gdalcubes
+#
+# CRITICAL: All packages are built from source against the same GDAL/PROJ/GEOS.
+# We do NOT use pak, r2u, or any binary packages that might have version skew.
+
+ARG BASE_IMAGE=ghcr.io/hypertidy/gdal-r:latest
+FROM ${BASE_IMAGE}
+
+LABEL org.opencontainers.image.source="https://github.com/hypertidy/gdal-r-ci"
+LABEL org.opencontainers.image.description="R with core GDAL packages (gdalraster, terra, sf, vapour, stars)"
+
+# Copy version check script
+COPY scripts/check-r-versions.R /opt/scripts/check-r-versions.R
+
+# Install core GDAL-dependent packages FROM SOURCE
+# Order: gdalraster first (doesn't link PROJ directly), then others
+# Using install.packages() ensures source build against system libraries
+COPY config/r-packages-geo.txt /tmp/r-packages-geo.txt
+RUN Rscript -e "\
+    pkgs <- readLines('/tmp/r-packages-geo.txt'); \
+    pkgs <- pkgs[!grepl('^#', pkgs) & nchar(trimws(pkgs)) > 0]; \
+    for (pkg in pkgs) { \
+        message('========================================'); \
+        message('Installing from source: ', pkg); \
+        message('========================================'); \
+        install.packages(pkg, type = 'source', Ncpus = parallel::detectCores()); \
+    }"
+
+# Verify packages load and report GDAL version
+RUN Rscript -e "\
+    library(gdalraster); \
+    cat('gdalraster GDAL:', gdal_version(), '\n'); \
+    library(terra); \
+    cat('terra GDAL:', terra::gdal(), '\n'); \
+    library(sf); \
+    cat('sf GDAL:', sf::sf_extSoftVersion()['GDAL'], '\n')"
+
+# Run version alignment check - FAIL BUILD if misaligned
+RUN Rscript /opt/scripts/check-r-versions.R
+
+CMD ["R"]

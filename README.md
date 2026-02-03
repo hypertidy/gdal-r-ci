@@ -1,58 +1,54 @@
 # gdal-r-ci
 
-Continuous integration for R packages against bleeding-edge GDAL.
+Continuous integration infrastructure for R packages against bleeding-edge GDAL.
 
-This repository provides:
+## Docker Images
 
-1. **Scheduled checks** - Fortnightly CI runs that test
-`gdalcubes`, `gdalraster`, `sf`, `terra`, and `vapour` against the latest GDAL
-Docker image
-2. **Reusable workflow** - A GitHub Action workflow that any R package can call
-to test against latest GDAL
+Pre-built images on GHCR, rebuilt weekly to track `osgeo/gdal:ubuntu-full-latest`:
 
-## Why?
+| Image | Description | Size |
+|-------|-------------|------|
+| `ghcr.io/hypertidy/gdal-r:latest` | R + system libs + PROJ fix | ~2GB |
+| `ghcr.io/hypertidy/gdal-r-full:latest` | + gdalraster, terra, sf, vapour, stars | ~3GB |
+| `ghcr.io/hypertidy/gdal-r-python:latest` | + Python geo stack (rasterio, geopandas, etc.) | ~4GB |
 
-GDAL's C API occasionally changes in ways that require updates to R packages.
-For example, [sf PR #2576](https://github.com/r-spatial/sf/pull/2576) changed
-`GDALMetadata` to use `CSLConstList` for compatibility with newer GDAL versions.
+### Quick Start
 
-Catching these issues early—before they hit CRAN—helps maintainers prepare fixes proactively.
+```bash
+# Interactive R session with bleeding-edge GDAL
+docker run --rm -ti ghcr.io/hypertidy/gdal-r-full:latest
 
-## Scheduled Checks
+# Check your package against latest GDAL
+docker run --rm -v $(pwd):/pkg ghcr.io/hypertidy/gdal-r:latest \
+  bash -c "cd /pkg && R CMD build . && R CMD check *.tar.gz"
+```
 
-The scheduled workflow runs on the 1st and 15th of each month at 02:00 UTC, testing these packages:
+### Image Hierarchy
 
-- [gdalcubes](https://github.com/appelmar/gdalcubes)
-- [gdalraster](https://github.com/firelab/gdalraster)
-- [sf](https://github.com/r-spatial/sf)
-- [terra](https://github.com/rspatial/terra)
-- [vapour](https://github.com/hypertidy/vapour)
+```
+ghcr.io/osgeo/gdal:ubuntu-full-latest    # GDAL team maintains
+           │
+           ▼
+ghcr.io/hypertidy/gdal-r:latest          # + R, system libs, PROJ fix
+           │                              # + minimal R packages (explicit)
+           ▼
+ghcr.io/hypertidy/gdal-r-full:latest     # + terra, sf, gdalraster, vapour, stars
+           │                              # Use this for package CI
+           ▼
+ghcr.io/hypertidy/gdal-r-python:latest   # + Python geo stack
+                                          # Use for R/Python interop
+```
 
-If any check fails, an issue is automatically created in this repository.
+## Reusable Workflow for Package CI
 
-### Manual Trigger
-
-(NOTE: we haven't actually tried this yet ...)
-
-You can manually trigger the scheduled workflow from the Actions tab:
-
-1. Go to **Actions** → **Scheduled GDAL Compatibility Check**
-2. Click **Run workflow**
-3. Optionally specify packages (comma-separated) or leave as "all"
-
-## Using the Reusable Workflow
-
-Add this to your R package's `.github/workflows/` directory:
-
-### Basic Usage
+Add to your package's `.github/workflows/`:
 
 ```yaml
-# .github/workflows/check-gdal-latest.yml
 name: Check GDAL Latest
 
 on:
   schedule:
-    - cron: '0 3 * * 0'  # Weekly on Sunday
+    - cron: '0 3 * * 0'  # Weekly
   workflow_dispatch:
 
 jobs:
@@ -60,246 +56,125 @@ jobs:
     uses: hypertidy/gdal-r-ci/.github/workflows/check-gdal-latest.yml@main
 ```
 
-### With Options
+See [examples/](examples/) for more options.
 
-```yaml
-name: Check GDAL Latest
+## Scheduled Checks
 
-on:
-  push:
-    branches: [main]
-  workflow_dispatch:
+The CRAN-5 packages are tested fortnightly:
 
-jobs:
-  gdal-latest:
-    uses: hypertidy/gdal-r-ci/.github/workflows/check-gdal-latest.yml@main
-    with:
-      # Git ref to checkout (branch, tag, SHA)
-      ref: 'main'
-      
-      # Additional apt packages to install
-      extra-deps: 'libnetcdf-dev'
-      
-      # Additional R packages to install
-      r-extra-packages: 'tinytest, wk'
-      
-      # Additional R CMD check arguments
-      check-args: '--no-manual --ignore-vignettes'
+- [gdalraster](https://github.com/firelab/gdalraster)
+- [terra](https://github.com/rspatial/terra)
+- [sf](https://github.com/r-spatial/sf)
+- [vapour](https://github.com/hypertidy/vapour)
+- [stars](https://github.com/r-spatial/stars)
+
+Results create issues in this repo on failure.
+
+## Package Manifests
+
+The R packages installed in each image are **explicit** (no kitchen sink):
+
+- [`config/r-packages-base.txt`](config/r-packages-base.txt) - Base image packages
+- [`config/r-packages-geo.txt`](config/r-packages-geo.txt) - Geo packages in -full
+- [`config/python-packages.txt`](config/python-packages.txt) - Python packages
+
+Edit these files to change what's pre-installed.
+
+## Version Alignment
+
+**All packages link to the exact same GDAL/PROJ/GEOS.** No exceptions.
+
+We enforce this by:
+1. Building all packages from source (no binaries from pak/r2u/RSPM)
+2. Running explicit version checks during image build
+3. Failing the build if versions don't match
+
+```bash
+# Run version checks manually
+docker run --rm ghcr.io/hypertidy/gdal-r-full:latest \
+  Rscript /opt/scripts/check-r-versions.R
+
+docker run --rm ghcr.io/hypertidy/gdal-r-python:latest \
+  python3 /opt/scripts/check-python-versions.py
 ```
 
-### Workflow Inputs
+See [docs/library-alignment.md](docs/library-alignment.md) for the full rationale.
 
-| Input | Description | Default |
-|-------|-------------|---------|
-| `ref` | Git ref to checkout | Default branch |
-| `extra-deps` | Space-separated apt packages | (none) |
-| `r-extra-packages` | Comma-separated R packages | (none) |
-| `check-args` | Arguments to R CMD check | `--no-manual` |
+### The osgeo Bindings
+
+The Python bindings (`osgeo.gdal`, `osgeo.ogr`, `osgeo.osr`) come from the GDAL build itself - they're already in the osgeo/gdal base image. We do NOT `pip install GDAL`. Other packages (rasterio, fiona) are built from source with `--no-binary` to ensure they link the same GDAL.
 
 ## Technical Details
 
-### Environment
+### Upstream: osgeo/gdal Docker Images
 
-- **Container**: `ghcr.io/osgeo/gdal:ubuntu-full-latest` (Ubuntu Noble 24.04 as at January 2026)
-- **R**: Latest from CRAN repository
-- **GDAL**: Whatever is in the `:latest` tag (typically nightly builds)
+We build on top of `ghcr.io/osgeo/gdal:ubuntu-full-latest`. Here's what you need to know about the upstream:
 
-### The GDAL Docker Image and PROJ
+**Source locations in [OSGeo/gdal](https://github.com/OSGeo/gdal):**
+```
+docker/
+├── ubuntu-full/
+│   ├── Dockerfile      # The actual image definition
+│   └── build.sh        # Local build script
+├── ubuntu-small/       # Lighter variant
+├── alpine-small/       # Alpine-based
+├── alpine-normal/
+└── README.md           # Documents all variants
 
-The `ghcr.io/osgeo/gdal:ubuntu-full-latest` image has an interesting
-architecture worth understanding:
+.github/workflows/
+├── linux_build.yml     # Main CI workflow - builds/pushes docker images on push to master
+└── ...
+```
 
-**GDAL** is installed to system paths (`/usr/bin/gdalinfo`, `/usr/bin/gdal-config`, `/usr/lib/...`). This means `gdal-config --cflags` and `gdal-config --libs` work as expected, and R packages using GDAL link correctly.
+**Build triggers:** The `:latest` images are rebuilt on every push to master (not scheduled - they track HEAD). The `linux_build.yml` workflow handles both CI testing and pushing updated images to GHCR. Tagged release images (e.g., `ubuntu-full-3.10.1`) are built on version tags.
 
-**PROJ** is more complex. The image contains two PROJ installations:
+**Key characteristics of ubuntu-full:**
+- Base: `ubuntu:24.04`
+- Python: 3.12 with osgeo bindings installed to `/usr/lib/python3/dist-packages/osgeo/`
+- PROJ: Internal (renamed symbols) + system PROJ from Ubuntu
+- All drivers enabled, including proprietary ones (FileGDB, Oracle, etc.)
+- ~2GB compressed
 
-1. **Internal PROJ** at `/usr/local/gdal-internal/` - This is a bleeding-edge
-version (e.g., 9.8.0) that GDAL itself uses. Crucially, all symbols are renamed
-to `internal_proj_*` (e.g., `internal_proj_context_create` instead of
-`proj_context_create`) to avoid conflicts. The `proj` command-line tool comes
-from here.
+**Registry:** Images moved from Docker Hub to GitHub Container Registry:
+- Old: `docker pull osgeo/gdal:ubuntu-full-latest` (deprecated)
+- New: `docker pull ghcr.io/osgeo/gdal:ubuntu-full-latest`
 
-2. **System PROJ** at `/lib/x86_64-linux-gnu/` - This is Ubuntu's packaged version (e.g., 9.4.0) with standard symbol names. However, only `libproj.so.25` exists—no `libproj.so` symlink is provided.
+**Useful links:**
+- [GDAL Docker README](https://github.com/OSGeo/gdal/tree/master/docker)
+- [Package registry](https://github.com/OSGeo/gdal/pkgs/container/gdal)
+- [ubuntu-full Dockerfile](https://github.com/OSGeo/gdal/blob/master/docker/ubuntu-full/Dockerfile)
 
-This design lets GDAL use cutting-edge PROJ internally while avoiding symbol conflicts with system libraries. However, it creates challenges for R packages:
+### The PROJ Symlink Fix
 
-- Packages like `terra` and `sf` that link directly to PROJ expect standard `-lproj` with standard symbols
-- The internal PROJ's renamed symbols won't resolve
-- Without the `.so` symlink, the linker can't find system PROJ either
-
-### Our Workaround
-
-The workflow creates the missing symlink:
+The osgeo/gdal image has a clever dual-PROJ setup (internal PROJ with renamed symbols for GDAL, system PROJ for everything else). However, system PROJ only provides `libproj.so.25` without the standard `.so` symlink. Packages like terra and sf that link PROJ directly need:
 
 ```bash
 ln -sf /lib/x86_64-linux-gnu/libproj.so.25 /lib/x86_64-linux-gnu/libproj.so
-ldconfig
 ```
 
-This means R packages link against **system PROJ** (9.4.0) while **GDAL uses internal PROJ** (9.8.0). For our purposes—catching GDAL API changes—this is fine. We're testing GDAL compatibility, not PROJ compatibility.
+This is done automatically in our images.
 
-### How R Packages Find GDAL and PROJ
+### Why Not Build GDAL from Source?
 
-Different packages use different detection strategies:
+The osgeo/gdal images are:
+- Built by the GDAL team themselves
+- Updated frequently (often nightly)
+- Include all drivers and dependencies properly configured
+- Much faster than building from source in CI
 
-| Package | GDAL detection | PROJ detection |
-|---------|---------------|----------------|
-| gdalraster | `gdal-config` | `gdal-config` (doesn't link PROJ directly) |
-| vapour | `gdal-config` | `gdal-config` (doesn't link PROJ directly) |
-| sf | `gdal-config` | `pkg-config proj` |
-| terra | `gdal-config` | `pkg-config proj` + hardcoded `-lproj` |
-
-Packages that only use `gdal-config` (like `gdalraster` and `vapour`) work out
-of the box. Packages that link PROJ directly need the symlink fix.
-
-Note: `terra`'s configure script uses `pkg-config` to find PROJ's version and
-include path, but then hardcodes `-lproj` rather than using `pkg-config --libs
-proj`. This is why simply setting `PKG_CONFIG_PATH` to the internal PROJ doesn't
-work—even though pkg-config would return `-linternalproj`, terra ignores that
-and uses `-lproj` anyway.
-
-### R Installation
-
-R is installed from the official CRAN Ubuntu repository following [CRAN's
-instructions](https://cran.r-project.org/bin/linux/ubuntu/):
-
-```bash
-wget -qO- https://cloud.r-project.org/bin/linux/ubuntu/marutter_pubkey.asc \
-  | tee -a /etc/apt/trusted.gpg.d/cran_ubuntu_key.asc
-add-apt-repository -y "deb https://cloud.r-project.org/bin/linux/ubuntu $(lsb_release -cs)-cran40/"
-apt-get install -y r-base r-base-dev
-```
-
-### Pre-installed System Libraries
-
-The workflow installs common dependencies needed by R geospatial packages:
-
-- `pkg-config` (not in the GDAL image by default!)
-- `cmake` (for packages that vendor dependencies)
-- `libcurl4-openssl-dev`, `libssl-dev`, `libxml2-dev`
-- `libfontconfig1-dev`, `libfreetype6-dev`, `libharfbuzz-dev`, `libfribidi-dev`
-- `libpng-dev`, `libtiff-dev`, `libjpeg-dev`
-- `libsqlite3-dev`, `libudunits2-dev`, `libnetcdf-dev`, `netcdf-bin`
-- `libproj-dev`, `libgeos-dev` (for packages linking these directly)
-- `libpq-dev`, `unixodbc-dev` (for database connectivity)
-- `libabsl-dev` (for s2, used by sf)
-- `pandoc`, `qpdf`
-
-## Adding More Packages
-
-To add a package to the scheduled checks, edit `.github/workflows/scheduled-check.yml`:
-
-1. Add to `ALL_PACKAGES` env variable
-2. Add a case in the "Clone package repository" step
-
-PRs welcome!
-
-## Interpreting Failures
-
-When a check fails, examine:
-
-1. **00install.out** - Compilation errors (often API changes)
-2. **00check.log** - Test failures
-3. **testthat.Rout.fail** - Detailed test failures
-
-Common GDAL API changes that cause issues:
-
-- Const-correctness changes (like `CSLConstList`)
-- New/removed function parameters
-- Struct field changes
-- Deprecated function removal
-
-### Example: CSLConstList
-
-In GDAL 3.13+, `GetMetadata()` returns `CSLConstList` (a `const char* const*`)
-instead of `char**`. Code like this fails:
-
-```cpp
-char **m = poDataset->GetMetadata();  // Error: invalid conversion from CSLConstList
-```
-
-The fix is straightforward:
-
-```cpp
-CSLConstList m = poDataset->GetMetadata();  // Or: const char* const* m = ...
-```
-
-## Debugging Locally
-
-To reproduce the CI environment locally, start the container:
-
-```bash
-docker run -it --rm ghcr.io/osgeo/gdal:ubuntu-full-latest bash
-```
-
-Then inside the container, install system dependencies:
-
-```bash
-apt-get update -qq
-apt-get install -y --no-install-recommends \
-  software-properties-common dirmngr wget ca-certificates gnupg git \
-  pkg-config lsb-release cmake \
-  libcurl4-openssl-dev libssl-dev libxml2-dev \
-  libfontconfig1-dev libfreetype6-dev libharfbuzz-dev libfribidi-dev \
-  libpng-dev libtiff-dev libjpeg-dev \
-  libsqlite3-dev libudunits2-dev libnetcdf-dev netcdf-bin \
-  libproj-dev libgeos-dev libpq-dev unixodbc-dev \
-  libabsl-dev \
-  pandoc qpdf
-```
-
-Create the PROJ symlink (required for sf/terra):
-
-```bash
-ln -sf /lib/x86_64-linux-gnu/libproj.so.25 /lib/x86_64-linux-gnu/libproj.so
-ldconfig
-```
-
-Install R from CRAN:
-
-```bash
-wget -qO- https://cloud.r-project.org/bin/linux/ubuntu/marutter_pubkey.asc \
-  | tee -a /etc/apt/trusted.gpg.d/cran_ubuntu_key.asc
-add-apt-repository -y "deb https://cloud.r-project.org/bin/linux/ubuntu $(lsb_release -cs)-cran40/"
-apt-get update -qq
-apt-get install -y --no-install-recommends r-base r-base-dev
-```
-
-Check versions:
-
-```bash
-gdalinfo --version            # GDAL (bleeding edge)
-pkg-config --modversion proj  # System PROJ (used by R packages)
-proj 2>&1 | head -1           # Internal PROJ (used by GDAL)
-R --version | head -1
-```
-
-Clone and test a package (using gdalraster as example):
-
-```bash
-git clone --depth 1 https://github.com/firelab/gdalraster.git
-cd gdalraster
-
-Rscript -e "
-  options(repos = c(CRAN = 'https://cloud.r-project.org'))
-  install.packages(c('remotes', 'knitr', 'rmarkdown', 'testthat'))
-  remotes::install_deps(dependencies = c('Depends', 'Imports', 'LinkingTo'), upgrade = 'never')
-"
-
-R CMD build .
-_R_CHECK_FORCE_SUGGESTS_=false R CMD check --no-manual --ignore-vignettes *.tar.gz
-```
-
-For sf or terra, the same approach works. Note that we use:
-- `dependencies = c('Depends', 'Imports', 'LinkingTo')` to skip Suggests (avoids circular sf/terra dependencies)
-- `_R_CHECK_FORCE_SUGGESTS_=false` to allow check to proceed without suggested packages
-- `--ignore-vignettes` to skip vignette building
+We add R on top rather than rebuilding GDAL.
 
 ## Related Projects
 
-- [r2u](https://github.com/eddelbuettel/r2u) - CRAN packages as Ubuntu binaries
-- [rocker-org](https://github.com/rocker-org/rocker-versioned2) - R Docker images
+- [mdsumner/gdal-builds](https://github.com/mdsumner/gdal-builds) - Extended images with more R/Python packages (builds on these images)
+- [mdsumner/gdalcheck](https://github.com/mdsumner/gdalcheck) - Reverse dependency checking infrastructure (future integration planned)
 - [osgeo/gdal](https://github.com/OSGeo/gdal) - GDAL source and Docker images
+
+## Documentation
+
+- [docs/library-alignment.md](docs/library-alignment.md) - Why we build from source, the PROJ wrinkle, osgeo bindings
+- [docs/gdal-builds-migration.md](docs/gdal-builds-migration.md) - How to migrate gdal-builds to use these base images
+- [docs/gdalcheck-roadmap.md](docs/gdalcheck-roadmap.md) - Future plans for reverse dependency checking
 
 ## License
 
