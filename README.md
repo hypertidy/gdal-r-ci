@@ -9,7 +9,7 @@ Pre-built images on GHCR, rebuilt weekly to track `osgeo/gdal:ubuntu-full-latest
 | Image | Description | Size |
 |-------|-------------|------|
 | `ghcr.io/hypertidy/gdal-r:latest` | R + system libs + PROJ fix | ~2GB |
-| `ghcr.io/hypertidy/gdal-r-full:latest` | + gdalraster, terra, sf, vapour, stars | ~3GB |
+| `ghcr.io/hypertidy/gdal-r-full:latest` | + gdalraster + optional: gdalcubes, sf, terra, vapour | ~3GB |
 | `ghcr.io/hypertidy/gdal-r-python:latest` | + Python geo stack (rasterio, geopandas, etc.) | ~4GB |
 
 ### Quick Start
@@ -63,10 +63,10 @@ See [examples/](examples/) for more options.
 The CRAN-5 packages are tested fortnightly:
 
 - [gdalraster](https://github.com/firelab/gdalraster)
+- [gdalcubes](https://github.com/appelmar/gdalcubes)
 - [terra](https://github.com/rspatial/terra)
 - [sf](https://github.com/r-spatial/sf)
 - [vapour](https://github.com/hypertidy/vapour)
-- [stars](https://github.com/r-spatial/stars)
 
 Results create issues in this repo on failure.
 
@@ -75,7 +75,8 @@ Results create issues in this repo on failure.
 The R packages installed in each image are **explicit** (no kitchen sink):
 
 - [`config/r-packages-base.txt`](config/r-packages-base.txt) - Base image packages
-- [`config/r-packages-geo.txt`](config/r-packages-geo.txt) - Geo packages in -full
+- [`config/r-packages-required.txt`](config/r-packages-required.txt) - Geo packages in -full
+- [`config/r-packages-optional.txt`](config/r-packages-optional.txt) - Geo packages in -full + required r-packages
 - [`config/python-packages.txt`](config/python-packages.txt) - Python packages
 
 Edit these files to change what's pre-installed.

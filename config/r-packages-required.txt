@@ -1,0 +1,5 @@
+# R packages for ghcr.io/hypertidy/gdal-r-full image
+# Core GDAL-dependent packages for the R geospatial ecosystem
+
+# Primary GDAL packages
+firelab/gdalraster

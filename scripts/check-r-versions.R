@@ -60,15 +60,6 @@ if (requireNamespace("vapour", quietly = TRUE)) {
   )
 }
 
-# stars - inherits from sf, but let's verify
-if (requireNamespace("stars", quietly = TRUE)) {
-  # stars uses sf under the hood
-  results$stars <- list(
-    GDAL = "via sf",
-    PROJ = "via sf", 
-    GEOS = "via sf"
-  )
-}
 
 # gdalcubes
 if (requireNamespace("gdalcubes", quietly = TRUE)) {
@@ -87,7 +78,7 @@ cat(sprintf("%-12s %-20s %-12s %-12s\n", "-------", "----", "----", "----"))
 
 for (pkg in names(results)) {
   r <- results[[pkg]]
-  cat(sprintf("%-12s %-20s %-12s %-12s\n", 
+  cat(sprintf("%-12s %-20s %-12s %-12s\n",
               pkg,
               if (is.na(r$GDAL)) "-" else r$GDAL,
               if (is.na(r$PROJ)) "-" else r$PROJ,
@@ -100,22 +91,22 @@ cat("\n=== Alignment Check ===\n")
 check_version <- function(lib_name, system_ver, pkg_versions) {
   # Filter out NAs and "via sf" markers
   pkg_versions <- pkg_versions[!is.na(pkg_versions) & pkg_versions != "via sf"]
-  
+
   if (length(pkg_versions) == 0) {
     cat(sprintf("%s: No packages report version (OK if not linked)\n", lib_name))
     return(TRUE)
   }
-  
+
   # Normalize versions for comparison (strip build metadata like "-dev")
   normalize <- function(v) {
     sub("-.*$", "", sub("dev.*$", "", v))
   }
-  
+
   system_norm <- normalize(system_ver)
   pkg_norms <- sapply(pkg_versions, normalize)
-  
+
   all_match <- all(pkg_norms == system_norm)
-  
+
   if (all_match) {
     cat(sprintf("%s: OK (all packages match system %s)\n", lib_name, system_ver))
   } else {
@@ -126,7 +117,7 @@ check_version <- function(lib_name, system_ver, pkg_versions) {
       cat(sprintf("  %s: %s [%s]\n", names(pkg_versions)[i], pkg_versions[i], status))
     }
   }
-  
+
   return(all_match)
 }
 

@@ -5,7 +5,7 @@
 gdalcheck is parked - it has ambitious goals but the infrastructure isn't ready.
 
 **What gdalcheck wants to do:**
-- Test ~930 reverse dependencies of sf/terra/gdalraster/vapour/stars
+- Test ~930 reverse dependencies of gdalraster/gdalcubes/sf/terra/vapour/
 - Pre-compile ~1500 R packages as binary cache
 - Run checks in parallel on HPC/cloud
 - Publish dashboard to GitHub Pages

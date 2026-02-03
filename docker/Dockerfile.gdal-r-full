@@ -1,8 +1,8 @@
 # ghcr.io/hypertidy/gdal-r-full:latest
 # R with core GDAL-dependent packages installed
 #
-# This is the image Chris Toney and others can use for gdalraster CI
-# Includes: gdalraster, terra, sf, vapour, stars, gdalcubes
+# This is the the GDAL-5 can use for CI
+# Includes: gdalraster, gdalcubes, sf, terra, vapour
 #
 # CRITICAL: All packages are built from source against the same GDAL/PROJ/GEOS.
 # We do NOT use pak, r2u, or any binary packages that might have version skew.
@@ -11,7 +11,7 @@ ARG BASE_IMAGE=ghcr.io/hypertidy/gdal-r:latest
 FROM ${BASE_IMAGE}
 
 LABEL org.opencontainers.image.source="https://github.com/hypertidy/gdal-r-ci"
-LABEL org.opencontainers.image.description="R with core GDAL packages (gdalraster, terra, sf, vapour, stars)"
+LABEL org.opencontainers.image.description="R with core GDAL packages (gdalraster, others)"
 
 # Copy version check script
 COPY scripts/check-r-versions.R /opt/scripts/check-r-versions.R
@@ -33,7 +33,7 @@ RUN Rscript -e "\
 # Verify packages load and report GDAL version
 RUN Rscript -e "\
     library(gdalraster); \
-    cat('gdalraster GDAL:', gdal_version(), '\n'); \
+    cat('gdalraster GDAL:', gdal_version()[[1]], '\n'); \
     library(terra); \
     cat('terra GDAL:', terra::gdal(), '\n'); \
     library(sf); \

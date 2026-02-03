@@ -1,0 +1,8 @@
+# R packages for ghcr.io/hypertidy/gdal-r-full image
+# Good to have if they install against latest, but not a showstopper
+
+# Optional R packages
+appelmar/gdalcubes
+r-spatial/sf
+rspatial/terra
+hypertidy/vapour
