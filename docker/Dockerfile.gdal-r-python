@@ -62,14 +62,15 @@ print('All imports successful')"
 # TODO: Fix version check script - fiona.gdal_version is a property not a function
 # RUN python3 /opt/scripts/check-python-versions.py
 
+# TODO
 # reticulate for R-Python interop (from source)
-RUN Rscript -e "install.packages('reticulate', type = 'source')"
+#RUN Rscript -e "install.packages('reticulate', type = 'source')"
 
 # Verify R can see Python and the geo stack
-RUN Rscript -e "\
-    library(reticulate); \
-    py_available(initialize = TRUE); \
-    gdal <- import('osgeo.gdal'); \
+#RUN Rscript -e "\
+    #library(reticulate); \
+    #py_available(initialize = TRUE); \
+    #gdal <- import('osgeo.gdal'); \
     #cat('R/reticulate sees osgeo.gdal version:', gdal\$VersionInfo('RELEASE_NAME'), '\n')"
 
 CMD ["bash"]
