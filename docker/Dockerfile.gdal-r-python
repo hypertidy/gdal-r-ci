@@ -47,7 +47,8 @@ assert osgeo_ver.startswith(system_ver.split('-')[0].split('dev')[0][:5]), \
 # CRITICAL: --no-binary for GDAL-linking packages ensures they build
 # against our system GDAL, not bundled wheels with different versions
 COPY config/python-packages.txt /tmp/python-packages.txt
-RUN uv pip install --system --no-cache \
+
+RUN uv pip install --system --break-system-packages --no-cache \
     --no-binary rasterio,fiona,pyproj,shapely \
     -r /tmp/python-packages.txt
 
