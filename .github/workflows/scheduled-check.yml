@@ -19,6 +19,10 @@ env:
   # All packages to test when running scheduled or "all"
   ALL_PACKAGES: 'gdalcubes,gdalraster,sf,terra,vapour'
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   setup:
     name: Determine packages to test
