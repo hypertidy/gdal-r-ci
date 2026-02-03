@@ -7,7 +7,7 @@
 # ========================================
 # The osgeo.gdal, osgeo.ogr, osgeo.osr bindings are ALREADY INSTALLED
 # in the osgeo/gdal base image. They were built WITH GDAL itself.
-# 
+#
 # DO NOT `pip install GDAL` - this would install a DIFFERENT build
 # that may not match the system GDAL version.
 #
@@ -23,13 +23,14 @@ LABEL org.opencontainers.image.description="R + Python with aligned GDAL stack"
 # Copy version check script
 COPY scripts/check-python-versions.py /opt/scripts/check-python-versions.py
 
-# Python is already in the osgeo/gdal image, just need pip and build deps
+# Python is already in the osgeo/gdal image, just need build deps and uv
 RUN apt-get update -qq && apt-get install -y --no-install-recommends \
     python3-pip \
     python3-dev \
-    # Build dependencies for source compilation
     cython3 \
-    && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/* \
+    # Install uv - faster and handles Debian system packages gracefully
+    && pip3 install --break-system-packages uv
 
 # Verify osgeo bindings are present and match system GDAL
 RUN python3 -c "\
@@ -42,11 +43,11 @@ print(f'System GDAL version: {system_ver}'); \
 assert osgeo_ver.startswith(system_ver.split('-')[0].split('dev')[0][:5]), \
     f'osgeo.gdal ({osgeo_ver}) does not match system GDAL ({system_ver})!'"
 
-# Install Python geo packages FROM SOURCE
+# Install Python geo packages FROM SOURCE using uv
 # CRITICAL: --no-binary for GDAL-linking packages ensures they build
 # against our system GDAL, not bundled wheels with different versions
 COPY config/python-packages.txt /tmp/python-packages.txt
-RUN pip3 install --break-system-packages --no-cache-dir \
+RUN uv pip install --system --no-cache \
     --no-binary rasterio,fiona,pyproj,shapely \
     -r /tmp/python-packages.txt
 
