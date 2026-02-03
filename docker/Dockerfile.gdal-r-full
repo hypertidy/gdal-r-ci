@@ -33,7 +33,7 @@ RUN Rscript -e "\
     }"
 
 # Install SET B: Optional packages (build CONTINUES if these fail)
-# We try each one individually and report status
+# We try each one individually and verify installation succeeded
 RUN Rscript -e "\
     pkgs <- readLines('/tmp/r-packages-optional.txt'); \
     pkgs <- pkgs[!grepl('^#', pkgs) & nchar(trimws(pkgs)) > 0]; \
@@ -42,14 +42,17 @@ RUN Rscript -e "\
         message('========================================'); \
         message('OPTIONAL: Installing ', pkg); \
         message('========================================'); \
+        pkg_name <- sub('.*/','', pkg); \
         success <- tryCatch({ \
             remotes::install_github(pkg, upgrade = 'never'); \
-            TRUE \
+            # Verify it actually installed \
+            requireNamespace(pkg_name, quietly = TRUE) \
         }, error = function(e) { \
             message('FAILED: ', pkg, ' - ', conditionMessage(e)); \
             FALSE \
         }); \
         results[[pkg]] <- success; \
+        if (!success) message('FAILED: ', pkg, ' did not install successfully'); \
     }; \
     message(''); \
     message('========================================'); \

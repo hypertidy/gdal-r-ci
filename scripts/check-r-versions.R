@@ -7,7 +7,7 @@
 #
 # Package APIs (as of 2026-02):
 #   gdalraster::gdal_version()     -> chr[1:4], [4] is clean version
-#   gdalraster::proj_version()     -> chr[1:4], [4] is clean version  
+#   gdalraster::proj_version()     -> chr[1:4], [4] is clean version
 #   gdalcubes::gdalcubes_gdalversion() -> "GDAL x.y.z, released..." (needs parsing)
 #   sf::sf_extSoftVersion()        -> named chr vector with GDAL, PROJ, GEOS
 #   terra::libVersion("gdal")      -> clean version string
@@ -153,7 +153,7 @@ check_version <- function(lib_name, system_ver, pkg_versions, warn_only = FALSE)
     cat(sprintf("  System: %s (normalized: %s)\n", system_ver, system_norm))
     for (i in seq_along(pkg_versions)) {
       status <- if (pkg_norms[i] == system_norm) "OK" else "DIFFERS"
-      cat(sprintf("  %s: %s (normalized: %s) [%s]\n", 
+      cat(sprintf("  %s: %s (normalized: %s) [%s]\n",
                   names(pkg_versions)[i], pkg_versions[i], pkg_norms[i], status))
     }
   }
@@ -172,12 +172,14 @@ proj_ok <- check_version("PROJ", system_proj, proj_versions, warn_only = TRUE)
 geos_ok <- check_version("GEOS", system_geos, geos_versions)
 
 cat("\n")
+
+# Instead of quit(status = 0/1)
 if (gdal_ok && proj_ok && geos_ok) {
   cat("All versions aligned\n")
-  quit(status = 0)
+  invisible(TRUE)
 } else {
   cat("Version misalignment detected!\n")
   cat("This indicates packages were built against different library versions.\n")
   cat("The environment may behave unpredictably.\n")
-  quit(status = 1)
+  invisible(FALSE)
 }
