@@ -269,7 +269,7 @@ jobs:
             This may indicate API changes in the latest GDAL that affect R packages.
 
             **Note:** sf and terra run compile-only checks due to dual-PROJ crash in GDAL Docker images.
-            See: https://github.com/OSGeo/gdal/issues/13777`;
+            See: gdal issue 13777`;
 
             await github.rest.issues.create({
               owner: context.repo.owner,
