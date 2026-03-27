@@ -15,62 +15,19 @@ FROM ${BASE_IMAGE}
 LABEL org.opencontainers.image.source="https://github.com/hypertidy/gdal-r-ci"
 LABEL org.opencontainers.image.description="Core GDAL R packages: gdalraster, sf, terra, vapour, gdalcubes"
 
-COPY scripts/check-r-versions.R /opt/scripts/check-r-versions.R
+COPY scripts/check-r-versions.R    /opt/scripts/check-r-versions.R
+COPY scripts/install-required.R    /opt/scripts/install-required.R
+COPY scripts/install-optional.R    /opt/scripts/install-optional.R
 COPY config/r-packages-required.txt /tmp/r-packages-required.txt
 COPY config/r-packages-optional.txt  /tmp/r-packages-optional.txt
 
 # ── SET A: Required packages ──────────────────────────────────────────────────
-# Use CRAN HEAD (not GitHub) when the package has a CRAN release — lets us test
-# against the released source which is what users actually install.
-# Use GitHub (owner/repo) for packages where we want latest commits.
-RUN Rscript -e "
-  pkgs <- readLines('/tmp/r-packages-required.txt')
-  pkgs <- pkgs[!grepl('^#', pkgs) & nchar(trimws(pkgs)) > 0]
-  for (pkg in pkgs) {
-    message(strrep('=', 60))
-    message('REQUIRED: ', pkg)
-    message(strrep('=', 60))
-    if (grepl('/', pkg)) {
-      remotes::install_github(pkg, upgrade = 'never', build_vignettes = FALSE)
-    } else {
-      install.packages(pkg, type = 'source')
-    }
-  }
-"
+RUN Rscript /opt/scripts/install-required.R
 
 # ── SET B: Optional packages ─────────────────────────────────────────────────
-RUN Rscript -e "
-  pkgs <- readLines('/tmp/r-packages-optional.txt')
-  pkgs <- pkgs[!grepl('^#', pkgs) & nchar(trimws(pkgs)) > 0]
-  results <- list()
-  for (pkg in pkgs) {
-    message(strrep('=', 60))
-    message('OPTIONAL: ', pkg)
-    message(strrep('=', 60))
-    pkg_name <- sub('.*/','', pkg)
-    ok <- tryCatch({
-      if (grepl('/', pkg)) {
-        remotes::install_github(pkg, upgrade = 'never', build_vignettes = FALSE)
-      } else {
-        install.packages(pkg, type = 'source')
-      }
-      requireNamespace(pkg_name, quietly = TRUE)
-    }, error = function(e) {
-      message('FAILED: ', conditionMessage(e)); FALSE
-    })
-    results[[pkg_name]] <- ok
-  }
-  message()
-  message(strrep('=', 60))
-  message('Optional package summary:')
-  for (n in names(results)) {
-    message(sprintf('  %-20s [%s]', n, if (results[[n]]) 'OK' else 'FAILED'))
-  }
-"
+RUN Rscript /opt/scripts/install-optional.R
 
 # ── Version alignment check ───────────────────────────────────────────────────
-# With a single PROJ (no internal-PROJ), all packages should report identical
-# GDAL/PROJ/GEOS versions. This check is now strict — no warn_only for PROJ.
 RUN Rscript /opt/scripts/check-r-versions.R
 
 CMD ["R"]
