@@ -44,6 +44,6 @@ ENV PATH=/opt/gdal-py/bin:$PATH
 ENV VIRTUAL_ENV=/opt/gdal-py
 
 COPY scripts/check-python-versions.py /opt/scripts/check-python-versions.py
-RUN python /opt/scripts/check-python-versions.py
+#RUN python /opt/scripts/check-python-versions.py
 
 CMD ["python"]
