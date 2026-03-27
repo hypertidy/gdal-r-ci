@@ -63,9 +63,9 @@ ubuntu:24.04
   → PROJ from source  → /usr/local  (standard symbols, projsync grids)
   → KEA  from source  → /usr/local
   → GDAL from source  → /usr/local  (links /usr/local/lib/libproj.so)
-  = gdal-r-base
+  = gdal-system
 
-  gdal-r-base
+  gdal-system
     → R from CRAN Ubuntu repo
     → base R packages (Rcpp, cpp11, wk, s2, remotes, testthat …)
     = gdal-r
