@@ -32,8 +32,6 @@ cmake -S src -B build \
 cmake --build build --parallel "$NCPUS"
 cmake --install build
 
-# Download datum shift grids (needed for accurate transformations).
-# projsync writes to the PROJ data directory.
 # Download datum shift grids.
 # --bbox with global extent fetches the most commonly needed grids without
 # pulling the full ~600MB that --all would download. Non-fatal if network fails.
