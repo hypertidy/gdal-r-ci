@@ -6,8 +6,14 @@
 # in gdal-system) via --system-site-packages. No PyPI GDAL package needed,
 # no version matching risk, works identically for release and dev branches.
 #
-# rasterio, fiona, pyproj are built from source (--no-binary) so they
-# link against the same /usr/local GDAL/PROJ as everything else.
+# --no-binary policy (hardwon):
+#   SOURCE builds required (link against system GDAL/PROJ/GEOS):
+#     rasterio, fiona, pyproj, shapely
+#   WHEELS fine (don't link system geo libs, or bundle safely):
+#     numpy, pandas, geopandas, netCDF4, h5py, xarray, zarr, fsspec, aiohttp
+#
+# Commented-out packages (add when ready):
+#   virtualizarr — needs xarray>=2024.x, add after confirming compat
 
 ARG BASE_IMAGE=ghcr.io/hypertidy/gdal-r-full:latest
 FROM ${BASE_IMAGE}
@@ -19,33 +25,46 @@ RUN apt-get update -qq && apt-get install -y --no-install-recommends \
         python3-pip \
     && rm -rf /var/lib/apt/lists/*
 
-# Install uv — use pip with --break-system-packages since this is Ubuntu 24.04
 RUN pip3 install --quiet uv --break-system-packages
 
-# Create venv with access to system site-packages (picks up osgeo from GDAL build)
+# Create venv — --system-site-packages exposes osgeo installed by GDAL build
 RUN uv venv /opt/gdal-py --python python3 --system-site-packages
 
 # Verify osgeo is visible through the venv
 RUN /opt/gdal-py/bin/python -c "from osgeo import gdal; print('osgeo.gdal:', gdal.__version__)"
 
-# Install geo stack from source via uv pip (avoids the pip shim issue)
-# --no-build-isolation needed for packages that use gdal-config at build time
+# ── Packages that link GDAL/PROJ/GEOS: build from source ─────────────────────
+# These must compile against our /usr/local libraries, not bundled wheels.
 RUN GDAL_CONFIG=/usr/local/bin/gdal-config \
     PROJ_DIR=/usr/local \
     uv pip install \
         --python /opt/gdal-py/bin/python \
-        --no-binary :all: \
+        --no-binary pyproj,rasterio,fiona,shapely \
         numpy \
         pyproj \
         rasterio \
         fiona \
-        shapely \
-        geopandas
+        shapely
+
+# ── Packages with no GDAL/PROJ linkage: wheels are fine ──────────────────────
+# virtualizarr is commented out below — uncomment when ready
+#RUN uv pip install \
+#        --python /opt/gdal-py/bin/python \
+#        pandas \
+#        geopandas \
+#        netCDF4 \
+#       h5py \
+#        xarray \
+#        zarr \
+#        fsspec \
+#        aiohttp \
+#        requests
+#       virtualizarr
 
 ENV PATH=/opt/gdal-py/bin:$PATH
 ENV VIRTUAL_ENV=/opt/gdal-py
 
 COPY scripts/check-python-versions.py /opt/scripts/check-python-versions.py
-#RUN python /opt/scripts/check-python-versions.py
+RUN python /opt/scripts/check-python-versions.py
 
 CMD ["python"]
