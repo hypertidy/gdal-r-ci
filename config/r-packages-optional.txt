@@ -1,8 +1,11 @@
-# R packages for ghcr.io/hypertidy/gdal-r-full image
-# Good to have if they install against latest, but not a showstopper
+# Optional packages for ghcr.io/hypertidy/gdal-r-full
+# Build CONTINUES if any of these fail — failures are logged and summarised.
+# These are the canary targets: failures here signal API changes worth reporting.
+# Format: "pkg" for CRAN, "owner/repo" for GitHub HEAD.
 
-# Optional R packages
-appelmar/gdalcubes
+# GitHub HEAD for all — we want to catch compile failures against latest GDAL
+# before they hit CRAN users
 r-spatial/sf
 rspatial/terra
 hypertidy/vapour
+appelmar/gdalcubes

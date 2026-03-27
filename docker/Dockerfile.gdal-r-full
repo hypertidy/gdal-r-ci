@@ -1,80 +1,76 @@
-# ghcr.io/hypertidy/gdal-r-full:latest
-# R with core GDAL-dependent packages installed
+# ghcr.io/hypertidy/gdal-r-full:latest  /  :dev
 #
-# This is the image the GDAL-5 can use for CI
-# Includes: gdalraster (required), + gdalcubes, sf, terra, vapour (optional)
+# Installs the core GDAL-dependent R packages on top of gdal-r.
+# All packages compiled from source against the same GDAL/PROJ/GEOS.
 #
-# CRITICAL: All packages are built from source against the same GDAL/PROJ/GEOS.
-# We do NOT use pak, r2u, or any binary packages that might have version skew.
+# SET A (required): build FAILS if these fail — gdalraster is the test target
+# SET B (optional): individual failures are logged but don't stop the build
+#
+# Version alignment is verified at the end: if GDAL/PROJ/GEOS versions
+# disagree between packages the check script exits non-zero and fails the build.
 
 ARG BASE_IMAGE=ghcr.io/hypertidy/gdal-r:latest
 FROM ${BASE_IMAGE}
 
 LABEL org.opencontainers.image.source="https://github.com/hypertidy/gdal-r-ci"
-LABEL org.opencontainers.image.description="R with core GDAL packages (gdalraster, others)"
+LABEL org.opencontainers.image.description="Core GDAL R packages: gdalraster, sf, terra, vapour, gdalcubes"
 
-# Copy version check script
 COPY scripts/check-r-versions.R /opt/scripts/check-r-versions.R
-
-# Copy package lists
 COPY config/r-packages-required.txt /tmp/r-packages-required.txt
-COPY config/r-packages-optional.txt /tmp/r-packages-optional.txt
+COPY config/r-packages-optional.txt  /tmp/r-packages-optional.txt
 
-# Install SET A: Required packages (build FAILS if these fail)
-# These are GitHub repos: owner/repo format
-RUN Rscript -e "\
-    pkgs <- readLines('/tmp/r-packages-required.txt'); \
-    pkgs <- pkgs[!grepl('^#', pkgs) & nchar(trimws(pkgs)) > 0]; \
-    for (pkg in pkgs) { \
-        message('========================================'); \
-        message('REQUIRED: Installing ', pkg); \
-        message('========================================'); \
-        remotes::install_github(pkg, upgrade = 'never'); \
-    }"
+# ── SET A: Required packages ──────────────────────────────────────────────────
+# Use CRAN HEAD (not GitHub) when the package has a CRAN release — lets us test
+# against the released source which is what users actually install.
+# Use GitHub (owner/repo) for packages where we want latest commits.
+RUN Rscript -e "
+  pkgs <- readLines('/tmp/r-packages-required.txt')
+  pkgs <- pkgs[!grepl('^#', pkgs) & nchar(trimws(pkgs)) > 0]
+  for (pkg in pkgs) {
+    message(strrep('=', 60))
+    message('REQUIRED: ', pkg)
+    message(strrep('=', 60))
+    if (grepl('/', pkg)) {
+      remotes::install_github(pkg, upgrade = 'never', build_vignettes = FALSE)
+    } else {
+      install.packages(pkg, type = 'source')
+    }
+  }
+"
 
-# Install SET B: Optional packages (build CONTINUES if these fail)
-# We try each one individually and verify installation succeeded
-RUN Rscript -e "\
-    pkgs <- readLines('/tmp/r-packages-optional.txt'); \
-    pkgs <- pkgs[!grepl('^#', pkgs) & nchar(trimws(pkgs)) > 0]; \
-    results <- list(); \
-    for (pkg in pkgs) { \
-        message('========================================'); \
-        message('OPTIONAL: Installing ', pkg); \
-        message('========================================'); \
-        pkg_name <- sub('.*/','', pkg); \
-        success <- tryCatch({ \
-            remotes::install_github(pkg, upgrade = 'never'); \
-            # Verify it actually installed \
-            requireNamespace(pkg_name, quietly = TRUE) \
-        }, error = function(e) { \
-            message('FAILED: ', pkg, ' - ', conditionMessage(e)); \
-            FALSE \
-        }); \
-        results[[pkg]] <- success; \
-        if (!success) message('FAILED: ', pkg, ' did not install successfully'); \
-    }; \
-    message(''); \
-    message('========================================'); \
-    message('Optional package summary:'); \
-    message('========================================'); \
-    for (pkg in names(results)) { \
-        status <- if (results[[pkg]]) 'OK' else 'FAILED'; \
-        message(sprintf('  %-25s [%s]', pkg, status)); \
-    }"
+# ── SET B: Optional packages ─────────────────────────────────────────────────
+RUN Rscript -e "
+  pkgs <- readLines('/tmp/r-packages-optional.txt')
+  pkgs <- pkgs[!grepl('^#', pkgs) & nchar(trimws(pkgs)) > 0]
+  results <- list()
+  for (pkg in pkgs) {
+    message(strrep('=', 60))
+    message('OPTIONAL: ', pkg)
+    message(strrep('=', 60))
+    pkg_name <- sub('.*/','', pkg)
+    ok <- tryCatch({
+      if (grepl('/', pkg)) {
+        remotes::install_github(pkg, upgrade = 'never', build_vignettes = FALSE)
+      } else {
+        install.packages(pkg, type = 'source')
+      }
+      requireNamespace(pkg_name, quietly = TRUE)
+    }, error = function(e) {
+      message('FAILED: ', conditionMessage(e)); FALSE
+    })
+    results[[pkg_name]] <- ok
+  }
+  message()
+  message(strrep('=', 60))
+  message('Optional package summary:')
+  for (n in names(results)) {
+    message(sprintf('  %-20s [%s]', n, if (results[[n]]) 'OK' else 'FAILED'))
+  }
+"
 
-# Verify required packages load and report GDAL version
-RUN Rscript -e "\
-    library(gdalraster); \
-    cat('gdalraster GDAL:', gdal_version()[4], '\n'); \
-    if (requireNamespace('terra', quietly = TRUE)) { \
-        cat('terra GDAL:', terra::libVersion('gdal'), '\n'); \
-    }; \
-    if (requireNamespace('sf', quietly = TRUE)) { \
-        cat('sf GDAL:', sf::sf_extSoftVersion()['GDAL'], '\n'); \
-    }"
-
-# Run version alignment check - FAIL BUILD if misaligned
+# ── Version alignment check ───────────────────────────────────────────────────
+# With a single PROJ (no internal-PROJ), all packages should report identical
+# GDAL/PROJ/GEOS versions. This check is now strict — no warn_only for PROJ.
 RUN Rscript /opt/scripts/check-r-versions.R
 
 CMD ["R"]

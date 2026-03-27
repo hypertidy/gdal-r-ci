@@ -1,0 +1,190 @@
+# Scheduled canary: test core R geospatial packages against release and dev GDAL.
+#
+# Runs fortnightly (1st and 15th) and on workflow_dispatch.
+# Uses pre-built images so no compilation of GDAL itself — just the R packages.
+#
+# Matrix: {gdalraster, sf, terra, vapour, gdalcubes} × {latest, dev}
+#
+# Failure in :dev but not :latest → upstream GDAL API change, file issue.
+# Failure in :latest → something broke in a stable release, urgent.
+#
+# Full R CMD check runs for all packages — no --no-test-load, no skipping.
+# This is only possible because we have a single PROJ with standard symbols.
+
+name: Scheduled canary check
+
+on:
+  schedule:
+    - cron: '0 4 1,15 * *'
+  workflow_dispatch:
+    inputs:
+      packages:
+        description: 'Packages to test (comma-separated or "all")'
+        required: false
+        default: 'all'
+        type: string
+      gdal-variants:
+        description: 'Image variants to test against'
+        required: false
+        default: 'both'
+        type: choice
+        options: [both, latest, dev]
+
+env:
+  ALL_PACKAGES: 'gdalraster,sf,terra,vapour,gdalcubes'
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: true
+
+jobs:
+  setup:
+    runs-on: ubuntu-latest
+    outputs:
+      packages: ${{ steps.set.outputs.packages }}
+      variants: ${{ steps.set.outputs.variants }}
+    steps:
+      - id: set
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] \
+             && [ "${{ inputs.packages }}" != "all" ]; then
+            PKGS="${{ inputs.packages }}"
+          else
+            PKGS="${{ env.ALL_PACKAGES }}"
+          fi
+          echo "packages=$(echo "$PKGS" | tr ',' '\n' | jq -R . | jq -sc .)" >> "$GITHUB_OUTPUT"
+
+          VSEL="${{ inputs.gdal-variants }}"
+          if [ "$VSEL" = "latest" ]; then
+            echo 'variants=["latest"]' >> "$GITHUB_OUTPUT"
+          elif [ "$VSEL" = "dev" ]; then
+            echo 'variants=["dev"]' >> "$GITHUB_OUTPUT"
+          else
+            echo 'variants=["latest","dev"]' >> "$GITHUB_OUTPUT"
+          fi
+
+  check:
+    name: ${{ matrix.package }} / gdal-r-full:${{ matrix.gdal-variant }}
+    needs: setup
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    container:
+      image: ghcr.io/hypertidy/gdal-r-full:${{ matrix.gdal-variant }}
+      options: --user root
+    strategy:
+      fail-fast: false
+      matrix:
+        package: ${{ fromJson(needs.setup.outputs.packages) }}
+        gdal-variant: ${{ fromJson(needs.setup.outputs.variants) }}
+
+    steps:
+      - name: Print environment
+        run: |
+          echo "=== ${{ matrix.package }} against gdal-r-full:${{ matrix.gdal-variant }} ==="
+          gdal-config --version
+          echo "PROJ: $(pkg-config --modversion proj)"
+          echo "GEOS: $(geos-config --version)"
+          R --version | head -1
+
+      - name: Clone package
+        run: |
+          case "${{ matrix.package }}" in
+            gdalraster) git clone --depth 1 https://github.com/firelab/gdalraster.git pkg ;;
+            sf)         git clone --depth 1 https://github.com/r-spatial/sf.git pkg ;;
+            terra)      git clone --depth 1 https://github.com/rspatial/terra.git pkg ;;
+            vapour)     git clone --depth 1 https://github.com/hypertidy/vapour.git pkg ;;
+            gdalcubes)
+              git clone --depth 1 https://github.com/appelmar/gdalcubes.git pkg-full
+              # gdalcubes R package lives in R-package/ subdirectory
+              if [ -d pkg-full/R-package ]; then
+                mv pkg-full/R-package pkg; rm -rf pkg-full
+              else
+                mv pkg-full pkg
+              fi
+              ;;
+            *) echo "Unknown package: ${{ matrix.package }}"; exit 1 ;;
+          esac
+
+      - name: Install R dependencies
+        working-directory: pkg
+        run: |
+          Rscript -e "
+            remotes::install_deps(
+              dependencies = c('Depends', 'Imports', 'LinkingTo'),
+              upgrade = 'never',
+              type = 'source'
+            )
+          "
+
+      - name: Build
+        working-directory: pkg
+        run: R CMD build --no-build-vignettes .
+
+      - name: Check
+        working-directory: pkg
+        env:
+          _R_CHECK_FORCE_SUGGESTS_: 'false'
+        run: |
+          tarball=$(ls -1 *.tar.gz | head -1)
+          # Full R CMD check — no skipping, no --no-test-load
+          # A clean single-PROJ environment makes this safe for all packages
+          R CMD check --no-manual --ignore-vignettes "$tarball"
+
+      - name: Show logs on failure
+        if: failure()
+        working-directory: pkg
+        run: |
+          for f in *.Rcheck/00check.log *.Rcheck/00install.out; do
+            [ -f "$f" ] && echo "=== $f ===" && cat "$f"
+          done
+
+      - name: Upload results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.package }}-${{ matrix.gdal-variant }}-${{ github.run_id }}
+          path: pkg/*.Rcheck
+          retention-days: 30
+
+  summary:
+    name: Summary
+    needs: check
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Write job summary
+        run: |
+          {
+            echo "## Canary check — $(date -u '+%Y-%m-%d')"
+            echo ""
+            echo "| Package | :latest | :dev |"
+            echo "|---------|---------|------|"
+            echo "| gdalraster | — | — |"
+            echo "| sf         | — | — |"
+            echo "| terra      | — | — |"
+            echo "| vapour     | — | — |"
+            echo "| gdalcubes  | — | — |"
+            echo ""
+            echo "Overall: ${{ needs.check.result }}"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Open issue on failure
+        if: needs.check.result == 'failure' && github.event_name == 'schedule'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const date = new Date().toISOString().split('T')[0];
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo:  context.repo.repo,
+              title: `Canary check failed — ${date}`,
+              body: [
+                'The scheduled canary check detected failures.',
+                '',
+                `Workflow run: ${process.env.GITHUB_SERVER_URL}/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID}`,
+                '',
+                'Check individual job logs to determine whether the failure is in `:latest` or `:dev` only.',
+                'A `:dev`-only failure typically means an upstream GDAL API change that has not yet reached a release.',
+              ].join('\n'),
+              labels: ['canary', 'automated'],
+            });

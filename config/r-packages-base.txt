@@ -1,25 +1,26 @@
-# R packages for ghcr.io/hypertidy/gdal-r base image
-# This list is EXPLICIT - only these packages are installed
-# Packages here should be broadly useful for package development/testing
-# NOT application-specific packages (those go in derived images)
+# R packages installed in ghcr.io/hypertidy/gdal-r
+# Keep this list minimal — packages here are compiled in every image rebuild.
+# Application-specific or GDAL-linking packages go in gdal-r-full.
 
-# Package installation and management
+# Package management
 remotes
 
 # Testing frameworks
 testthat
 tinytest
 
-# Documentation and reporting
-knitr
-rmarkdown
+# Check tooling
 rcmdcheck
 
-# Common dependencies that many packages need
-# (installing here avoids repeated compilation in derived images)
+# Documentation
+knitr
+rmarkdown
+
+# Compiled dependency bases — build these once here so derived images
+# don't recompile them from scratch every time
 Rcpp
 cpp11
 
-# Spatial data primitives (no GDAL linkage)
+# Spatial primitives (no GDAL linkage, pure R/C++)
 wk
 s2

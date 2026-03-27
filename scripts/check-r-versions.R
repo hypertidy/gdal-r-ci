@@ -1,31 +1,23 @@
 #!/usr/bin/env Rscript
 # check-r-versions.R
-# Verify all R packages link to the same GDAL/PROJ/GEOS versions
+# Verify all R packages link to the same GDAL/PROJ/GEOS.
 #
-# This is a critical sanity check - if versions differ, we have a broken environment
-# where packages may behave inconsistently or crash.
+# With a single PROJ (no osgeo/gdal internal-PROJ), all packages should report
+# exactly the same versions. PROJ check is now strict (was warn_only before).
 #
-# Package APIs (as of 2026-02):
-#   gdalraster::gdal_version()     -> chr[1:4], [4] is clean version
-#   gdalraster::proj_version()     -> chr[1:4], [4] is clean version
-#   gdalcubes::gdalcubes_gdalversion() -> "GDAL x.y.z, released..." (needs parsing)
-#   sf::sf_extSoftVersion()        -> named chr vector with GDAL, PROJ, GEOS
-#   terra::libVersion("gdal")      -> clean version string
-#   vapour::vapour_gdal_version()  -> "GDAL x.y.z, released..." (needs parsing)
-#   vapour::vapour_proj_version()  -> clean version string
+# Package version APIs:
+#   gdalraster::gdal_version()          -> chr[4], [4] is "X.Y.Z"
+#   gdalraster::proj_version()          -> list $major/$minor/$patch/$name
+#   sf::sf_extSoftVersion()             -> named chr: GDAL, PROJ, GEOS
+#   terra::libVersion("gdal"|"proj"|"geos") -> "X.Y.Z"
+#   vapour::vapour_gdal_version()       -> "GDAL X.Y.Z, released ..."
+#   vapour::vapour_proj_version()       -> "X.Y.Z"
+#   gdalcubes::gdalcubes_gdalversion()  -> "GDAL X.Y.Z, released ..."
 
-cat("=== R Package Library Version Alignment Check ===\n\n")
+cat("=== R package library version alignment ===\n\n")
 
-# Helper to extract version from "GDAL x.y.z, released..." strings
-extract_gdal_version <- function(s) {
-  if (grepl("^GDAL ", s)) {
-    sub("^GDAL ([^,]+),.*", "\\1", s)
-  } else {
-    s
-  }
-}
+extract_gdal_ver <- function(s) sub("^GDAL ([^,]+),.*", "\\1", s)
 
-# Get system library versions (ground truth)
 system_gdal <- system("gdal-config --version", intern = TRUE)
 system_proj <- system("pkg-config --modversion proj", intern = TRUE)
 system_geos <- system("geos-config --version", intern = TRUE)
@@ -35,28 +27,17 @@ cat("  GDAL:", system_gdal, "\n")
 cat("  PROJ:", system_proj, "\n")
 cat("  GEOS:", system_geos, "\n\n")
 
-# Collect versions from each package
 results <- list()
 
-# NOTE on PROJ versions:
-# - Packages that use PROJ via GDAL headers (gdalraster, vapour) report GDAL's internal PROJ
-# - Packages that link PROJ directly (terra, sf) report system PROJ
-# - These may differ (e.g., internal 9.8.0 vs system 9.4.0) - this is expected in osgeo/gdal images
-# - For PROJ, we mainly care that direct-linking packages agree with each other
-
-# gdalraster - gdal_version() returns chr[4], element [4] is clean version
-#            - proj_version() returns LIST with $name, $major, $minor, $patch
 if (requireNamespace("gdalraster", quietly = TRUE)) {
-  gv <- gdalraster::gdal_version()
   pv <- gdalraster::proj_version()
   results$gdalraster <- list(
-    GDAL = gv[4],
-    PROJ = pv$name,  # It's a list! Use $name for "major.minor.patch"
-    GEOS = NA  # gdalraster doesn't expose GEOS
+    GDAL = gdalraster::gdal_version()[4],
+    PROJ = pv$name,
+    GEOS = NA_character_
   )
 }
 
-# terra - libVersion() returns clean strings
 if (requireNamespace("terra", quietly = TRUE)) {
   results$terra <- list(
     GDAL = terra::libVersion("gdal"),
@@ -65,7 +46,6 @@ if (requireNamespace("terra", quietly = TRUE)) {
   )
 }
 
-# sf - sf_extSoftVersion() returns named vector
 if (requireNamespace("sf", quietly = TRUE)) {
   v <- sf::sf_extSoftVersion()
   results$sf <- list(
@@ -75,111 +55,71 @@ if (requireNamespace("sf", quietly = TRUE)) {
   )
 }
 
-# vapour - vapour_gdal_version() returns full string, needs parsing
 if (requireNamespace("vapour", quietly = TRUE)) {
   results$vapour <- list(
-    GDAL = extract_gdal_version(vapour::vapour_gdal_version()),
+    GDAL = extract_gdal_ver(vapour::vapour_gdal_version()),
     PROJ = vapour::vapour_proj_version(),
-    GEOS = NA  # vapour doesn't expose GEOS
+    GEOS = NA_character_
   )
 }
 
-# gdalcubes - gdalcubes_gdalversion() returns full string, needs parsing
 if (requireNamespace("gdalcubes", quietly = TRUE)) {
   results$gdalcubes <- list(
-    GDAL = extract_gdal_version(gdalcubes::gdalcubes_gdalversion()),
-    PROJ = NA,  # doesn't expose
-    GEOS = NA
+    GDAL = extract_gdal_ver(gdalcubes::gdalcubes_gdalversion()),
+    PROJ = NA_character_,
+    GEOS = NA_character_
   )
 }
 
-# Print results
-cat("Package-reported versions:\n")
-cat(sprintf("%-12s %-25s %-12s %-12s\n", "Package", "GDAL", "PROJ", "GEOS"))
-cat(sprintf("%-12s %-25s %-12s %-12s\n", "-------", "----", "----", "----"))
-
+cat(sprintf("%-12s %-12s %-12s %-12s\n", "Package", "GDAL", "PROJ", "GEOS"))
+cat(sprintf("%-12s %-12s %-12s %-12s\n", "-------", "----", "----", "----"))
 for (pkg in names(results)) {
   r <- results[[pkg]]
-  cat(sprintf("%-12s %-25s %-12s %-12s\n",
-              pkg,
-              if (is.na(r$GDAL)) "-" else r$GDAL,
-              if (is.na(r$PROJ)) "-" else r$PROJ,
-              if (is.na(r$GEOS)) "-" else r$GEOS))
+  cat(sprintf("%-12s %-12s %-12s %-12s\n",
+    pkg,
+    if (is.na(r$GDAL)) "-" else r$GDAL,
+    if (is.na(r$PROJ)) "-" else r$PROJ,
+    if (is.na(r$GEOS)) "-" else r$GEOS))
 }
-
-# Check for mismatches
-cat("\n=== Alignment Check ===\n")
-
-check_version <- function(lib_name, system_ver, pkg_versions, warn_only = FALSE) {
-  # Filter out NAs
-  pkg_versions <- pkg_versions[!is.na(pkg_versions)]
-
-  if (length(pkg_versions) == 0) {
-    cat(sprintf("%s: No packages report version (OK if not linked)\n", lib_name))
-    return(TRUE)
-  }
-
-  # Normalize versions for comparison
-  # Handles: "3.13.0dev-abc123" -> "3.13.0"
-  #          "3.13.0" -> "3.13.0"
-  #          "9.8.0" -> "9.8.0"
-  normalize <- function(v) {
-    # Strip everything after "dev" or first hyphen
-    v <- sub("dev.*$", "", v)
-    v <- sub("-.*$", "", v)
-    trimws(v)
-  }
-
-  system_norm <- normalize(system_ver)
-  pkg_norms <- sapply(pkg_versions, normalize, USE.NAMES = TRUE)
-
-  all_match <- all(pkg_norms == system_norm)
-  # Also check if packages at least agree with each other
-  pkgs_agree <- length(unique(pkg_norms)) == 1
-
-  if (all_match) {
-    cat(sprintf("%s: OK (all packages match system %s)\n", lib_name, system_ver))
-    return(TRUE)
-  } else if (warn_only) {
-    cat(sprintf("%s: NOTE - versions differ (expected for PROJ-via-GDAL packages)\n", lib_name))
-    cat(sprintf("  System: %s\n", system_ver))
-    for (i in seq_along(pkg_versions)) {
-      status <- if (pkg_norms[i] == system_norm) "system" else "via-GDAL"
-      cat(sprintf("  %s: %s [%s]\n", names(pkg_versions)[i], pkg_versions[i], status))
-    }
-    return(TRUE)  # Don't fail on PROJ differences
-  } else {
-    cat(sprintf("%s: MISMATCH!\n", lib_name))
-    cat(sprintf("  System: %s (normalized: %s)\n", system_ver, system_norm))
-    for (i in seq_along(pkg_versions)) {
-      status <- if (pkg_norms[i] == system_norm) "OK" else "DIFFERS"
-      cat(sprintf("  %s: %s (normalized: %s) [%s]\n",
-                  names(pkg_versions)[i], pkg_versions[i], pkg_norms[i], status))
-    }
-  }
-
-  return(all_match)
-}
-
-gdal_versions <- sapply(results, function(x) x$GDAL)
-proj_versions <- sapply(results, function(x) x$PROJ)
-geos_versions <- sapply(results, function(x) x$GEOS)
-
-gdal_ok <- check_version("GDAL", system_gdal, gdal_versions)
-# PROJ: warn_only because packages using PROJ-via-GDAL report internal PROJ version
-# which differs from system PROJ in osgeo/gdal images (by design)
-proj_ok <- check_version("PROJ", system_proj, proj_versions, warn_only = TRUE)
-geos_ok <- check_version("GEOS", system_geos, geos_versions)
-
 cat("\n")
 
-# Instead of quit(status = 0/1)
+normalize <- function(v) {
+  v <- sub("dev.*$", "", v); v <- sub("-.*$", "", v); trimws(v)
+}
+
+check_lib <- function(name, sys_ver, pkg_vers) {
+  pkg_vers <- pkg_vers[!is.na(pkg_vers)]
+  if (length(pkg_vers) == 0) {
+    cat(name, ": no packages report version\n"); return(TRUE)
+  }
+  sys_n   <- normalize(sys_ver)
+  pkg_n   <- sapply(pkg_vers, normalize)
+  ok      <- all(pkg_n == sys_n)
+  if (ok) {
+    cat(name, ": OK (all match system", sys_ver, ")\n")
+  } else {
+    cat(name, ": MISMATCH\n")
+    cat("  system:", sys_ver, "\n")
+    for (i in seq_along(pkg_vers)) {
+      flag <- if (pkg_n[i] == sys_n) "ok" else "DIFFERS"
+      cat(sprintf("  %-12s %s [%s]\n", names(pkg_vers)[i], pkg_vers[i], flag))
+    }
+  }
+  ok
+}
+
+cat("=== Alignment check ===\n")
+gdal_ok <- check_lib("GDAL", system_gdal, sapply(results, `[[`, "GDAL"))
+# PROJ: strict — with a single PROJ there is no legitimate reason for mismatch
+proj_ok <- check_lib("PROJ", system_proj, sapply(results, `[[`, "PROJ"))
+geos_ok <- check_lib("GEOS", system_geos, sapply(results, `[[`, "GEOS"))
+cat("\n")
+
 if (gdal_ok && proj_ok && geos_ok) {
-  cat("All versions aligned\n")
-  invisible(TRUE)
+  cat("All versions aligned — environment is clean.\n")
+  quit(status = 0)
 } else {
-  cat("Version misalignment detected!\n")
-  cat("This indicates packages were built against different library versions.\n")
-  cat("The environment may behave unpredictably.\n")
-  invisible(FALSE)
+  cat("Version misalignment detected.\n")
+  cat("Packages may have been compiled against different libraries.\n")
+  quit(status = 1)
 }

@@ -1,0 +1,116 @@
+# ghcr.io/hypertidy/gdal-r-base:latest  (release branch)
+# ghcr.io/hypertidy/gdal-r-base:dev     (dev branch)
+#
+# Builds GEOS, PROJ, and GDAL from source on plain Ubuntu 24.04.
+# All three are installed to /usr/local with standard symbols.
+# R packages (sf, terra, vapour, gdalraster) link the same libproj/libgdal
+# as GDAL itself — one PROJ, no dual-library crashes, full R CMD check works.
+#
+# BRANCH VARIANTS (set via build-arg):
+#   GDAL_VERSION=3.x.y  PROJ_VERSION=9.x.y  GEOS_VERSION=3.x.y  → release
+#   GDAL_VERSION=master PROJ_VERSION=master  GEOS_VERSION=main    → dev/canary
+#
+# Driver coverage: Arrow/GeoParquet, NetCDF, HDF5, HDF4, KEA,
+#                  TileDB, SPATIALITE, PostgreSQL, WebP, OpenJP2,
+#                  ZSTD, BLOSC, LERC, LZ4, DEFLATE
+
+FROM ubuntu:24.04
+
+LABEL org.opencontainers.image.source="https://github.com/hypertidy/gdal-r-ci"
+LABEL org.opencontainers.image.description="GDAL/PROJ/GEOS built from source, no internal PROJ"
+
+ARG GDAL_VERSION=master
+ARG GDAL_REPOSITORY=OSGeo/gdal
+ARG PROJ_VERSION=master
+ARG GEOS_VERSION=main
+ARG NCPUS=0
+
+ENV DEBIAN_FRONTEND=noninteractive
+ENV TZ=UTC
+# All three libraries land in /usr/local; make sure everything finds them
+ENV LD_LIBRARY_PATH=/usr/local/lib:${LD_LIBRARY_PATH}
+ENV PKG_CONFIG_PATH=/usr/local/lib/pkgconfig:${PKG_CONFIG_PATH}
+
+# ── 1. Build-time and runtime apt dependencies ───────────────────────────────
+# Split into logical groups so the layer is readable but still one RUN.
+RUN apt-get update -qq && apt-get install -y --no-install-recommends \
+    # Toolchain
+    build-essential cmake git wget curl ca-certificates pkg-config \
+    software-properties-common lsb-release unzip \
+    # PROJ build deps
+    libsqlite3-dev libcurl4-openssl-dev libtiff-dev \
+    # GEOS build deps (cmake only, no extra)
+    # GDAL build deps — format libraries
+    libpng-dev libjpeg-turbo8-dev libgif-dev libwebp-dev \
+    libopenjp2-7-dev libdeflate-dev liblzma-dev \
+    libblosc-dev libzstd-dev liblz4-dev liblerc-dev \
+    libxml2-dev libexpat1-dev \
+    # GDAL — HDF / NetCDF / scientific formats
+    libhdf4-alt-dev libhdf5-dev \
+    libnetcdf-dev netcdf-bin \
+    # GDAL — vector / database drivers
+    libspatialite-dev libsqlite3-dev \
+    libpq-dev \
+    libmysqlclient-dev \
+    # GDAL — misc drivers
+    libkml-dev libxerces-c-dev libpoppler-dev libpoppler-private-dev \
+    librasterlite2-dev \
+    libcfitsio-dev libfreexl-dev \
+    libspdlog-dev \
+    # Runtime: keep these for derived images
+    libsqlite3-0 \
+    && rm -rf /var/lib/apt/lists/*
+
+# ── 2. Apache Arrow (GeoParquet support) ─────────────────────────────────────
+# Use Apache's own APT repo — gives us latest Arrow, not Ubuntu's stale version
+RUN wget -q https://apache.jfrog.io/artifactory/arrow/\
+$(lsb_release --id --short | tr '[:upper:]' '[:lower:]')/\
+apache-arrow-apt-source-latest-$(lsb_release --codename --short).deb \
+    -O /tmp/arrow.deb \
+    && apt-get install -y /tmp/arrow.deb \
+    && apt-get update -qq \
+    && apt-get install -y --no-install-recommends \
+        libarrow-dev libparquet-dev libarrow-dataset-dev libarrow-acero-dev \
+    && rm -f /tmp/arrow.deb \
+    && rm -rf /var/lib/apt/lists/*
+
+# ── 3. TileDB (GDAL TileDB driver, source build) ─────────────────────────────
+# apt package lags; source build matches what GDAL expects
+COPY build-scripts/build-tiledb.sh /build-scripts/build-tiledb.sh
+RUN bash /build-scripts/build-tiledb.sh && rm -rf /var/lib/apt/lists/*
+
+# ── 4. GEOS ───────────────────────────────────────────────────────────────────
+COPY build-scripts/build-geos.sh /build-scripts/build-geos.sh
+RUN bash /build-scripts/build-geos.sh && ldconfig
+
+# ── 5. PROJ ───────────────────────────────────────────────────────────────────
+# Standard symbols — NO -DPROJ_RENAME_SYMBOLS
+# Installed to /usr/local so both GDAL and R packages find the same library
+COPY build-scripts/build-proj.sh /build-scripts/build-proj.sh
+RUN bash /build-scripts/build-proj.sh && ldconfig
+
+# ── 6. KEA (HDF5-based raster format, GDAL KEA driver) ───────────────────────
+COPY build-scripts/build-kea.sh /build-scripts/build-kea.sh
+RUN bash /build-scripts/build-kea.sh && ldconfig
+
+# ── 7. GDAL ───────────────────────────────────────────────────────────────────
+# Links against /usr/local/lib/libproj.so — same PROJ as R packages.
+# All major drivers explicitly enabled so we know what we have.
+COPY build-scripts/build-gdal.sh /build-scripts/build-gdal.sh
+ARG GDAL_VERSION
+ARG GDAL_REPOSITORY
+RUN bash /build-scripts/build-gdal.sh && ldconfig
+
+# ── 8. Verify ─────────────────────────────────────────────────────────────────
+RUN echo "=== Library versions ===" \
+    && gdal-config --version \
+    && echo "PROJ: $(pkg-config --modversion proj)" \
+    && echo "GEOS: $(geos-config --version)" \
+    && echo "" \
+    && echo "=== Key GDAL drivers ===" \
+    && gdal-config --formats | tr ' ' '\n' | grep -iE 'arrow|parquet|netcdf|hdf|zarr|tiledb|kea|gpkg' | sort \
+    && echo "" \
+    && echo "=== PROJ data dir ===" \
+    && proj -P 2>/dev/null | head -3 || projinfo EPSG:4326 | head -5
+
+WORKDIR /workspace

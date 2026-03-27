@@ -1,5 +1,7 @@
-# R packages for ghcr.io/hypertidy/gdal-r-full image
-# Core GDAL-dependent packages for the R geospatial ecosystem
+# Required packages for ghcr.io/hypertidy/gdal-r-full
+# Build FAILS if any of these fail to install or load.
+# Format: "pkg" for CRAN, "owner/repo" for GitHub HEAD.
 
-# Primary GDAL packages
+# gdalraster is the primary test target for this CI infrastructure.
+# Use GitHub HEAD to catch breaking GDAL API changes before CRAN release.
 firelab/gdalraster

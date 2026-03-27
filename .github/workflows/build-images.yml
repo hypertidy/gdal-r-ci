@@ -1,29 +1,47 @@
-# Build and publish Docker images to GHCR
-# Triggered on push to main or manually
-# Images are layered: gdal-r -> gdal-r-full -> gdal-r-python
+# Build and push Docker image chains to GHCR.
 #
-# CRITICAL: All images enforce library version alignment.
-# If GDAL/PROJ/GEOS versions don't match across packages, builds FAIL.
+# Two variants are built from this one workflow:
+#   release  — latest stable GDAL/PROJ/GEOS release tarballs (weekly)
+#   dev      — HEAD of OSGeo/gdal + PROJ/GEOS main branches (daily canary)
+#
+# Layer chain for each variant:
+#   gdal-r-base  →  gdal-r  →  gdal-r-full
+#
+# Tags produced:
+#   ghcr.io/hypertidy/gdal-r-base:latest    (release)
+#   ghcr.io/hypertidy/gdal-r-base:dev
+#   ghcr.io/hypertidy/gdal-r:latest
+#   ghcr.io/hypertidy/gdal-r:dev
+#   ghcr.io/hypertidy/gdal-r-full:latest
+#   ghcr.io/hypertidy/gdal-r-full:dev
+#
+# The :dev chain is the canary — daily failures here are the early warning.
+# The :latest chain is what consumer packages use for stable CI.
 
-name: Build Docker Images
+name: Build images
 
 on:
   push:
     branches: [main]
     paths:
       - 'docker/**'
+      - 'build-scripts/**'
       - 'config/**'
       - 'scripts/**'
       - '.github/workflows/build-images.yml'
   schedule:
-    # Weekly on Monday 3am UTC - pick up new osgeo/gdal:latest
-    - cron: '0 3 * * 1'
+    # Release chain: weekly Monday 02:00 UTC
+    - cron: '0 2 * * 1'
+    # Dev/canary chain: daily 03:00 UTC
+    - cron: '0 3 * * *'
   workflow_dispatch:
     inputs:
-      force_rebuild:
-        description: 'Force rebuild all images'
+      variant:
+        description: 'Which variant to build'
         required: false
-        default: 'false'
+        default: 'both'
+        type: choice
+        options: [both, release, dev]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -31,122 +49,172 @@ concurrency:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_PREFIX: hypertidy
+  ORG: hypertidy
+
+# ── Version pins for release builds ──────────────────────────────────────────
+# Update these when new releases ship.
+# Dev builds always use master/main (set in the job matrix below).
+  GDAL_RELEASE: '3.10.2'
+  PROJ_RELEASE: '9.5.1'
+  GEOS_RELEASE: '3.13.1'
+  TILEDB_VERSION: '2.26.2'
+  KEA_VERSION: '1.5.3'
 
 jobs:
-  build-gdal-r:
+  # ── Decide which variants to build ──────────────────────────────────────────
+  setup:
+    runs-on: ubuntu-latest
+    outputs:
+      variants: ${{ steps.set.outputs.variants }}
+    steps:
+      - id: set
+        run: |
+          EVENT="${{ github.event_name }}"
+          SCHED_HOUR=$(date -u +%H)
+          INPUT="${{ inputs.variant }}"
+
+          if [ "$EVENT" = "workflow_dispatch" ]; then
+            VARIANT="$INPUT"
+          elif [ "$EVENT" = "schedule" ]; then
+            # 02:xx = release (Monday only), 03:xx = dev (daily)
+            if [ "$SCHED_HOUR" = "02" ]; then VARIANT="release"; else VARIANT="dev"; fi
+          else
+            # push to main — build both
+            VARIANT="both"
+          fi
+
+          if [ "$VARIANT" = "both" ]; then
+            echo 'variants=["release","dev"]' >> "$GITHUB_OUTPUT"
+          else
+            echo "variants=[\"$VARIANT\"]" >> "$GITHUB_OUTPUT"
+          fi
+
+  # ── gdal-r-base ─────────────────────────────────────────────────────────────
+  build-base:
+    needs: setup
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      fail-fast: false
+      matrix:
+        variant: ${{ fromJson(needs.setup.outputs.variants) }}
+        include:
+          - variant: release
+            gdal_version: ${{ env.GDAL_RELEASE }}
+            proj_version: ${{ env.PROJ_RELEASE }}
+            geos_version: ${{ env.GEOS_RELEASE }}
+            tag_suffix: 'latest'
+          - variant: dev
+            gdal_version: master
+            proj_version: master
+            geos_version: main
+            tag_suffix: dev
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: docker/Dockerfile.gdal-r-base
+          push: true
+          tags: ${{ env.REGISTRY }}/${{ env.ORG }}/gdal-r-base:${{ matrix.tag_suffix }}
+          build-args: |
+            GDAL_VERSION=${{ matrix.gdal_version }}
+            PROJ_VERSION=${{ matrix.proj_version }}
+            GEOS_VERSION=${{ matrix.geos_version }}
+            TILEDB_VERSION=${{ env.TILEDB_VERSION }}
+            KEA_VERSION=${{ env.KEA_VERSION }}
+          cache-from: type=registry,ref=${{ env.REGISTRY }}/${{ env.ORG }}/gdal-r-base:${{ matrix.tag_suffix }}
+          cache-to: type=inline
+
+  # ── gdal-r ───────────────────────────────────────────────────────────────────
+  build-r:
+    needs: build-base
     runs-on: ubuntu-latest
     timeout-minutes: 60
     permissions:
       contents: read
       packages: write
-    
-    outputs:
-      image_tag: ${{ steps.meta.outputs.tags }}
-    
+    strategy:
+      fail-fast: false
+      matrix:
+        variant: ${{ fromJson(needs.setup.outputs.variants) }}
+        include:
+          - variant: release
+            tag_suffix: 'latest'
+          - variant: dev
+            tag_suffix: dev
+
     steps:
       - uses: actions/checkout@v4
-      
-      - name: Log in to GHCR
-        uses: docker/login-action@v3
+
+      - uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      
-      - name: Extract metadata
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/gdal-r
-          tags: |
-            type=raw,value=latest
-            type=sha,prefix=
-      
-      - name: Build and push gdal-r
-        uses: docker/build-push-action@v5
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/build-push-action@v6
         with:
           context: .
           file: docker/Dockerfile.gdal-r
           push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
+          tags: ${{ env.REGISTRY }}/${{ env.ORG }}/gdal-r:${{ matrix.tag_suffix }}
+          build-args: |
+            BASE_IMAGE=${{ env.REGISTRY }}/${{ env.ORG }}/gdal-r-base:${{ matrix.tag_suffix }}
+          cache-from: type=registry,ref=${{ env.REGISTRY }}/${{ env.ORG }}/gdal-r:${{ matrix.tag_suffix }}
+          cache-to: type=inline
 
-  build-gdal-r-full:
-    needs: build-gdal-r
+  # ── gdal-r-full ──────────────────────────────────────────────────────────────
+  build-full:
+    needs: build-r
     runs-on: ubuntu-latest
-    timeout-minutes: 90  # Longer for package compilation
+    timeout-minutes: 90
     permissions:
       contents: read
       packages: write
-    
-    outputs:
-      image_tag: ${{ steps.meta.outputs.tags }}
-    
+    strategy:
+      fail-fast: false
+      matrix:
+        variant: ${{ fromJson(needs.setup.outputs.variants) }}
+        include:
+          - variant: release
+            tag_suffix: 'latest'
+          - variant: dev
+            tag_suffix: dev
+
     steps:
       - uses: actions/checkout@v4
-      
-      - name: Log in to GHCR
-        uses: docker/login-action@v3
+
+      - uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      
-      - name: Extract metadata
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/gdal-r-full
-          tags: |
-            type=raw,value=latest
-            type=sha,prefix=
-      
-      - name: Build and push gdal-r-full
-        uses: docker/build-push-action@v5
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/build-push-action@v6
         with:
           context: .
           file: docker/Dockerfile.gdal-r-full
           push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
+          tags: ${{ env.REGISTRY }}/${{ env.ORG }}/gdal-r-full:${{ matrix.tag_suffix }}
           build-args: |
-            BASE_IMAGE=${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/gdal-r:latest
-
-  build-gdal-r-python:
-    needs: build-gdal-r-full
-    runs-on: ubuntu-latest
-    timeout-minutes: 90  # Longer for package compilation
-    permissions:
-      contents: read
-      packages: write
-    
-    steps:
-      - uses: actions/checkout@v4
-      
-      - name: Log in to GHCR
-        uses: docker/login-action@v3
-        with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-      
-      - name: Extract metadata
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/gdal-r-python
-          tags: |
-            type=raw,value=latest
-            type=sha,prefix=
-      
-      - name: Build and push gdal-r-python
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          file: docker/Dockerfile.gdal-r-python
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          build-args: |
-            BASE_IMAGE=${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/gdal-r-full:latest
+            BASE_IMAGE=${{ env.REGISTRY }}/${{ env.ORG }}/gdal-r:${{ matrix.tag_suffix }}
+          cache-from: type=registry,ref=${{ env.REGISTRY }}/${{ env.ORG }}/gdal-r-full:${{ matrix.tag_suffix }}
+          cache-to: type=inline

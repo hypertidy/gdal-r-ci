@@ -1,0 +1,112 @@
+# Reusable workflow: check an R package against the latest stable GDAL image.
+#
+# Consumer packages call this from their own CI:
+#
+#   jobs:
+#     gdal-latest:
+#       uses: hypertidy/gdal-r-ci/.github/workflows/check-gdal-release.yml@main
+#
+# Optional inputs let packages add system deps or extra R packages.
+
+name: Check package (GDAL release)
+
+on:
+  workflow_call:
+    inputs:
+      ref:
+        description: 'Git ref to checkout'
+        required: false
+        type: string
+        default: ''
+      extra-sys-deps:
+        description: 'Extra apt packages (space-separated)'
+        required: false
+        type: string
+        default: ''
+      extra-r-packages:
+        description: 'Extra R packages to install before check (comma-separated)'
+        required: false
+        type: string
+        default: ''
+      check-args:
+        description: 'Arguments to R CMD check'
+        required: false
+        type: string
+        default: '--no-manual --no-build-vignettes'
+      fail-on-warning:
+        description: 'Fail if R CMD check produces warnings'
+        required: false
+        type: boolean
+        default: false
+
+jobs:
+  check:
+    name: R CMD check (GDAL ${{ matrix.gdal-variant }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        gdal-variant: [latest, dev]
+    container:
+      image: ghcr.io/hypertidy/gdal-r-full:${{ matrix.gdal-variant }}
+      options: --user root
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
+
+      - name: Install extra system deps
+        if: inputs.extra-sys-deps != ''
+        run: |
+          apt-get update -qq
+          apt-get install -y --no-install-recommends ${{ inputs.extra-sys-deps }}
+
+      - name: Install extra R packages
+        if: inputs.extra-r-packages != ''
+        run: |
+          Rscript -e "
+            pkgs <- trimws(strsplit('${{ inputs.extra-r-packages }}', ',')[[1]])
+            install.packages(pkgs, type = 'source')
+          "
+
+      - name: Print environment
+        run: |
+          echo "=== GDAL variant: ${{ matrix.gdal-variant }} ==="
+          gdal-config --version
+          echo "PROJ: $(pkg-config --modversion proj)"
+          echo "GEOS: $(geos-config --version)"
+          R --version | head -1
+
+      - name: Install package dependencies
+        run: |
+          Rscript -e "
+            remotes::install_deps(
+              dependencies = c('Depends', 'Imports', 'LinkingTo', 'Suggests'),
+              upgrade = 'never',
+              type = 'source'
+            )
+          "
+
+      - name: Build
+        run: R CMD build --no-build-vignettes .
+
+      - name: Check
+        run: |
+          tarball=$(ls -1 *.tar.gz | head -1)
+          R CMD check ${{ inputs.check-args }} "$tarball"
+
+      - name: Show logs on failure
+        if: failure()
+        run: |
+          for f in *.Rcheck/00check.log *.Rcheck/00install.out; do
+            [ -f "$f" ] && echo "=== $f ===" && cat "$f"
+          done
+
+      - name: Upload check results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: check-${{ matrix.gdal-variant }}-${{ github.run_id }}
+          path: '*.Rcheck'
+          retention-days: 14

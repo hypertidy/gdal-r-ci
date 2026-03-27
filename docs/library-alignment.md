@@ -1,194 +1,101 @@
-# Library Version Alignment Philosophy
+# Library version alignment
 
-## The Core Principle
+## The core principle
 
-**Every R or Python package that links to GDAL, PROJ, or GEOS must link to the exact same version.**
+Every R package that links GDAL, PROJ, or GEOS must link the **exact same version**
+of each library. Version mismatches cause silent data corruption, ABI crashes,
+and subtle behavioural differences that are difficult to debug.
 
-This is non-negotiable. Version mismatches can cause:
-- Silent data corruption (different projection handling)
-- Crashes (ABI incompatibility)
-- Subtle behavioral differences that are hard to debug
+## Why we build from source (not osgeo/gdal images)
 
-## Why We Build From Source (Not pak/r2u)
+The upstream `osgeo/gdal:ubuntu-full` images build PROJ with renamed symbols
+(`-DPROJ_RENAME_SYMBOLS -DPROJ_INTERNAL_CPP_NAMESPACE`). This means GDAL
+uses an *internal* PROJ whose symbols are prefixed `internal_proj_*`, isolated
+from any system PROJ. The image also installs Ubuntu's system PROJ alongside it.
 
-Hybrid approaches that mix pre-built binaries with source builds are dangerous:
+That architecture works fine for GDAL itself, but it creates two PROJs in one
+container. R packages that link PROJ directly (sf, terra) use the system PROJ;
+packages that go through GDAL's headers (gdalraster, vapour) report GDAL's
+internal PROJ version. When objects from both cross a boundary — or when the
+dynamic linker resolves the same symbol from two DSOs — you get the crash that
+upstream tracks as [GDAL issue #13777](https://github.com/OSGeo/gdal/issues/13777).
 
-1. **r2u** provides CRAN packages as Ubuntu binaries, but they're built against Ubuntu's system GDAL (e.g., 3.4.x), not bleeding-edge GDAL (3.10.x)
+The previous gdal-r-ci worked around this with `--no-test-load` and by skipping
+`R CMD check` for sf and terra entirely. That defeats the purpose of canary testing.
 
-2. **pak** with binary fallback might pull a binary built against GDAL 3.8 while we have GDAL 3.10
+## What we do instead
 
-3. **pip wheels** for rasterio/fiona often bundle their own GDAL, creating version skew
-
-The only safe approach: **build everything from source against the same libraries**.
-
-Yes, this is slower. That's why we pre-build images weekly.
-
-## The GDAL/PROJ/GEOS Stack
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│ GEOS (geometry engine)                                       │
-│  - Used by: sf, terra, shapely, GDAL itself                 │
-└─────────────────────────────────────────────────────────────┘
-                              │
-┌─────────────────────────────────────────────────────────────┐
-│ PROJ (coordinate transformations)                            │
-│  - Used by: sf, terra, GDAL, pyproj, rasterio               │
-│  - Note: osgeo/gdal image has INTERNAL PROJ with renamed    │
-│    symbols - GDAL uses that, R/Python use system PROJ       │
-└─────────────────────────────────────────────────────────────┘
-                              │
-┌─────────────────────────────────────────────────────────────┐
-│ GDAL (raster/vector I/O, format drivers)                    │
-│  - Used by: everything                                       │
-│  - Provides: osgeo.gdal Python bindings (built with GDAL)   │
-└─────────────────────────────────────────────────────────────┘
-```
-
-## The osgeo.gdal Bindings Situation
-
-### How They Work
-
-The official Python bindings (`osgeo.gdal`, `osgeo.ogr`, `osgeo.osr`) are:
-
-1. **Built as part of GDAL itself** (not a separate pip package)
-2. **Installed to a specific Python path during GDAL's cmake install**
-3. **Tightly coupled to the GDAL version** - must match exactly
-
-In the osgeo/gdal Docker image:
-```
-/usr/lib/python3/dist-packages/osgeo/
-├── __init__.py
-├── gdal.py
-├── ogr.py
-├── osr.py
-└── _gdal.cpython-312-x86_64-linux-gnu.so  # The actual bindings
-```
-
-### The GDAL-from-pip Problem
-
-If you `pip install GDAL`, you get:
-- A **different** build of the bindings
-- Possibly against a **different** GDAL version
-- **Conflicts** with the system GDAL that R packages link to
-
-**Never pip install GDAL in our images.** Use the bindings that come with GDAL.
-
-### Verifying osgeo Bindings
-
-```python
-from osgeo import gdal
-print(gdal.VersionInfo('RELEASE_NAME'))  # Should match gdal-config --version
-```
-
-If these don't match, the environment is broken.
-
-## The PROJ Internal Symbols Wrinkle
-
-The osgeo/gdal image has a clever but confusing setup:
+We build GDAL ourselves from `ubuntu:24.04`, linking it against the same PROJ
+we install to `/usr/local` without any symbol renaming. The result:
 
 ```
-/usr/local/gdal-internal/lib/libinternalproj.so
-  - PROJ 9.8.0 (bleeding edge)
-  - All symbols renamed: proj_* → internal_proj_*
-  - Used by GDAL internally
+/usr/local/lib/libproj.so    ← one PROJ, standard symbols
+/usr/local/lib/libgdal.so    ← links libproj.so above
+/usr/local/lib/libgeos.so    ← one GEOS
 
-/lib/x86_64-linux-gnu/libproj.so.25
-  - PROJ 9.4.0 (Ubuntu's version)
-  - Standard symbols
-  - Used by R packages (sf, terra) and Python packages (pyproj, rasterio)
+R packages (sf, terra, vapour, gdalraster)
+  link: /usr/local/lib/libproj.so   ← same library
+  link: /usr/local/lib/libgdal.so   ← same library
+  link: /usr/local/lib/libgeos.so   ← same library
 ```
 
-This means:
-- **GDAL** uses internal PROJ 9.8.0
-- **R/Python packages** use system PROJ 9.4.0
-- They can coexist because symbols don't conflict
+Full `R CMD check` works for all packages. The version alignment check
+(`scripts/check-r-versions.R`) is now strict — a PROJ mismatch between packages
+is a real environment problem, not an expected artefact.
 
-For our purposes (testing GDAL API compatibility), this is fine. We're primarily testing GDAL, and PROJ 9.4 vs 9.8 differences are usually minor.
+## Why we don't use pak / r2u / RSPM binaries
 
-### Linux Shared Library Versioning (sonames)
+- **r2u** provides CRAN packages compiled against Ubuntu's system GDAL (~3.4 on 22.04,
+  ~3.8 on 24.04). Those binaries will crash or silently misbehave when loaded in
+  a container with a different GDAL version.
+- **pak** with binary fallback has the same risk — a binary fetched from RSPM was
+  compiled against whatever GDAL was current at RSPM's build time.
 
-Understanding Linux library versioning helps debug linking issues:
+All R packages in these images are compiled from source in the same environment.
+This is slower; that is why we pre-build images weekly and cache them in GHCR.
+
+## Build order
 
 ```
-libproj.so.25.9.8.0
-    │     │  │ │ │
-    │     │  └─┴─┴── minor/patch (API-compatible changes)
-    │     └────────── soname/ABI version (increments on incompatible changes)
-    └──────────────── library name
+ubuntu:24.04
+  apt: build tools, format libraries (HDF5, NetCDF, Arrow, etc.)
+  → GEOS from source  → /usr/local
+  → PROJ from source  → /usr/local  (standard symbols, projsync grids)
+  → KEA  from source  → /usr/local
+  → GDAL from source  → /usr/local  (links /usr/local/lib/libproj.so)
+  = gdal-r-base
 
-Symlink chain:
-libproj.so      → libproj.so.25        (linker uses: -lproj)
-libproj.so.25   → libproj.so.25.9.8.0  (runtime loader uses)
-libproj.so.25.9.8.0                    (actual file)
+  gdal-r-base
+    → R from CRAN Ubuntu repo
+    → base R packages (Rcpp, cpp11, wk, s2, remotes, testthat …)
+    = gdal-r
+
+    gdal-r
+      → gdalraster (required, GitHub HEAD)
+      → sf, terra, vapour, gdalcubes (optional, GitHub HEAD)
+      → version alignment check (strict)
+      = gdal-r-full
 ```
 
-The **soname** (e.g., `25`) changes when the library breaks ABI compatibility:
+## Version check
 
-| PROJ version | soname |
-|--------------|--------|
-| 6.x | 15 |
-| 7.x | 19 |
-| 8.x | 22 |
-| 9.0–9.4+ | 25 |
+`scripts/check-r-versions.R` queries each installed package for the GDAL/PROJ/GEOS
+version it was linked against and compares with the system ground truth from
+`gdal-config --version`, `pkg-config --modversion proj`, and `geos-config --version`.
 
-When PROJ 10 ships, expect soname 26+. The symlink fix in Dockerfile.gdal-r currently hardcodes `libproj.so.25` - this will need updating. A future improvement would detect dynamically:
+With a single PROJ, all package-reported versions should match the system version
+exactly. The script exits non-zero if they do not, failing the Docker build.
+
+Run it anytime:
 
 ```bash
-ln -sf $(ls /lib/x86_64-linux-gnu/libproj.so.* 2>/dev/null | head -1) /lib/x86_64-linux-gnu/libproj.so
+docker run --rm ghcr.io/hypertidy/gdal-r-full:latest \
+    Rscript /opt/scripts/check-r-versions.R
 ```
 
-### The Missing Symlink
+## Image variants
 
-System PROJ only provides `libproj.so.25`, not the standard `libproj.so` symlink. Packages that link with `-lproj` fail to find it. Our fix:
-
-```bash
-ln -sf /lib/x86_64-linux-gnu/libproj.so.25 /lib/x86_64-linux-gnu/libproj.so
-ldconfig
-```
-
-## Version Check Scripts
-
-We include explicit checks that verify alignment:
-
-- `scripts/check-r-versions.R` - Verifies sf, terra, gdalraster, vapour all see same GDAL/PROJ/GEOS
-- `scripts/check-python-versions.py` - Verifies osgeo.gdal, rasterio, fiona, pyproj, shapely alignment
-
-These run during image build and can be run anytime:
-
-```bash
-docker run --rm ghcr.io/hypertidy/gdal-r-full:latest Rscript /opt/scripts/check-r-versions.R
-docker run --rm ghcr.io/hypertidy/gdal-r-python:latest python3 /opt/scripts/check-python-versions.py
-```
-
-## What If Versions Don't Match?
-
-If the checks fail, something is wrong:
-
-1. **pip installed a wheel with bundled GDAL** - Remove it, install with `--no-binary`
-2. **A package was installed from r2u/RSPM** - Reinstall from source
-3. **System libraries changed after package install** - Reinstall all packages
-
-The nuclear option: rebuild the image from scratch.
-
-## Future Considerations
-
-### Python Virtual Environments
-
-If we need tighter control, we could:
-```bash
-python3 -m venv /opt/geo-env --system-site-packages
-source /opt/geo-env/bin/activate
-pip install --no-binary :all: rasterio fiona  # Force source build
-```
-
-The `--system-site-packages` flag lets the venv see the osgeo bindings.
-
-### Multiple GDAL Versions
-
-For testing against multiple GDAL versions, we'd need separate images:
-- `gdal-r:3.9` 
-- `gdal-r:3.10`
-- `gdal-r:latest` (bleeding edge)
-
-This is future work - for now we only track latest.
+| Tag | GDAL source | Rebuild schedule | Purpose |
+|-----|-------------|-----------------|---------|
+| `:latest` | latest release tarball | weekly (Mon 02:00 UTC) | stable CI for consumer packages |
+| `:dev` | OSGeo/gdal HEAD | daily (03:00 UTC) | canary — catches API breaks before release |
