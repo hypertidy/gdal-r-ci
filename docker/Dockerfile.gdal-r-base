@@ -37,6 +37,8 @@ RUN apt-get update -qq && apt-get install -y --no-install-recommends \
     # Toolchain
     build-essential cmake git wget curl ca-certificates pkg-config \
     software-properties-common lsb-release unzip \
+    # Python bindings build deps
+    python3-dev python3-numpy swig \
     # PROJ build deps (sqlite3 binary required to build proj.db)
     libsqlite3-dev sqlite3 libcurl4-openssl-dev libtiff-dev \
     # GEOS build deps (cmake only, no extra)

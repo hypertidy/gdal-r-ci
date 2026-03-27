@@ -99,18 +99,11 @@ jobs:
         variant: ${{ fromJson(needs.setup.outputs.variants) }}
         include:
           - variant: release
-            gdal_version: '3.10.2'
-            proj_version: '9.5.1'
-            geos_version: '3.13.1'
-            tiledb_version: '2.26.2'
-            kea_version: '1.5.3'
             tag_suffix: latest
           - variant: dev
             gdal_version: master
             proj_version: master
             geos_version: main
-            tiledb_version: '2.26.2'
-            kea_version: '1.5.3'
             tag_suffix: dev
 
     steps:
@@ -124,6 +117,26 @@ jobs:
 
       - uses: docker/setup-buildx-action@v3
 
+      - name: Resolve release versions
+        if: matrix.variant == 'release'
+        id: versions
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          eval "$(bash build-scripts/get-versions.sh)"
+          echo "gdal_version=${GDAL_VERSION}" >> "$GITHUB_OUTPUT"
+          echo "proj_version=${PROJ_VERSION}" >> "$GITHUB_OUTPUT"
+          echo "geos_version=${GEOS_VERSION}" >> "$GITHUB_OUTPUT"
+          echo "Resolved: GDAL=${GDAL_VERSION} PROJ=${PROJ_VERSION} GEOS=${GEOS_VERSION}"
+
+      - name: Set dev versions
+        if: matrix.variant == 'dev'
+        id: versions-dev
+        run: |
+          echo "gdal_version=master"  >> "$GITHUB_OUTPUT"
+          echo "proj_version=master"  >> "$GITHUB_OUTPUT"
+          echo "geos_version=main"    >> "$GITHUB_OUTPUT"
+
       - uses: docker/build-push-action@v6
         with:
           context: .
@@ -131,11 +144,11 @@ jobs:
           push: true
           tags: ${{ env.REGISTRY }}/${{ env.ORG }}/gdal-r-base:${{ matrix.tag_suffix }}
           build-args: |
-            GDAL_VERSION=${{ matrix.gdal_version }}
-            PROJ_VERSION=${{ matrix.proj_version }}
-            GEOS_VERSION=${{ matrix.geos_version }}
-            TILEDB_VERSION=${{ matrix.tiledb_version }}
-            KEA_VERSION=${{ matrix.kea_version }}
+            GDAL_VERSION=${{ steps.versions.outputs.gdal_version || steps.versions-dev.outputs.gdal_version }}
+            PROJ_VERSION=${{ steps.versions.outputs.proj_version || steps.versions-dev.outputs.proj_version }}
+            GEOS_VERSION=${{ steps.versions.outputs.geos_version || steps.versions-dev.outputs.geos_version }}
+            TILEDB_VERSION=2.26.2
+            KEA_VERSION=1.5.3
           cache-from: type=registry,ref=${{ env.REGISTRY }}/${{ env.ORG }}/gdal-r-base:${{ matrix.tag_suffix }}
           cache-to: type=inline
 
