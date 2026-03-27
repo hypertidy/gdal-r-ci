@@ -154,6 +154,7 @@ jobs:
             PROJ_VERSION=${{ steps.versions.outputs.proj_version || steps.versions-dev.outputs.proj_version }}
             GEOS_VERSION=${{ steps.versions.outputs.geos_version || steps.versions-dev.outputs.geos_version }}
             KEA_VERSION=1.5.3
+            CACHE_DATE=${{ github.run_id }}
           no-cache: ${{ inputs.no_cache == 'true' }}
           cache-from: type=registry,ref=${{ env.REGISTRY }}/${{ env.ORG }}/gdal-system:${{ matrix.tag_suffix }}
           cache-to: type=inline

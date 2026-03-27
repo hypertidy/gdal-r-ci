@@ -64,6 +64,10 @@ RUN apt-get update -qq && apt-get install -y --no-install-recommends \
     libsqlite3-0 \
     && rm -rf /var/lib/apt/lists/*
 
+# Cache-bust token — set to github.run_id in CI so every scheduled/dispatch
+# run rebuilds from this point down, preventing stale library layers.
+ARG CACHE_DATE=unknown
+
 # ── 2. Apache Arrow (GeoParquet support) ─────────────────────────────────────
 # Add Apache Arrow APT repo directly — avoids the fragile jfrog .deb URL.
 RUN apt-get install -y --no-install-recommends gpg \
