@@ -19,20 +19,22 @@ RUN apt-get update -qq && apt-get install -y --no-install-recommends \
         python3-pip \
     && rm -rf /var/lib/apt/lists/*
 
-RUN pip install --quiet uv --break-system-packages
+# Install uv — use pip with --break-system-packages since this is Ubuntu 24.04
+RUN pip3 install --quiet uv --break-system-packages
 
-# --system-site-packages exposes osgeo (installed by the GDAL build into
-# /usr/local/lib/python3.x/dist-packages) without any reinstall.
+# Create venv with access to system site-packages (picks up osgeo from GDAL build)
 RUN uv venv /opt/gdal-py --python python3 --system-site-packages
 
-# Verify osgeo is visible through the venv before installing anything else
+# Verify osgeo is visible through the venv
 RUN /opt/gdal-py/bin/python -c "from osgeo import gdal; print('osgeo.gdal:', gdal.__version__)"
 
-# Install geo Python packages from source so they compile against our
-# /usr/local GDAL/PROJ/GEOS rather than bundled wheels.
+# Install geo stack from source via uv pip (avoids the pip shim issue)
+# --no-build-isolation needed for packages that use gdal-config at build time
 RUN GDAL_CONFIG=/usr/local/bin/gdal-config \
     PROJ_DIR=/usr/local \
-    /opt/gdal-py/bin/pip install --no-binary :all: \
+    uv pip install \
+        --python /opt/gdal-py/bin/python \
+        --no-binary :all: \
         numpy \
         pyproj \
         rasterio \
