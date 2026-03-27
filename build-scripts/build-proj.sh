@@ -34,6 +34,9 @@ cmake --install build
 
 # Download datum shift grids (needed for accurate transformations).
 # projsync writes to the PROJ data directory.
-PROJ_DATA_DIR=$(pkg-config --variable=datadir proj 2>/dev/null || echo "/usr/local/share/proj")
-/usr/local/bin/projsync --system-directory --all --quiet || \
+# Download datum shift grids.
+# --bbox with global extent fetches the most commonly needed grids without
+# pulling the full ~600MB that --all would download. Non-fatal if network fails.
+/usr/local/bin/projsync --system-directory \
+    --bbox -180,-90,180,90 --quiet || \
     echo "projsync failed (network?), continuing without optional grids"

@@ -38,7 +38,7 @@ RUN apt-get update -qq && apt-get install -y --no-install-recommends \
     build-essential cmake git wget curl ca-certificates pkg-config \
     software-properties-common lsb-release unzip \
     # PROJ build deps
-    libsqlite3-dev libcurl4-openssl-dev libtiff-dev \
+    libsqlite3-dev sqlite3 libcurl4-openssl-dev libtiff-dev \
     # GEOS build deps (cmake only, no extra)
     # GDAL build deps — format libraries
     libpng-dev libjpeg-turbo8-dev libgif-dev libwebp-dev \
