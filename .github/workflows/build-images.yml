@@ -47,6 +47,12 @@ on:
         default: 'both'
         type: choice
         options: [both, release, dev]
+      no_cache:
+        description: 'Disable Docker layer cache (force full rebuild)'
+        required: false
+        default: 'false'
+        type: choice
+        options: ['false', 'true']
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -148,6 +154,7 @@ jobs:
             PROJ_VERSION=${{ steps.versions.outputs.proj_version || steps.versions-dev.outputs.proj_version }}
             GEOS_VERSION=${{ steps.versions.outputs.geos_version || steps.versions-dev.outputs.geos_version }}
             KEA_VERSION=1.5.3
+          no-cache: ${{ inputs.no_cache == 'true' }}
           cache-from: type=registry,ref=${{ env.REGISTRY }}/${{ env.ORG }}/gdal-system:${{ matrix.tag_suffix }}
           cache-to: type=inline
 
@@ -188,6 +195,7 @@ jobs:
           tags: ${{ env.REGISTRY }}/${{ env.ORG }}/gdal-r:${{ matrix.tag_suffix }}
           build-args: |
             BASE_IMAGE=${{ env.REGISTRY }}/${{ env.ORG }}/gdal-system:${{ matrix.tag_suffix }}
+          no-cache: ${{ inputs.no_cache == 'true' }}
           cache-from: type=registry,ref=${{ env.REGISTRY }}/${{ env.ORG }}/gdal-r:${{ matrix.tag_suffix }}
           cache-to: type=inline
 
@@ -228,6 +236,7 @@ jobs:
           tags: ${{ env.REGISTRY }}/${{ env.ORG }}/gdal-r-full:${{ matrix.tag_suffix }}
           build-args: |
             BASE_IMAGE=${{ env.REGISTRY }}/${{ env.ORG }}/gdal-r:${{ matrix.tag_suffix }}
+          no-cache: ${{ inputs.no_cache == 'true' }}
           cache-from: type=registry,ref=${{ env.REGISTRY }}/${{ env.ORG }}/gdal-r-full:${{ matrix.tag_suffix }}
           cache-to: type=inline
 
@@ -269,5 +278,6 @@ jobs:
           tags: ${{ env.REGISTRY }}/${{ env.ORG }}/gdal-python:${{ matrix.tag_suffix }}
           build-args: |
             BASE_IMAGE=${{ env.REGISTRY }}/${{ env.ORG }}/gdal-r-full:${{ matrix.tag_suffix }}
+          no-cache: ${{ inputs.no_cache == 'true' }}
           cache-from: type=registry,ref=${{ env.REGISTRY }}/${{ env.ORG }}/gdal-python:${{ matrix.tag_suffix }}
           cache-to: type=inline
