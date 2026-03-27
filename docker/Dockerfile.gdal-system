@@ -1,5 +1,5 @@
-# ghcr.io/hypertidy/gdal-r-base:latest  (release branch)
-# ghcr.io/hypertidy/gdal-r-base:dev     (dev branch)
+# ghcr.io/hypertidy/gdal-system:latest  (release branch)
+# ghcr.io/hypertidy/gdal-system:dev     (dev branch)
 #
 # Builds GEOS, PROJ, and GDAL from source on plain Ubuntu 24.04.
 # All three are installed to /usr/local with standard symbols.
@@ -32,7 +32,6 @@ ENV LD_LIBRARY_PATH=/usr/local/lib
 ENV PKG_CONFIG_PATH=/usr/local/lib/pkgconfig
 # GDAL Python bindings install to /usr/local/lib/python3.x/dist-packages
 # Add a glob-friendly path via PYTHONPATH so osgeo is importable
-ENV PYTHONPATH=/usr/local/lib/python3/dist-packages
 
 # ── 1. Build-time and runtime apt dependencies ───────────────────────────────
 # Split into logical groups so the layer is readable but still one RUN.

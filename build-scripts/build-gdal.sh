@@ -22,9 +22,6 @@ else
     mkdir src && tar xf gdal.tar.gz -C src --strip-components=1
 fi
 
-# Python: find the system python3 explicitly so cmake doesn't guess wrong
-PYTHON3=$(command -v python3)
-
 cmake -S src -B build \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_INSTALL_PREFIX=/usr/local \
@@ -67,13 +64,17 @@ cmake -S src -B build \
     -DGDAL_USE_FREEXL=ON \
     \
     -DBUILD_PYTHON_BINDINGS=ON \
-    -DPython_EXECUTABLE="${PYTHON3}" \
+    -DPython_EXECUTABLE=$(command -v python3) \
     -DBUILD_JAVA_BINDINGS=OFF \
     -DBUILD_CSHARP_BINDINGS=OFF \
     -DBUILD_TESTING=OFF
 
 cmake --build build --parallel "$NCPUS"
 cmake --install build
+
+# Verify osgeo landed correctly
+python3 -c "from osgeo import gdal; print('osgeo.gdal:', gdal.__version__)" \
+    || echo "WARNING: osgeo.gdal not importable (check PYTHONPATH)"
 
 # Verify the Python bindings landed and import correctly.
 # Non-fatal — path issues are fixed in the Dockerfile ENV, not here.

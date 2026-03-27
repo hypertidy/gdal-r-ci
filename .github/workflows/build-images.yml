@@ -5,11 +5,11 @@
 #   dev      — HEAD of OSGeo/gdal + PROJ/GEOS main branches (daily canary)
 #
 # Layer chain for each variant:
-#   gdal-r-base  →  gdal-r  →  gdal-r-full
+#   gdal-system  →  gdal-r  →  gdal-r-full
 #
 # Tags produced:
-#   ghcr.io/hypertidy/gdal-r-base:latest    (release)
-#   ghcr.io/hypertidy/gdal-r-base:dev
+#   ghcr.io/hypertidy/gdal-system:latest    (release)
+#   ghcr.io/hypertidy/gdal-system:dev
 #   ghcr.io/hypertidy/gdal-r:latest
 #   ghcr.io/hypertidy/gdal-r:dev
 #   ghcr.io/hypertidy/gdal-r-full:latest
@@ -85,8 +85,8 @@ jobs:
             echo "variants=[\"$VARIANT\"]" >> "$GITHUB_OUTPUT"
           fi
 
-  # ── gdal-r-base ─────────────────────────────────────────────────────────────
-  build-base:
+  # ── gdal-system ─────────────────────────────────────────────────────────────
+  build-system:
     needs: setup
     runs-on: ubuntu-latest
     timeout-minutes: 120
@@ -140,20 +140,20 @@ jobs:
       - uses: docker/build-push-action@v6
         with:
           context: .
-          file: docker/Dockerfile.gdal-r-base
+          file: docker/Dockerfile.gdal-system
           push: true
-          tags: ${{ env.REGISTRY }}/${{ env.ORG }}/gdal-r-base:${{ matrix.tag_suffix }}
+          tags: ${{ env.REGISTRY }}/${{ env.ORG }}/gdal-system:${{ matrix.tag_suffix }}
           build-args: |
             GDAL_VERSION=${{ steps.versions.outputs.gdal_version || steps.versions-dev.outputs.gdal_version }}
             PROJ_VERSION=${{ steps.versions.outputs.proj_version || steps.versions-dev.outputs.proj_version }}
             GEOS_VERSION=${{ steps.versions.outputs.geos_version || steps.versions-dev.outputs.geos_version }}
             KEA_VERSION=1.5.3
-          cache-from: type=registry,ref=${{ env.REGISTRY }}/${{ env.ORG }}/gdal-r-base:${{ matrix.tag_suffix }}
+          cache-from: type=registry,ref=${{ env.REGISTRY }}/${{ env.ORG }}/gdal-system:${{ matrix.tag_suffix }}
           cache-to: type=inline
 
   # ── gdal-r ───────────────────────────────────────────────────────────────────
   build-r:
-    needs: [setup, build-base]
+    needs: [setup, build-system]
     runs-on: ubuntu-latest
     timeout-minutes: 60
     permissions:
@@ -187,7 +187,7 @@ jobs:
           push: true
           tags: ${{ env.REGISTRY }}/${{ env.ORG }}/gdal-r:${{ matrix.tag_suffix }}
           build-args: |
-            BASE_IMAGE=${{ env.REGISTRY }}/${{ env.ORG }}/gdal-r-base:${{ matrix.tag_suffix }}
+            BASE_IMAGE=${{ env.REGISTRY }}/${{ env.ORG }}/gdal-system:${{ matrix.tag_suffix }}
           cache-from: type=registry,ref=${{ env.REGISTRY }}/${{ env.ORG }}/gdal-r:${{ matrix.tag_suffix }}
           cache-to: type=inline
 
@@ -229,4 +229,45 @@ jobs:
           build-args: |
             BASE_IMAGE=${{ env.REGISTRY }}/${{ env.ORG }}/gdal-r:${{ matrix.tag_suffix }}
           cache-from: type=registry,ref=${{ env.REGISTRY }}/${{ env.ORG }}/gdal-r-full:${{ matrix.tag_suffix }}
+          cache-to: type=inline
+
+
+  # ── gdal-python ──────────────────────────────────────────────────────────────
+  build-python:
+    needs: [setup, build-full]
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      fail-fast: false
+      matrix:
+        variant: ${{ fromJson(needs.setup.outputs.variants) }}
+        include:
+          - variant: release
+            tag_suffix: latest
+          - variant: dev
+            tag_suffix: dev
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: docker/Dockerfile.gdal-python
+          push: true
+          tags: ${{ env.REGISTRY }}/${{ env.ORG }}/gdal-python:${{ matrix.tag_suffix }}
+          build-args: |
+            BASE_IMAGE=${{ env.REGISTRY }}/${{ env.ORG }}/gdal-r-full:${{ matrix.tag_suffix }}
+          cache-from: type=registry,ref=${{ env.REGISTRY }}/${{ env.ORG }}/gdal-python:${{ matrix.tag_suffix }}
           cache-to: type=inline
