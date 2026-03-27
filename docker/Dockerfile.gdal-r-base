@@ -61,16 +61,18 @@ RUN apt-get update -qq && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # ── 2. Apache Arrow (GeoParquet support) ─────────────────────────────────────
-# Use Apache's own APT repo — gives us latest Arrow, not Ubuntu's stale version
-RUN wget -q https://apache.jfrog.io/artifactory/arrow/\
-$(lsb_release --id --short | tr '[:upper:]' '[:lower:]')/\
-apache-arrow-apt-source-latest-$(lsb_release --codename --short).deb \
-    -O /tmp/arrow.deb \
-    && apt-get install -y /tmp/arrow.deb \
+# Add Apache Arrow APT repo directly — avoids the fragile jfrog .deb URL.
+RUN apt-get install -y --no-install-recommends gpg \
+    && wget -q https://dist.apache.org/repos/dist/release/arrow/KEYS \
+        -O /tmp/arrow-keyring.asc \
+    && gpg --dearmor < /tmp/arrow-keyring.asc \
+        > /usr/share/keyrings/apache-arrow-keyring.gpg \
+    && rm /tmp/arrow-keyring.asc \
+    && echo "deb [signed-by=/usr/share/keyrings/apache-arrow-keyring.gpg] https://packages.apache.org/artifactory/arrow/ubuntu $(lsb_release -cs) main" \
+        > /etc/apt/sources.list.d/apache-arrow.list \
     && apt-get update -qq \
     && apt-get install -y --no-install-recommends \
         libarrow-dev libparquet-dev libarrow-dataset-dev libarrow-acero-dev \
-    && rm -f /tmp/arrow.deb \
     && rm -rf /var/lib/apt/lists/*
 
 # ── 3. TileDB (GDAL TileDB driver, source build) ─────────────────────────────
