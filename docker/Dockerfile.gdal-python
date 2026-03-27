@@ -15,27 +15,21 @@ FROM ${BASE_IMAGE}
 LABEL org.opencontainers.image.source="https://github.com/hypertidy/gdal-r-ci"
 LABEL org.opencontainers.image.description="gdal-r-full + Python geo stack in /opt/gdal-py"
 
-# pip needed to install uv; keep python3-pip out of base to stay lean
 RUN apt-get update -qq && apt-get install -y --no-install-recommends \
         python3-pip \
     && rm -rf /var/lib/apt/lists/*
 
-# Install uv into the system (small, single binary)
 RUN pip install --quiet uv --break-system-packages
 
-# Create venv at /opt/gdal-py with access to system site-packages.
-# --system-site-packages means osgeo (installed by the GDAL build into
-# /usr/local/lib/python3.x/dist-packages) is immediately importable
-# without any reinstall or copying.
+# --system-site-packages exposes osgeo (installed by the GDAL build into
+# /usr/local/lib/python3.x/dist-packages) without any reinstall.
 RUN uv venv /opt/gdal-py --python python3 --system-site-packages
 
 # Verify osgeo is visible through the venv before installing anything else
-RUN /opt/gdal-py/bin/python -c \
-    "from osgeo import gdal; print('osgeo.gdal:', gdal.__version__)"
+RUN /opt/gdal-py/bin/python -c "from osgeo import gdal; print('osgeo.gdal:', gdal.__version__)"
 
 # Install geo Python packages from source so they compile against our
 # /usr/local GDAL/PROJ/GEOS rather than bundled wheels.
-# GDAL_CONFIG and PROJ_DIR point at our builds explicitly.
 RUN GDAL_CONFIG=/usr/local/bin/gdal-config \
     PROJ_DIR=/usr/local \
     /opt/gdal-py/bin/pip install --no-binary :all: \
@@ -46,20 +40,10 @@ RUN GDAL_CONFIG=/usr/local/bin/gdal-config \
         shapely \
         geopandas
 
-# Activate venv by default for subsequent layers and at runtime
 ENV PATH=/opt/gdal-py/bin:$PATH
 ENV VIRTUAL_ENV=/opt/gdal-py
 
-# Verify the full stack
-RUN python -c "
-from osgeo import gdal, ogr, osr
-import rasterio, fiona, pyproj, shapely, geopandas
-print('GDAL:      ', gdal.__version__)
-print('rasterio:  ', rasterio.__version__)
-print('fiona:     ', fiona.__version__)
-print('pyproj:    ', pyproj.__version__)
-print('shapely:   ', shapely.__version__)
-print('geopandas: ', geopandas.__version__)
-"
+COPY scripts/check-python-versions.py /opt/scripts/check-python-versions.py
+RUN python /opt/scripts/check-python-versions.py
 
 CMD ["python"]
