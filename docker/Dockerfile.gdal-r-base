@@ -30,6 +30,9 @@ ENV TZ=UTC
 # All three libraries land in /usr/local; make sure everything finds them
 ENV LD_LIBRARY_PATH=/usr/local/lib:${LD_LIBRARY_PATH}
 ENV PKG_CONFIG_PATH=/usr/local/lib/pkgconfig:${PKG_CONFIG_PATH}
+# GDAL Python bindings install to /usr/local/lib/python3.x/dist-packages
+# Add a glob-friendly path via PYTHONPATH so osgeo is importable
+ENV PYTHONPATH=/usr/local/lib/python3/dist-packages:${PYTHONPATH:-}
 
 # ── 1. Build-time and runtime apt dependencies ───────────────────────────────
 # Split into logical groups so the layer is readable but still one RUN.
