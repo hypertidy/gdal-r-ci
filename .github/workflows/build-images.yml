@@ -17,6 +17,11 @@
 #
 # The :dev chain is the canary — daily failures here are the early warning.
 # The :latest chain is what consumer packages use for stable CI.
+#
+# Version pins for release builds — update these when new releases ship:
+#   GDAL  3.10.2   https://github.com/OSGeo/gdal/releases
+#   PROJ  9.5.1    https://github.com/OSGeo/PROJ/releases
+#   GEOS  3.13.1   https://github.com/libgeos/geos/releases
 
 name: Build images
 
@@ -50,15 +55,6 @@ concurrency:
 env:
   REGISTRY: ghcr.io
   ORG: hypertidy
-
-# ── Version pins for release builds ──────────────────────────────────────────
-# Update these when new releases ship.
-# Dev builds always use master/main (set in the job matrix below).
-  GDAL_RELEASE: '3.10.2'
-  PROJ_RELEASE: '9.5.1'
-  GEOS_RELEASE: '3.13.1'
-  TILEDB_VERSION: '2.26.2'
-  KEA_VERSION: '1.5.3'
 
 jobs:
   # ── Decide which variants to build ──────────────────────────────────────────
@@ -103,14 +99,18 @@ jobs:
         variant: ${{ fromJson(needs.setup.outputs.variants) }}
         include:
           - variant: release
-            gdal_version: ${{ env.GDAL_RELEASE }}
-            proj_version: ${{ env.PROJ_RELEASE }}
-            geos_version: ${{ env.GEOS_RELEASE }}
-            tag_suffix: 'latest'
+            gdal_version: '3.10.2'
+            proj_version: '9.5.1'
+            geos_version: '3.13.1'
+            tiledb_version: '2.26.2'
+            kea_version: '1.5.3'
+            tag_suffix: latest
           - variant: dev
             gdal_version: master
             proj_version: master
             geos_version: main
+            tiledb_version: '2.26.2'
+            kea_version: '1.5.3'
             tag_suffix: dev
 
     steps:
@@ -134,8 +134,8 @@ jobs:
             GDAL_VERSION=${{ matrix.gdal_version }}
             PROJ_VERSION=${{ matrix.proj_version }}
             GEOS_VERSION=${{ matrix.geos_version }}
-            TILEDB_VERSION=${{ env.TILEDB_VERSION }}
-            KEA_VERSION=${{ env.KEA_VERSION }}
+            TILEDB_VERSION=${{ matrix.tiledb_version }}
+            KEA_VERSION=${{ matrix.kea_version }}
           cache-from: type=registry,ref=${{ env.REGISTRY }}/${{ env.ORG }}/gdal-r-base:${{ matrix.tag_suffix }}
           cache-to: type=inline
 
@@ -153,7 +153,7 @@ jobs:
         variant: ${{ fromJson(needs.setup.outputs.variants) }}
         include:
           - variant: release
-            tag_suffix: 'latest'
+            tag_suffix: latest
           - variant: dev
             tag_suffix: dev
 
@@ -193,7 +193,7 @@ jobs:
         variant: ${{ fromJson(needs.setup.outputs.variants) }}
         include:
           - variant: release
-            tag_suffix: 'latest'
+            tag_suffix: latest
           - variant: dev
             tag_suffix: dev
 
