@@ -215,8 +215,10 @@ jobs:
         include:
           - variant: release
             tag_suffix: latest
+            image_variant: release
           - variant: dev
             tag_suffix: dev
+            image_variant: dev
 
     steps:
       - uses: actions/checkout@v4
@@ -237,6 +239,7 @@ jobs:
           tags: ${{ env.REGISTRY }}/${{ env.ORG }}/gdal-r-full:${{ matrix.tag_suffix }}
           build-args: |
             BASE_IMAGE=${{ env.REGISTRY }}/${{ env.ORG }}/gdal-r:${{ matrix.tag_suffix }}
+            IMAGE_VARIANT=${{ matrix.image_variant }}
           no-cache: ${{ inputs.no_cache == 'true' }}
           cache-from: type=registry,ref=${{ env.REGISTRY }}/${{ env.ORG }}/gdal-r-full:${{ matrix.tag_suffix }}
           cache-to: type=inline

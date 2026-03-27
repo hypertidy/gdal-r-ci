@@ -3,14 +3,16 @@
 # Installs the core GDAL-dependent R packages on top of gdal-r.
 # All packages compiled from source against the same GDAL/PROJ/GEOS.
 #
-# SET A (required): build FAILS if these fail — gdalraster is the test target
-# SET B (optional): individual failures are logged but don't stop the build
-#
-# Version alignment is verified at the end: if GDAL/PROJ/GEOS versions
-# disagree between packages the check script exits non-zero and fails the build.
+# IMAGE_VARIANT controls failure behaviour:
+#   release — SET A (gdalraster) FAILS the build if it fails
+#   dev     — SET A failures are logged but build continues; dev canary
+#             images are still useful for testing optional packages even
+#             if gdalraster fails against bleeding-edge GDAL/GEOS
 
 ARG BASE_IMAGE=ghcr.io/hypertidy/gdal-r:latest
 FROM ${BASE_IMAGE}
+
+ARG IMAGE_VARIANT=release
 
 LABEL org.opencontainers.image.source="https://github.com/hypertidy/gdal-r-ci"
 LABEL org.opencontainers.image.description="Core GDAL R packages: gdalraster, sf, terra, vapour, gdalcubes"
@@ -21,13 +23,29 @@ COPY scripts/install-optional.R    /opt/scripts/install-optional.R
 COPY config/r-packages-required.txt /tmp/r-packages-required.txt
 COPY config/r-packages-optional.txt  /tmp/r-packages-optional.txt
 
+# Record which variant this image is
+RUN echo "${IMAGE_VARIANT}" > /opt/image_variant.txt
+
 # ── SET A: Required packages ──────────────────────────────────────────────────
-RUN Rscript /opt/scripts/install-required.R
+# For release: failure is fatal (something is genuinely broken)
+# For dev: failure is logged but build continues (canary signal, not a blocker)
+RUN if [ "${IMAGE_VARIANT}" = "release" ]; then \
+        Rscript /opt/scripts/install-required.R; \
+    else \
+        Rscript /opt/scripts/install-required.R \
+            || echo "WARNING: required package install failed on dev variant — canary signal"; \
+    fi
 
 # ── SET B: Optional packages ─────────────────────────────────────────────────
 RUN Rscript /opt/scripts/install-optional.R
 
 # ── Version alignment check ───────────────────────────────────────────────────
-RUN Rscript /opt/scripts/check-r-versions.R
+# Non-fatal on dev — misalignment may be expected during bleeding-edge transitions
+RUN if [ "${IMAGE_VARIANT}" = "release" ]; then \
+        Rscript /opt/scripts/check-r-versions.R; \
+    else \
+        Rscript /opt/scripts/check-r-versions.R \
+            || echo "WARNING: version misalignment on dev variant — check logs"; \
+    fi
 
 CMD ["R"]
