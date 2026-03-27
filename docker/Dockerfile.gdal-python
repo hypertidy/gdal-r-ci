@@ -48,23 +48,23 @@ RUN GDAL_CONFIG=/usr/local/bin/gdal-config \
 
 # ── Packages with no GDAL/PROJ linkage: wheels are fine ──────────────────────
 # virtualizarr is commented out below — uncomment when ready
-#RUN uv pip install \
-#        --python /opt/gdal-py/bin/python \
-#        pandas \
-#        geopandas \
-#        netCDF4 \
-#       h5py \
-#        xarray \
-#        zarr \
-#        fsspec \
-#        aiohttp \
-#        requests
-#       virtualizarr
+RUN uv pip install \
+        --python /opt/gdal-py/bin/python \
+        pandas \
+        geopandas \
+        netCDF4 \
+       h5py \
+        xarray \
+        zarr \
+        fsspec \
+        aiohttp \
+        requests \
+       virtualizarr
 
 ENV PATH=/opt/gdal-py/bin:$PATH
 ENV VIRTUAL_ENV=/opt/gdal-py
 
 COPY scripts/check-python-versions.py /opt/scripts/check-python-versions.py
-#RUN python /opt/scripts/check-python-versions.py
+RUN python /opt/scripts/check-python-versions.py
 
 CMD ["python"]
