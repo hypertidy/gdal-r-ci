@@ -11,7 +11,7 @@
 #   GDAL_VERSION=master PROJ_VERSION=master  GEOS_VERSION=main    → dev/canary
 #
 # Driver coverage: Arrow/GeoParquet, NetCDF, HDF5, HDF4, KEA,
-#                  TileDB, SPATIALITE, PostgreSQL, WebP, OpenJP2,
+#                  SPATIALITE, PostgreSQL, WebP, OpenJP2,
 #                  ZSTD, BLOSC, LERC, LZ4, DEFLATE
 
 FROM ubuntu:24.04
@@ -77,12 +77,7 @@ RUN apt-get install -y --no-install-recommends gpg \
         libarrow-dev libparquet-dev libarrow-dataset-dev libarrow-acero-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# ── 3. TileDB (GDAL TileDB driver, source build) ─────────────────────────────
-# apt package lags; source build matches what GDAL expects
-COPY build-scripts/build-tiledb.sh /build-scripts/build-tiledb.sh
-RUN bash /build-scripts/build-tiledb.sh && rm -rf /var/lib/apt/lists/*
-
-# ── 4. GEOS ───────────────────────────────────────────────────────────────────
+# ── 3. GEOS ───────────────────────────────────────────────────────────────────
 COPY build-scripts/build-geos.sh /build-scripts/build-geos.sh
 RUN bash /build-scripts/build-geos.sh && ldconfig
 
@@ -111,7 +106,7 @@ RUN echo "=== Library versions ===" \
     && echo "GEOS: $(geos-config --version)" \
     && echo "" \
     && echo "=== Key GDAL drivers ===" \
-    && gdal-config --formats | tr ' ' '\n' | grep -iE 'arrow|parquet|netcdf|hdf|zarr|tiledb|kea|gpkg' | sort \
+    && gdal-config --formats | tr ' ' '\n' | grep -iE 'arrow|parquet|netcdf|hdf|zarr|kea|gpkg' | sort \
     && echo "" \
     && echo "=== PROJ data dir ===" \
     && proj -P 2>/dev/null | head -3 || projinfo EPSG:4326 | head -5

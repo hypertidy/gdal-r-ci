@@ -56,9 +56,6 @@ cmake -S src -B build \
     -DKEA_INCLUDE_DIR=/usr/local/include \
     -DKEA_LIBRARY=/usr/local/lib/libkea.so \
     \
-    -DGDAL_USE_TILEDB=ON \
-    -DTileDB_ROOT=/usr/local \
-    \
     -DGDAL_USE_SPATIALITE=ON \
     -DGDAL_USE_POSTGRESQL=ON \
     -DGDAL_USE_MYSQL=ON \

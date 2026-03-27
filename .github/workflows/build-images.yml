@@ -147,7 +147,6 @@ jobs:
             GDAL_VERSION=${{ steps.versions.outputs.gdal_version || steps.versions-dev.outputs.gdal_version }}
             PROJ_VERSION=${{ steps.versions.outputs.proj_version || steps.versions-dev.outputs.proj_version }}
             GEOS_VERSION=${{ steps.versions.outputs.geos_version || steps.versions-dev.outputs.geos_version }}
-            TILEDB_VERSION=2.26.2
             KEA_VERSION=1.5.3
           cache-from: type=registry,ref=${{ env.REGISTRY }}/${{ env.ORG }}/gdal-r-base:${{ matrix.tag_suffix }}
           cache-to: type=inline
