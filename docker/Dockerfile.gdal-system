@@ -53,7 +53,7 @@ RUN apt-get update -qq && apt-get install -y --no-install-recommends \
     libhdf4-alt-dev libhdf5-dev \
     libnetcdf-dev netcdf-bin \
     # GDAL — vector / database drivers
-    libspatialite-dev libsqlite3-dev \
+    libsqlite3-dev \
     libpq-dev \
     libmysqlclient-dev \
     # GDAL — misc drivers

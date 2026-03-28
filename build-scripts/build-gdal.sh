@@ -54,6 +54,7 @@ cmake -S src -B build \
     -DKEA_LIBRARY=/usr/local/lib/libkea.so \
     \
     -DGDAL_USE_SPATIALITE=ON \
+    -DSpatiaLite_ROOT=/usr/local \
     -DGDAL_USE_POSTGRESQL=ON \
     -DGDAL_USE_MYSQL=ON \
     -DGDAL_USE_EXPAT=ON \
