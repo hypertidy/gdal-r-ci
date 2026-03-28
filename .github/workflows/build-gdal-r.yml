@@ -1,0 +1,119 @@
+# Build and push ghcr.io/hypertidy/gdal-r
+#
+# Triggered by repository_dispatch from build-gdal-system when gdal-system
+# digest changes. Also triggerable manually.
+# Adds R + base dev packages on top of gdal-system.
+
+name: Build gdal-r
+
+on:
+  repository_dispatch:
+    types: [gdal-system-updated]
+  workflow_dispatch:
+    inputs:
+      variant:
+        description: 'Which variant to build'
+        required: false
+        default: 'both'
+        type: choice
+        options: [both, release, dev]
+      no_cache:
+        description: 'Disable Docker layer cache'
+        required: false
+        default: 'false'
+        type: choice
+        options: ['false', 'true']
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.client_payload.variant || 'manual' }}
+  cancel-in-progress: true
+
+env:
+  REGISTRY: ghcr.io
+  ORG: hypertidy
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - variant: ${{ github.event.client_payload.variant || 'release' }}
+            tag_suffix: ${{ github.event.client_payload.tag_suffix || 'latest' }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Resolve variants for manual dispatch
+        id: vars
+        run: |
+          VARIANT="${{ github.event.client_payload.variant || inputs.variant || 'release' }}"
+          TAG="${{ github.event.client_payload.tag_suffix }}"
+          NO_CACHE="${{ github.event.client_payload.no_cache || inputs.no_cache || 'false' }}"
+          # Handle 'both' from manual dispatch
+          if [ "$VARIANT" = "both" ]; then
+            echo "Build 'both' not supported in single job — use individual triggers"
+            echo "Defaulting to release"
+            VARIANT="release"
+          fi
+          [ -z "$TAG" ] && TAG=$([ "$VARIANT" = "dev" ] && echo "dev" || echo "latest")
+          echo "variant=${VARIANT}" >> "$GITHUB_OUTPUT"
+          echo "tag_suffix=${TAG}" >> "$GITHUB_OUTPUT"
+          echo "no_cache=${NO_CACHE}" >> "$GITHUB_OUTPUT"
+
+      - name: Get current upstream digest (before build)
+        id: before
+        run: |
+          docker pull ${{ env.REGISTRY }}/${{ env.ORG }}/gdal-r:${{ steps.vars.outputs.tag_suffix }} 2>/dev/null || true
+          DIGEST=$(docker inspect ${{ env.REGISTRY }}/${{ env.ORG }}/gdal-r:${{ steps.vars.outputs.tag_suffix }} \
+            --format '{{index .RepoDigests 0}}' 2>/dev/null || echo "none")
+          echo "digest=${DIGEST}" >> "$GITHUB_OUTPUT"
+
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: docker/Dockerfile.gdal-r
+          push: true
+          tags: ${{ env.REGISTRY }}/${{ env.ORG }}/gdal-r:${{ steps.vars.outputs.tag_suffix }}
+          build-args: |
+            BASE_IMAGE=${{ env.REGISTRY }}/${{ env.ORG }}/gdal-system:${{ steps.vars.outputs.tag_suffix }}
+          no-cache: ${{ steps.vars.outputs.no_cache == 'true' }}
+          cache-from: type=gha,scope=gdal-r-${{ steps.vars.outputs.tag_suffix }}
+          cache-to: type=gha,mode=max,scope=gdal-r-${{ steps.vars.outputs.tag_suffix }}
+
+      - name: Check if digest changed
+        id: changed
+        run: |
+          NEW=$(docker inspect ${{ env.REGISTRY }}/${{ env.ORG }}/gdal-r:${{ steps.vars.outputs.tag_suffix }} \
+            --format '{{index .RepoDigests 0}}' 2>/dev/null || echo "unknown")
+          OLD="${{ steps.before.outputs.digest }}"
+          echo "changed=$( [ "$NEW" != "$OLD" ] && echo true || echo false )" >> "$GITHUB_OUTPUT"
+
+      - name: Trigger gdal-r-full build
+        if: steps.changed.outputs.changed == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.repos.createDispatchEvent({
+              owner: context.repo.owner,
+              repo:  context.repo.repo,
+              event_type: 'gdal-r-updated',
+              client_payload: {
+                variant: '${{ steps.vars.outputs.variant }}',
+                tag_suffix: '${{ steps.vars.outputs.tag_suffix }}',
+                no_cache: '${{ steps.vars.outputs.no_cache }}'
+              }
+            })
