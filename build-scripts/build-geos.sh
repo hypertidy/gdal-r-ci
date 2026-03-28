@@ -24,3 +24,12 @@ cmake -S src -B build \
 
 cmake --build build --parallel "$NCPUS"
 cmake --install build
+
+# Remove system GEOS dev package if present — it arrives as a dependency of
+# libspatialite-dev and puts stale headers in /usr/include that confuse
+# R packages into compiling against the wrong GEOS version.
+# We have our source-built GEOS in /usr/local so this is safe.
+if dpkg -l libgeos-dev >/dev/null 2>&1; then
+    apt-get remove -y --auto-remove libgeos-dev
+    echo "Removed system libgeos-dev (replaced by source build in /usr/local)"
+fi
