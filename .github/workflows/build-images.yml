@@ -107,9 +107,6 @@ jobs:
           - variant: release
             tag_suffix: latest
           - variant: dev
-            gdal_version: master
-            proj_version: master
-            geos_version: main
             tag_suffix: dev
 
     steps:
@@ -135,13 +132,21 @@ jobs:
           echo "geos_version=${GEOS_VERSION}" >> "$GITHUB_OUTPUT"
           echo "Resolved: GDAL=${GDAL_VERSION} PROJ=${PROJ_VERSION} GEOS=${GEOS_VERSION}"
 
-      - name: Set dev versions
+      - name: Resolve dev versions
         if: matrix.variant == 'dev'
         id: versions-dev
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          echo "gdal_version=master"  >> "$GITHUB_OUTPUT"
-          echo "proj_version=master"  >> "$GITHUB_OUTPUT"
-          echo "geos_version=main"    >> "$GITHUB_OUTPUT"
+          # GDAL: always master for the canary
+          # PROJ/GEOS: latest release — we're testing GDAL API changes,
+          # not PROJ/GEOS dev. Using released PROJ/GEOS keeps R packages
+          # installable and the canary actually useful.
+          eval "$(bash build-scripts/get-versions.sh)"
+          echo "gdal_version=master"        >> "$GITHUB_OUTPUT"
+          echo "proj_version=${PROJ_VERSION}" >> "$GITHUB_OUTPUT"
+          echo "geos_version=${GEOS_VERSION}" >> "$GITHUB_OUTPUT"
+          echo "Dev: GDAL=master PROJ=${PROJ_VERSION} GEOS=${GEOS_VERSION}"
 
       - uses: docker/build-push-action@v6
         with:
