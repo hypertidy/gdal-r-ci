@@ -202,8 +202,8 @@ jobs:
           build-args: |
             BASE_IMAGE=${{ env.REGISTRY }}/${{ env.ORG }}/gdal-system:${{ matrix.tag_suffix }}
           no-cache: ${{ inputs.no_cache == 'true' }}
-          cache-from: type=registry,ref=${{ env.REGISTRY }}/${{ env.ORG }}/gdal-r:${{ matrix.tag_suffix }}
-          cache-to: type=inline
+          cache-from: type=gha,scope=gdal-r-${{ matrix.tag_suffix }}
+          cache-to: type=gha,mode=max,scope=gdal-r-${{ matrix.tag_suffix }}
 
   # ── gdal-r-full ──────────────────────────────────────────────────────────────
   build-full:
@@ -246,8 +246,8 @@ jobs:
             BASE_IMAGE=${{ env.REGISTRY }}/${{ env.ORG }}/gdal-r:${{ matrix.tag_suffix }}
             IMAGE_VARIANT=${{ matrix.image_variant }}
           no-cache: ${{ inputs.no_cache == 'true' }}
-          cache-from: type=registry,ref=${{ env.REGISTRY }}/${{ env.ORG }}/gdal-r-full:${{ matrix.tag_suffix }}
-          cache-to: type=inline
+          cache-from: type=gha,scope=gdal-r-full-${{ matrix.tag_suffix }}
+          cache-to: type=gha,mode=max,scope=gdal-r-full-${{ matrix.tag_suffix }}
 
 
   # ── gdal-python ──────────────────────────────────────────────────────────────
@@ -288,5 +288,5 @@ jobs:
           build-args: |
             BASE_IMAGE=${{ env.REGISTRY }}/${{ env.ORG }}/gdal-r-full:${{ matrix.tag_suffix }}
           no-cache: ${{ inputs.no_cache == 'true' }}
-          cache-from: type=registry,ref=${{ env.REGISTRY }}/${{ env.ORG }}/gdal-python:${{ matrix.tag_suffix }}
-          cache-to: type=inline
+          cache-from: type=gha,scope=gdal-python-${{ matrix.tag_suffix }}
+          cache-to: type=gha,mode=max,scope=gdal-python-${{ matrix.tag_suffix }}
