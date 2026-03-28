@@ -41,6 +41,7 @@ cd src
 
 # Configure: point explicitly at /usr/local for GEOS/PROJ
 # disable RTTOPO if not available (optional topology support)
+PKG_CONFIG_PATH=/usr/local/lib/pkgconfig:${PKG_CONFIG_PATH:-} \
 ./configure \
     --prefix=/usr/local \
     --with-geosconfig=/usr/local/bin/geos-config \
@@ -53,3 +54,12 @@ make install
 ldconfig
 
 echo "spatialite: $(spatialite --version 2>&1 | head -1 || echo 'installed')"
+
+# Verify pkg-config can find it (needed by GDAL cmake)
+if pkg-config --exists spatialite; then
+    echo "spatialite pkg-config: $(pkg-config --modversion spatialite)"
+else
+    echo "WARNING: spatialite not found via pkg-config"
+    echo "Expected .pc file at /usr/local/lib/pkgconfig/spatialite.pc"
+    ls /usr/local/lib/pkgconfig/ | grep -i spat || echo "Not found"
+fi

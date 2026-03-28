@@ -22,6 +22,7 @@ else
     mkdir src && tar xf gdal.tar.gz -C src --strip-components=1
 fi
 
+PKG_CONFIG_PATH=/usr/local/lib/pkgconfig:${PKG_CONFIG_PATH:-} \
 cmake -S src -B build \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_INSTALL_PREFIX=/usr/local \
