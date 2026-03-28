@@ -1,7 +1,6 @@
 from osgeo import gdal, ogr, osr
 import rasterio, fiona, pyproj, shapely, geopandas
 import xarray, zarr, fsspec, netCDF4, h5py
-import pyarrow, polars
 import numpy, pandas, scipy
 
 # Critical: osgeo and rasterio must agree on GDAL version
@@ -29,6 +28,18 @@ print(f'xarray:     {xarray.__version__}')
 print(f'zarr:       {zarr.__version__}')
 print(f'netCDF4:    {netCDF4.__version__}')
 print(f'h5py:       {h5py.__version__}')
-print(f'pyarrow:    {pyarrow.__version__}')
-print(f'polars:     {polars.__version__}')
 print(f'pandas:     {pandas.__version__}')
+
+# pyarrow: may have abseil ABI conflict with system libabsl-dev (installed for R s2 package)
+# Import separately so failure here doesn't mask the above checks
+try:
+    import pyarrow
+    print(f'pyarrow:    {pyarrow.__version__}')
+except ImportError as e:
+    print(f'pyarrow:    IMPORT FAILED (abseil ABI conflict likely) — {e}')
+
+try:
+    import polars
+    print(f'polars:     {polars.__version__}')
+except ImportError as e:
+    print(f'polars:     IMPORT FAILED — {e}')
