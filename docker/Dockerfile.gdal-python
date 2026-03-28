@@ -6,14 +6,18 @@
 # in gdal-system) via --system-site-packages. No PyPI GDAL package needed,
 # no version matching risk, works identically for release and dev branches.
 #
-# --no-binary policy (hardwon):
-#   SOURCE builds required (link against system GDAL/PROJ/GEOS):
-#     rasterio, fiona, pyproj, shapely
-#   WHEELS fine (don't link system geo libs, or bundle safely):
-#     numpy, pandas, geopandas, netCDF4, h5py, xarray, zarr, fsspec, aiohttp
+# --no-binary policy (hardwon from experience):
 #
-# Commented-out packages (add when ready):
-#   virtualizarr — needs xarray>=2024.x, add after confirming compat
+#   MUST build from source (link against system GDAL/PROJ/GEOS/Arrow):
+#     rasterio, fiona, pyogrio, shapely, pyproj,
+#     geopandas (links GDAL via fiona/rasterio at runtime — needs alignment),
+#     odc-geo, rioxarray, fastparquet
+#
+#   WHEELS fine (pure Python, Cython-only, or safely bundled):
+#     numpy, pandas, xarray, zarr, fsspec, aiohttp, netCDF4, h5py/h5netcdf,
+#     scipy, matplotlib, dask, pyarrow, polars, duckdb, jupyter etc.
+#     NOTE: netCDF4 and h5py bundle their own HDF5 — do NOT use --no-binary,
+#     it will fight with system HDF5 in unpredictable ways.
 
 ARG BASE_IMAGE=ghcr.io/hypertidy/gdal-r-full:latest
 FROM ${BASE_IMAGE}
@@ -23,6 +27,7 @@ LABEL org.opencontainers.image.description="gdal-r-full + Python geo stack in /o
 
 RUN apt-get update -qq && apt-get install -y --no-install-recommends \
         python3-pip \
+        python3-dev \
     && rm -rf /var/lib/apt/lists/*
 
 RUN pip3 install --quiet uv --break-system-packages
@@ -30,36 +35,117 @@ RUN pip3 install --quiet uv --break-system-packages
 # Create venv — --system-site-packages exposes osgeo installed by GDAL build
 RUN uv venv /opt/gdal-py --python python3 --system-site-packages
 
-# Verify osgeo is visible through the venv
-RUN /opt/gdal-py/bin/python -c "from osgeo import gdal; print('osgeo.gdal:', gdal.__version__)"
+# Verify osgeo is visible and reports the correct GDAL version
+RUN /opt/gdal-py/bin/python -c \
+    "from osgeo import gdal; print('osgeo.gdal:', gdal.__version__)"
 
-# ── Packages that link GDAL/PROJ/GEOS: build from source ─────────────────────
-# These must compile against our /usr/local libraries, not bundled wheels.
+# ── Packages that link system GDAL/PROJ/GEOS: build from source ──────────────
 RUN GDAL_CONFIG=/usr/local/bin/gdal-config \
     PROJ_DIR=/usr/local \
     uv pip install \
         --python /opt/gdal-py/bin/python \
-        --no-binary pyproj,rasterio,fiona,shapely \
-        numpy \
+        --no-binary rasterio,fiona,pyogrio,shapely,pyproj,geopandas,odc-geo,rioxarray,fastparquet \
+        "numpy>2" \
         pyproj \
-        rasterio \
+        shapely \
         fiona \
-        shapely
-
-# ── Packages with no GDAL/PROJ linkage: wheels are fine ──────────────────────
-# virtualizarr is commented out below — uncomment when ready
-RUN uv pip install \
-        --python /opt/gdal-py/bin/python \
-        pandas \
+        rasterio \
+        pyogrio \
         geopandas \
-        netCDF4 \
-       h5py \
+        odc-geo \
+        rioxarray \
+        fastparquet
+
+# ── Wheels fine: pure Python / Cython / safely bundled HDF ───────────────────
+# Split into logical groups for better layer caching and readability
+
+# Core scientific stack
+RUN uv pip install --python /opt/gdal-py/bin/python \
+        "numpy>2" \
+        pandas \
         xarray \
+        scipy \
+        matplotlib \
+        cftime \
+        pytz tzdata
+
+# Cloud-native / IO formats
+# netCDF4 and h5py: DO NOT use --no-binary (bundle their own HDF5, intentionally)
+RUN uv pip install --python /opt/gdal-py/bin/python \
         zarr \
+        netCDF4 \
+        h5netcdf \
+        h5py \
         fsspec \
         aiohttp \
         requests \
-       virtualizarr
+        s3fs \
+        kerchunk \
+        virtualizarr \
+        rechunker \
+        tifffile \
+        imagecodecs \
+        async-tiff
+
+# Arrow / Parquet / query engines
+RUN uv pip install --python /opt/gdal-py/bin/python \
+        pyarrow \
+        polars \
+        "ibis-framework[duckdb]" \
+        stac-geoparquet \
+        geoarrow-pyarrow \
+        geoarrow-pandas \
+        deltalake
+
+# Dask ecosystem
+RUN uv pip install --python /opt/gdal-py/bin/python \
+        dask \
+        dask-expr \
+        distributed \
+        cloudpickle \
+        toolz \
+        partd
+
+# STAC / cloud geospatial
+RUN uv pip install --python /opt/gdal-py/bin/python \
+        pystac-client \
+        stackstac \
+        rio-stac \
+        odc-stac \
+        xstac \
+        xpystac \
+        stacrs \
+        earthaccess \
+        pooch \
+        cartopy
+
+# Icechunk / Zarr stores
+RUN uv pip install --python /opt/gdal-py/bin/python \
+        "arraylake[icechunk]" \
+        icechunk \
+        obstore \
+        virtual-tiff
+
+# R interop
+RUN uv pip install --python /opt/gdal-py/bin/python \
+        rpy2 \
+        rpy2-arrow
+
+# Dev / build tools (needed for building packages from source above)
+RUN uv pip install --python /opt/gdal-py/bin/python \
+        setuptools wheel cython \
+        affine attrs click cligj snuggs pyparsing \
+        click-plugins \
+        hypothesis pytest pytest-cov pytest-randomly \
+        mypy numpydoc packaging \
+        sphinx sphinx-click sphinx-rtd-theme
+
+# Jupyter
+RUN uv pip install --python /opt/gdal-py/bin/python \
+        notebook jupyterlab jupyterhub \
+        jupyter-rsession-proxy \
+        ipytree \
+        lonboard
 
 ENV PATH=/opt/gdal-py/bin:$PATH
 ENV VIRTUAL_ENV=/opt/gdal-py
