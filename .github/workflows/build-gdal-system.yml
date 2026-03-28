@@ -1,0 +1,165 @@
+# Build and push ghcr.io/hypertidy/gdal-system
+#
+# Builds GDAL/PROJ/GEOS from source on ubuntu:24.04.
+# Triggers downstream builds via repository_dispatch when the digest changes.
+#
+# Schedule:
+#   release (weekly Mon 02:00 UTC) — latest released GDAL/PROJ/GEOS
+#   dev     (daily   03:00 UTC)    — GDAL master + latest released PROJ/GEOS
+
+name: Build gdal-system
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'docker/Dockerfile.gdal-system'
+      - 'build-scripts/**'
+      - '.github/workflows/build-gdal-system.yml'
+  schedule:
+    - cron: '0 2 * * 1'   # release: weekly Monday
+    - cron: '0 3 * * *'   # dev: daily
+  workflow_dispatch:
+    inputs:
+      variant:
+        description: 'Which variant to build'
+        required: false
+        default: 'both'
+        type: choice
+        options: [both, release, dev]
+      no_cache:
+        description: 'Disable Docker layer cache'
+        required: false
+        default: 'false'
+        type: choice
+        options: ['false', 'true']
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  REGISTRY: ghcr.io
+  ORG: hypertidy
+
+jobs:
+  setup:
+    runs-on: ubuntu-latest
+    outputs:
+      variants: ${{ steps.set.outputs.variants }}
+    steps:
+      - id: set
+        run: |
+          EVENT="${{ github.event_name }}"
+          HOUR=$(date -u +%H)
+          INPUT="${{ inputs.variant }}"
+          if [ "$EVENT" = "workflow_dispatch" ]; then
+            VARIANT="$INPUT"
+          elif [ "$EVENT" = "schedule" ]; then
+            if [ "$HOUR" = "02" ]; then VARIANT="release"; else VARIANT="dev"; fi
+          else
+            VARIANT="both"
+          fi
+          if [ "$VARIANT" = "both" ]; then
+            echo 'variants=["release","dev"]' >> "$GITHUB_OUTPUT"
+          else
+            echo "variants=[\"$VARIANT\"]" >> "$GITHUB_OUTPUT"
+          fi
+
+  build:
+    needs: setup
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      fail-fast: false
+      matrix:
+        variant: ${{ fromJson(needs.setup.outputs.variants) }}
+        include:
+          - variant: release
+            tag_suffix: latest
+          - variant: dev
+            tag_suffix: dev
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Resolve versions
+        id: versions
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          eval "$(bash build-scripts/get-versions.sh)"
+          if [ "${{ matrix.variant }}" = "dev" ]; then
+            GDAL_VERSION="master"
+          fi
+          echo "gdal_version=${GDAL_VERSION}" >> "$GITHUB_OUTPUT"
+          echo "proj_version=${PROJ_VERSION}" >> "$GITHUB_OUTPUT"
+          echo "geos_version=${GEOS_VERSION}" >> "$GITHUB_OUTPUT"
+          echo "Resolved: GDAL=${GDAL_VERSION} PROJ=${PROJ_VERSION} GEOS=${GEOS_VERSION}"
+
+      - name: Get current upstream digest (before build)
+        id: before
+        run: |
+          docker pull ${{ env.REGISTRY }}/${{ env.ORG }}/gdal-system:${{ matrix.tag_suffix }} 2>/dev/null || true
+          DIGEST=$(docker inspect ${{ env.REGISTRY }}/${{ env.ORG }}/gdal-system:${{ matrix.tag_suffix }} \
+            --format '{{index .RepoDigests 0}}' 2>/dev/null || echo "none")
+          echo "digest=${DIGEST}" >> "$GITHUB_OUTPUT"
+
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: docker/Dockerfile.gdal-system
+          push: true
+          tags: ${{ env.REGISTRY }}/${{ env.ORG }}/gdal-system:${{ matrix.tag_suffix }}
+          build-args: |
+            GDAL_VERSION=${{ steps.versions.outputs.gdal_version }}
+            PROJ_VERSION=${{ steps.versions.outputs.proj_version }}
+            GEOS_VERSION=${{ steps.versions.outputs.geos_version }}
+            KEA_VERSION=1.5.3
+            CACHE_DATE=${{ github.run_id }}
+          no-cache: ${{ inputs.no_cache == 'true' }}
+          cache-from: type=registry,ref=${{ env.REGISTRY }}/${{ env.ORG }}/gdal-system:${{ matrix.tag_suffix }}
+          cache-to: type=inline
+          labels: |
+            org.opencontainers.image.revision=${{ github.sha }}
+
+      - name: Check if digest changed
+        id: changed
+        run: |
+          NEW=$(docker inspect ${{ env.REGISTRY }}/${{ env.ORG }}/gdal-system:${{ matrix.tag_suffix }} \
+            --format '{{index .RepoDigests 0}}' 2>/dev/null || echo "unknown")
+          OLD="${{ steps.before.outputs.digest }}"
+          if [ "$NEW" != "$OLD" ]; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            echo "Digest changed: triggering downstream builds"
+          else
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "Digest unchanged: no downstream rebuild needed"
+          fi
+
+      - name: Trigger gdal-r build
+        if: steps.changed.outputs.changed == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.repos.createDispatchEvent({
+              owner: context.repo.owner,
+              repo:  context.repo.repo,
+              event_type: 'gdal-system-updated',
+              client_payload: {
+                variant: '${{ matrix.variant }}',
+                tag_suffix: '${{ matrix.tag_suffix }}',
+                no_cache: '${{ inputs.no_cache }}'
+              }
+            })
