@@ -11,6 +11,9 @@ FROM ${BASE_IMAGE}
 LABEL org.opencontainers.image.source="https://github.com/hypertidy/gdal-r-ci"
 LABEL org.opencontainers.image.description="R + dev tooling on clean GDAL/PROJ/GEOS base"
 
+ENV LC_ALL=C.UTF-8
+ENV LANG=C.UTF-8
+
 # Extra apt deps that R packages need at build time
 RUN apt-get update -qq && apt-get install -y --no-install-recommends \
     # R install infrastructure
