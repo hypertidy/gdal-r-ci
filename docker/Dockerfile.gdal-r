@@ -5,7 +5,7 @@
 # All R packages built from source — no pak/r2u/RSPM binaries that might
 # have been compiled against a different GDAL.
 
-ARG BASE_IMAGE=ghcr.io/hypertidy/gdal-r-base:latest
+ARG BASE_IMAGE=ghcr.io/hypertidy/gdal-system:latest
 FROM ${BASE_IMAGE}
 
 LABEL org.opencontainers.image.source="https://github.com/hypertidy/gdal-r-ci"
