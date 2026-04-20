@@ -33,6 +33,9 @@ ENV PKG_CONFIG_PATH=/usr/local/lib/pkgconfig
 # GDAL Python bindings install to /usr/local/lib/python3.x/dist-packages
 # Add a glob-friendly path via PYTHONPATH so osgeo is importable
 
+ENV LC_ALL=C.UTF-8
+ENV LANG=C.UTF-8
+
 # ── 1. Build-time and runtime apt dependencies ───────────────────────────────
 # Split into logical groups so the layer is readable but still one RUN.
 RUN apt-get update -qq && apt-get install -y --no-install-recommends \
