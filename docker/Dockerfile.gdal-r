@@ -25,6 +25,8 @@ RUN apt-get update -qq && apt-get install -y --no-install-recommends \
     libpng-dev libjpeg-dev \
     libudunits2-dev \
     libabsl-dev \
+    # for fs package
+    libuv1-dev \
     # Docs/check tools
     pandoc qpdf \
     && rm -rf /var/lib/apt/lists/*

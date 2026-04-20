@@ -6,7 +6,7 @@ for (pkg in pkgs) {
   message('REQUIRED: ', pkg)
   message(strrep('=', 60))
   if (grepl('/', pkg)) {
-    remotes::install_github(pkg, upgrade = 'never', build_vignettes = FALSE, dependencies  = TRUE)
+    remotes::install_github(pkg, upgrade = 'always', build_vignettes = FALSE, dependencies  = TRUE)
   } else {
     install.packages(pkg, type = 'source', dependencies = TRUE)
   }
