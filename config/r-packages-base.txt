@@ -4,6 +4,8 @@
 
 # Package management
 remotes
+devtools
+roygen2
 
 # Testing frameworks
 testthat
