@@ -13,6 +13,7 @@ tinytest
 
 # Check tooling
 rcmdcheck
+spelling
 
 # Documentation
 knitr

@@ -11,8 +11,6 @@ FROM ${BASE_IMAGE}
 LABEL org.opencontainers.image.source="https://github.com/hypertidy/gdal-r-ci"
 LABEL org.opencontainers.image.description="R + dev tooling on clean GDAL/PROJ/GEOS base"
 
-ENV LC_ALL=C.UTF-8
-ENV LANG=C.UTF-8
 
 # Extra apt deps that R packages need at build time
 RUN apt-get update -qq && apt-get install -y --no-install-recommends \
@@ -30,6 +28,13 @@ RUN apt-get update -qq && apt-get install -y --no-install-recommends \
     # Docs/check tools
     pandoc qpdf \
     && rm -rf /var/lib/apt/lists/*
+
+RUN apt-get install -y --no-install-recommends \
+    devscripts \        # provides checkbashisms
+    texinfo \           # for --as-cran PDF manual check
+    texlive-latex-base \ # pdflatex
+    locales \           # locale-gen
+    && locale-gen en_US.UTF-8
 
 # Install R from CRAN Ubuntu repository (current R release)
 RUN wget -qO- https://cloud.r-project.org/bin/linux/ubuntu/marutter_pubkey.asc \
