@@ -19,7 +19,7 @@ on:
         required: false
         default: 'both'
         type: choice
-        options: [both, release, dev]
+        options: [release, dev]
       no_cache:
         description: 'Disable Docker layer cache'
         required: false
@@ -66,12 +66,6 @@ jobs:
           VARIANT="${{ github.event.client_payload.variant || inputs.variant || 'release' }}"
           TAG="${{ github.event.client_payload.tag_suffix }}"
           NO_CACHE="${{ github.event.client_payload.no_cache || inputs.no_cache || 'false' }}"
-          # Handle 'both' from manual dispatch
-          if [ "$VARIANT" = "both" ]; then
-            echo "Build 'both' not supported in single job — use individual triggers"
-            echo "Defaulting to release"
-            VARIANT="release"
-          fi
           [ -z "$TAG" ] && TAG=$([ "$VARIANT" = "dev" ] && echo "dev" || echo "latest")
           echo "variant=${VARIANT}" >> "$GITHUB_OUTPUT"
           echo "tag_suffix=${TAG}" >> "$GITHUB_OUTPUT"
