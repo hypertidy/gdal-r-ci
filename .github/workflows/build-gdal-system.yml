@@ -17,8 +17,8 @@ on:
       - 'build-scripts/**'
       - '.github/workflows/build-gdal-system.yml'
   schedule:
-    - cron: '0 2 * * 1'   # release: weekly Monday
-    - cron: '0 3 * * *'   # dev: daily
+    - cron: '0 17 * * 0'   # Sun 17:00 UTC = Mon 03:00 AEST → release
+    - cron: '0 18 * * *'   # daily 18:00 UTC = next day 04:00 AEST → dev
   workflow_dispatch:
     inputs:
       variant:
@@ -56,7 +56,7 @@ jobs:
           if [ "$EVENT" = "workflow_dispatch" ]; then
             VARIANT="$INPUT"
           elif [ "$EVENT" = "schedule" ]; then
-            if [ "$HOUR" = "02" ]; then VARIANT="release"; else VARIANT="dev"; fi
+            if [ "$HOUR" = "17" ]; then VARIANT="release"; else VARIANT="dev"; fi
           else
             VARIANT="both"
           fi

@@ -9,9 +9,6 @@ name: Build gdal-r
 on:
   repository_dispatch:
     types: [gdal-system-updated]
-  schedule:
-   - cron: '0 3 * * 1'   # release: weekly Monday
-   - cron: '0 4 * * *'   # dev: daily
   workflow_dispatch:
     inputs:
       variant:
