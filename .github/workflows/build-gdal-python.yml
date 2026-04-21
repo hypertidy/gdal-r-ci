@@ -9,6 +9,9 @@ name: Build gdal-python
 on:
   repository_dispatch:
     types: [gdal-r-full-updated]
+schedule:
+   - cron: '0 4 * * 1'   # release: weekly Monday
+   - cron: '0 5 * * 1'
   workflow_dispatch:
     inputs:
       variant:

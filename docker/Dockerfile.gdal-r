@@ -11,6 +11,8 @@ FROM ${BASE_IMAGE}
 LABEL org.opencontainers.image.source="https://github.com/hypertidy/gdal-r-ci"
 LABEL org.opencontainers.image.description="R + dev tooling on clean GDAL/PROJ/GEOS base"
 
+ENV LANG=en_US.UTF-8
+ENV LC_ALL=en_US.UTF-8
 
 # Extra apt deps that R packages need at build time
 RUN apt-get update -qq && apt-get install -y --no-install-recommends \
@@ -36,6 +38,7 @@ RUN apt-get update -qq && apt-get install -y --no-install-recommends \
     # locale-gen
     locales \
     && locale-gen en_US.UTF-8 \
+    && update-locale LANG=en_US.UTF-8 \
     && rm -rf /var/lib/apt/lists/*
 
 
