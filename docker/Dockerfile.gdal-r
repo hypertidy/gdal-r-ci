@@ -30,10 +30,14 @@ RUN apt-get update -qq && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 RUN apt-get install -y --no-install-recommends \
-    devscripts \        # provides checkbashisms
-    texinfo \           # for --as-cran PDF manual check
-    texlive-latex-base \ # pdflatex
-    locales \           # locale-gen
+    # provides checkbashisms
+    devscripts \
+    # for --as-cran PDF manual check
+    texinfo \
+    # pdflatex
+    texlive-latex-base \
+    # locale-gen
+    locales \
     && locale-gen en_US.UTF-8
 
 # Install R from CRAN Ubuntu repository (current R release)
