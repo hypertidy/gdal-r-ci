@@ -27,9 +27,6 @@ RUN apt-get update -qq && apt-get install -y --no-install-recommends \
     libuv1-dev \
     # Docs/check tools
     pandoc qpdf \
-    && rm -rf /var/lib/apt/lists/*
-
-RUN apt-get install -y --no-install-recommends \
     # provides checkbashisms
     devscripts \
     # for --as-cran PDF manual check
@@ -38,7 +35,9 @@ RUN apt-get install -y --no-install-recommends \
     texlive-latex-base \
     # locale-gen
     locales \
-    && locale-gen en_US.UTF-8
+    && locale-gen en_US.UTF-8 \
+    && rm -rf /var/lib/apt/lists/*
+
 
 # Install R from CRAN Ubuntu repository (current R release)
 RUN wget -qO- https://cloud.r-project.org/bin/linux/ubuntu/marutter_pubkey.asc \
