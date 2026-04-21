@@ -33,8 +33,6 @@ RUN apt-get update -qq && apt-get install -y --no-install-recommends \
     devscripts \
     # for --as-cran PDF manual check
     texinfo \
-    # pdflatex
-    texlive-latex-base \
     # locale-gen
     locales \
     && locale-gen en_US.UTF-8 \
@@ -62,6 +60,15 @@ RUN echo '/usr/local/lib' >> /etc/ld.so.conf.d/gdal-r-local.conf && ldconfig
 
 COPY config/r-packages-base.txt /tmp/r-packages-base.txt
 RUN Rscript -e "pkgs <- readLines('/tmp/r-packages-base.txt'); pkgs <- pkgs[!grepl('^#', pkgs) & nchar(trimws(pkgs)) > 0]; install.packages(pkgs, type = 'source', Ncpus = parallel::detectCores())"
+
+RUN R -e "tinytex::install_tinytex(bundle = 'TinyTeX-1', force = TRUE)"
+
+# The installer appends ~/.TinyTeX/bin/<arch> to PATH via a shell profile
+# edit, which doesn't apply to non-login shells in Docker RUN layers.
+# Make it explicit:
+ENV PATH="/root/.TinyTeX/bin/x86_64-linux:${PATH}"
+
+RUN R -e "tinytex::tlmgr_install(c('inconsolata','upquote','courier','helvetic','hyperref','titling','framed','grfext'))"
 
 # Quick sanity check: R finds our GDAL headers
 RUN Rscript -e "cat('R', R.version\$major, R.version\$minor, '\n')" \

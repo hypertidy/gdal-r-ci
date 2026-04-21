@@ -18,6 +18,8 @@ spelling
 # Documentation
 knitr
 rmarkdown
+xfun
+tinytex
 
 # Compiled dependency bases — build these once here so derived images
 # don't recompile them from scratch every time
