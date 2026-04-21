@@ -1,4 +1,3 @@
-# BUMP
 pkgs <- readLines('/tmp/r-packages-required.txt')
 pkgs <- pkgs[!grepl('^#', pkgs) & nchar(trimws(pkgs)) > 0]
 for (pkg in pkgs) {

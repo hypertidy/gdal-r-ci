@@ -56,7 +56,7 @@ jobs:
           if [ "$EVENT" = "workflow_dispatch" ]; then
             VARIANT="$INPUT"
           elif [ "$EVENT" = "schedule" ]; then
-            if [ "$HOUR" = "03" ]; then VARIANT="release"; else VARIANT="dev"; fi
+            if [ "$HOUR" = "02" ]; then VARIANT="release"; else VARIANT="dev"; fi
           else
             VARIANT="both"
           fi

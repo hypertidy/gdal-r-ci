@@ -1,8 +1,8 @@
 # ghcr.io/hypertidy/gdal-r:latest  /  :dev
 #
-# Adds R (from CRAN Ubuntu repo) on top of gdal-r-base.
+# Adds R (from CRAN Ubuntu repo) on top of gdal-system.
 # Installs a minimal set of packages needed for package development and testing.
-# All R packages built from source — no pak/r2u/RSPM binaries that might
+# All R packages built from source — no r2u/RSPM binaries that might
 # have been compiled against a different GDAL.
 
 ARG BASE_IMAGE=ghcr.io/hypertidy/gdal-system:latest
@@ -50,7 +50,7 @@ $(lsb_release -cs)-cran40/" > /etc/apt/sources.list.d/cran.list \
     && rm -rf /var/lib/apt/lists/*
 
 # Source packages only: R packages must compile against our GDAL/PROJ/GEOS.
-# Never let pak or install.packages pull a CRAN binary built against Ubuntu's GDAL.
+# Never let install.packages pull a CRAN binary built against Ubuntu's GDAL.
 RUN echo 'options(repos = c(CRAN = "https://cloud.r-project.org"))' >> /etc/R/Rprofile.site \
     && echo 'options(pkgType = "source")' >> /etc/R/Rprofile.site \
     && echo 'options(Ncpus = parallel::detectCores())' >> /etc/R/Rprofile.site
