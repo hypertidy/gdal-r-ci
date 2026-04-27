@@ -179,11 +179,12 @@ message("\n== Phase C: hypertidy WIP + AAD + other GitHub ==")
 #   CRAN      = CRAN
 # ))
 
-pak::pkg_install(
-  c(hypertidy_dev, aad, gh_other),
-  ask = FALSE,
-  upgrade = FALSE
-)
+# pak::pkg_install(
+#   c(hypertidy_dev, aad, gh_other),
+#   ask = FALSE,
+#   upgrade = FALSE
+# )
+remotes::install_github(c(hypertidy_dev, aad, gh_other), upgrade = FALSE)
 
 # # ---- 6. Sanity check ---------------------------------------------------------
 # message("\n== Sanity check: GDAL alignment across packages ==")
