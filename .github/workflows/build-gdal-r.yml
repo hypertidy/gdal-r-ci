@@ -97,7 +97,7 @@ jobs:
           echo "changed=$( [ "$NEW" != "$OLD" ] && echo true || echo false )" >> "$GITHUB_OUTPUT"
 
       - name: Trigger gdal-r-full build
-        if: steps.changed.outputs.changed == 'true'
+        #if: steps.changed.outputs.changed == 'true'
         uses: actions/github-script@v7
         with:
           github-token: ${{ secrets.WORKFLOW_TRIGGER_TOKEN }}
