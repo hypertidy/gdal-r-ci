@@ -21,6 +21,13 @@ LABEL org.opencontainers.image.source="https://github.com/hypertidy/gdal-r-ci"
 LABEL org.opencontainers.image.description="gdal-r-python + R kitchen sink (hypertidy stack, arrow, targets, dev tooling)"
 LABEL org.opencontainers.image.documentation="https://github.com/hypertidy/gdal-r-ci#gdal-r-python-extras"
 
+
+# Extra apt deps that R packages need at build time
+RUN apt-get update -qq && apt-get install -y --no-install-recommends \
+    libarchive-dev libcairo2-dev libgit2-devlibx11-dev  libglpk-dev   \
+    && rm -rf /var/lib/apt/lists/*
+
+
 # ── R kitchen sink ───────────────────────────────────────────────────────────
 # pak's cache lives under /root/.cache/R; mount it the same way uv's is
 # mounted in the parent image. Source builds for spatial + hypertidy CRAN,
