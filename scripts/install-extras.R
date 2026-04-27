@@ -138,7 +138,7 @@ Sys.setenv(PKG_SYSREQS = "false")
 pak::pkg_install(
   paste0(c(spatial, hypertidy_cran), "?source"),
   ask = FALSE,
-  upgrade = TRUE
+  upgrade = FALSE
 )
 
 # ---- 4. Phase B: everything else, PPM binaries OK ----------------------------
@@ -148,7 +148,7 @@ options(repos = c(PPM = PPM, CRAN = CRAN))
 pak::pkg_install(
   c(cloud, http, pipeline, tidy, dev),
   ask = FALSE,
-  upgrade = TRUE
+  upgrade = FALSE
 )
 
 # ---- 5. Phase C: r-universe / GitHub overlays --------------------------------
@@ -164,7 +164,7 @@ options(repos = c(
 pak::pkg_install(
   c(hypertidy_dev, aad, gh_other),
   ask = FALSE,
-  upgrade = TRUE
+  upgrade = FALSE
 )
 
 # # ---- 6. Sanity check ---------------------------------------------------------
