@@ -28,11 +28,16 @@ LABEL org.opencontainers.image.documentation="https://github.com/hypertidy/gdal-
 # per-phase repo / source-vs-binary policy.
 COPY scripts/install-extras.R /opt/scripts/install-extras.R
 
+RUN --mount=type=secret,id=gh_pat \
+    echo "secret file exists: $([ -f /run/secrets/gh_pat ] && echo yes || echo no)" && \
+    echo "secret file size: $(stat -c%s /run/secrets/gh_pat 2>/dev/null || echo missing)"
+
 RUN --mount=type=cache,target=/root/.cache/R,sharing=locked \
     --mount=type=secret,id=gh_pat \
-    GITHUB_PAT="$(cat /run/secrets/gh_pat)" \
+    export GITHUB_PAT="$(tr -d '\n\r' < /run/secrets/gh_pat)" && \
+    export GITHUB_TOKEN="$GITHUB_PAT" && \
+    echo "GITHUB_PAT length in shell: ${#GITHUB_PAT}" && \
     Rscript /opt/scripts/install-extras.R
-
 
 # ── Refresh MOTD for the leaf image ──────────────────────────────────────────
 RUN { \

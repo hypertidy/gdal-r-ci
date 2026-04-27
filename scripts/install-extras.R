@@ -135,11 +135,11 @@ options(
 Sys.setenv(PKG_SYSREQS = "false")
 
 
-pak::pkg_install(
-  paste0(c(spatial, hypertidy_cran), "?source"),
-  ask = FALSE,
-  upgrade = FALSE
-)
+# pak::pkg_install(
+#   paste0(c(spatial, hypertidy_cran), "?source"),
+#   ask = FALSE,
+#   upgrade = FALSE
+# )
 
 # ---- 4. Phase B: everything else, PPM binaries OK ----------------------------
 message("\n== Phase B: cloud / http / pipeline / tidy / dev (binary) ==")
