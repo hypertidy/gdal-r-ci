@@ -39,7 +39,7 @@ RUN --mount=type=cache,target=/root/.cache/R,sharing=locked \
     echo "GITHUB_PAT length in shell: ${#GITHUB_PAT}" && \
     echo "GITHUB_PAT=${GITHUB_PAT}" > /root/.Renviron && \
     echo "GITHUB_TOKEN=${GITHUB_PAT}" >> /root/.Renviron && \
-    Rscript /opt/scripts/install-extras.R
+    Rscript /opt/scripts/install-extras.R \
     rm -f /root/.Renviron
 
 # ── Refresh MOTD for the leaf image ──────────────────────────────────────────
