@@ -70,11 +70,15 @@ jobs:
 
       - name: Get current image digest (before build)
         id: before
+        continue-on-error: true
         run: |
-          docker pull ${{ env.REGISTRY }}/${{ env.ORG }}/gdal-r-python:${{ steps.vars.outputs.tag_suffix }} 2>/dev/null || true
+          set +e
+          docker pull ${{ env.REGISTRY }}/${{ env.ORG }}/gdal-r-python:${{ steps.vars.outputs.tag_suffix }} >/dev/null 2>&1
           DIGEST=$(docker inspect ${{ env.REGISTRY }}/${{ env.ORG }}/gdal-r-python:${{ steps.vars.outputs.tag_suffix }} \
-            --format '{{index .RepoDigests 0}}' 2>/dev/null || echo "none")
+            --format '{{index .RepoDigests 0}}' 2>/dev/null)
+          [ -z "$DIGEST" ] && DIGEST="none"
           echo "digest=${DIGEST}" >> "$GITHUB_OUTPUT"
+          exit 0
 
       - uses: docker/build-push-action@v6
         with:
