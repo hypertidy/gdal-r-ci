@@ -22,6 +22,10 @@
 ARG BASE_IMAGE=ghcr.io/hypertidy/gdal-r-full:latest
 FROM ${BASE_IMAGE}
 
+## avoid uv symlink issues on slurm
+ENV UV_LINK_MODE=copy 
+## use rm cache lower down not UV_NO_CACHE=1
+
 LABEL org.opencontainers.image.source="https://github.com/hypertidy/gdal-r-ci"
 LABEL org.opencontainers.image.description="gdal-r-full + Python geo stack in /opt/gdal-py"
 
@@ -146,6 +150,8 @@ RUN uv pip install --python /opt/gdal-py/bin/python \
         jupyter-rsession-proxy \
         ipytree \
         lonboard
+
+RUN rm -rf /root/.cache/uv
 
 ENV PATH=/opt/gdal-py/bin:$PATH
 ENV VIRTUAL_ENV=/opt/gdal-py
