@@ -125,6 +125,16 @@ gh_other <- c(
 message("\n== Phase A: spatial + hypertidy CRAN (source) ==")
 options(repos = c(CRAN = CRAN))
 
+# Tell pak NOT to apt-install system deps. /usr/local has GDAL/PROJ/GEOS
+# built from source; Ubuntu's libgdal-dev would shadow them
+options(
+  pkg.sysreqs = FALSE,
+  pkg.sysreqs_update = FALSE,
+  pkg.sysreqs_db_update = FALSE
+)
+Sys.setenv(PKG_SYSREQS = "false")
+
+
 pak::pkg_install(
   paste0(c(spatial, hypertidy_cran), "?source"),
   ask = FALSE,
