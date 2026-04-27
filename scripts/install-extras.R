@@ -141,6 +141,9 @@ Sys.setenv(PKG_SYSREQS = "false")
 #   upgrade = FALSE
 # )
 
+cat("GITHUB_PAT in R:", nchar(Sys.getenv("GITHUB_PAT")), "\n")
+cat("GITHUB_TOKEN in R:", nchar(Sys.getenv("GITHUB_TOKEN")), "\n")
+
 # ---- 4. Phase B: everything else, PPM binaries OK ----------------------------
 message("\n== Phase B: cloud / http / pipeline / tidy / dev (binary) ==")
 options(repos = c(PPM = PPM, CRAN = CRAN))
