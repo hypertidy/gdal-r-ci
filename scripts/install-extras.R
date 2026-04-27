@@ -135,20 +135,29 @@ options(
 Sys.setenv(PKG_SYSREQS = "false")
 
 
+
+# cat("GITHUB_PAT in R:", nchar(Sys.getenv("GITHUB_PAT")), "\n")
+# cat("GITHUB_TOKEN in R:", nchar(Sys.getenv("GITHUB_TOKEN")), "\n")
+#
+# # Verify PAT reaches pak's subprocess
+# callr::r(function() {
+#   cat("PAT in subprocess:", nchar(Sys.getenv("GITHUB_PAT")), "\n")
+#   cat("TOKEN in subprocess:", nchar(Sys.getenv("GITHUB_TOKEN")), "\n")
+# })
+
+# pat <- trimws(readLines("/run/secrets/gh_pat", warn = FALSE))
+# Sys.setenv(GITHUB_PAT = pat, GITHUB_TOKEN = pat)
+# writeLines(
+#   c(paste0("GITHUB_PAT=", pat), paste0("GITHUB_TOKEN=", pat)),
+#   file.path(Sys.getenv("HOME"), ".Renviron")
+# )
+
 # pak::pkg_install(
 #   paste0(c(spatial, hypertidy_cran), "?source"),
 #   ask = FALSE,
 #   upgrade = FALSE
 # )
 
-cat("GITHUB_PAT in R:", nchar(Sys.getenv("GITHUB_PAT")), "\n")
-cat("GITHUB_TOKEN in R:", nchar(Sys.getenv("GITHUB_TOKEN")), "\n")
-
-# Verify PAT reaches pak's subprocess
-callr::r(function() {
-  cat("PAT in subprocess:", nchar(Sys.getenv("GITHUB_PAT")), "\n")
-  cat("TOKEN in subprocess:", nchar(Sys.getenv("GITHUB_TOKEN")), "\n")
-})
 
 # ---- 4. Phase B: everything else, PPM binaries OK ----------------------------
 message("\n== Phase B: cloud / http / pipeline / tidy / dev (binary) ==")
