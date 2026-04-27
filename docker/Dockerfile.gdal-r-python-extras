@@ -59,5 +59,7 @@ RUN { \
         echo "Docs: https://github.com/hypertidy/gdal-r-ci#gdal-r-python-extras" ; \
     } > /etc/gdal-r-ci-motd
 
+RUN strip --strip-debug /usr/local/lib/R/site-library/*/libs/*.so 2>/dev/null || true
+
 WORKDIR /workspace
 CMD ["bash"]

@@ -76,5 +76,7 @@ RUN Rscript -e "cat('R', R.version\$major, R.version\$minor, '\n')" \
     && echo "PROJ: $(pkg-config --modversion proj)" \
     && echo "GEOS: $(geos-config --version)"
 
+RUN strip --strip-debug /usr/local/lib/R/site-library/*/libs/*.so 2>/dev/null || true
+
 WORKDIR /workspace
-CMD ["R"]
+CMD ["bash"]

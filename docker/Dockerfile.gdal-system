@@ -121,4 +121,6 @@ RUN echo "=== Library versions ===" \
     && echo "=== PROJ data dir ===" \
     && proj -P 2>/dev/null | head -3 || projinfo EPSG:4326 | head -5
 
+RUN strip --strip-unneeded /usr/local/lib/lib*.so* 2>/dev/null || true
+
 WORKDIR /workspace

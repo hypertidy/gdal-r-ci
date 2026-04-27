@@ -125,5 +125,9 @@ RUN { \
  && echo '[ -t 0 ] && [ -f /etc/gdal-r-ci-motd ] && cat /etc/gdal-r-ci-motd' \
         >> /etc/bash.bashrc
 
+
+RUN strip --strip-debug /usr/local/lib/R/site-library/*/libs/*.so 2>/dev/null || true
+RUN find /opt/gdal-py -name "*.so" -exec strip --strip-debug {} \; 2>/dev/null || true
+
 WORKDIR /workspace
 CMD ["bash"]

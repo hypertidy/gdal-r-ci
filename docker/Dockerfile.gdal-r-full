@@ -48,4 +48,6 @@ RUN if [ "${IMAGE_VARIANT}" = "release" ]; then \
             || echo "WARNING: version misalignment on dev variant — check logs"; \
     fi
 
-CMD ["R"]
+RUN strip --strip-debug /usr/local/lib/R/site-library/*/libs/*.so 2>/dev/null || true
+
+CMD ["bash"]
