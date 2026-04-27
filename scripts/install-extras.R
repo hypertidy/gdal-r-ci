@@ -171,13 +171,13 @@ pak::pkg_install(
 
 # ---- 5. Phase C: r-universe / GitHub overlays --------------------------------
 message("\n== Phase C: hypertidy WIP + AAD + other GitHub ==")
-options(repos = c(
-  hypertidy = HYPERTIDY,
-  ropensci  = ROPENSCI,
-  aad       = AAD,
-  PPM       = PPM,
-  CRAN      = CRAN
-))
+# options(repos = c(
+#   hypertidy = HYPERTIDY,
+#   ropensci  = ROPENSCI,
+#   aad       = AAD,
+#   PPM       = PPM,
+#   CRAN      = CRAN
+# ))
 
 pak::pkg_install(
   c(hypertidy_dev, aad, gh_other),
