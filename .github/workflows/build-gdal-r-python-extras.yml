@@ -67,6 +67,8 @@ jobs:
           file: docker/Dockerfile.gdal-r-python-extras
           push: true
           tags: ${{ env.REGISTRY }}/${{ env.ORG }}/gdal-r-python-extras:${{ steps.vars.outputs.tag_suffix }}
+          secrets: |
+            gh_pat=${{ secrets.GITHUB_TOKEN }}
           build-args: |
             BASE_IMAGE=${{ env.REGISTRY }}/${{ env.ORG }}/gdal-r-python:${{ steps.vars.outputs.tag_suffix }}
           no-cache: ${{ steps.vars.outputs.no_cache == 'true' }}
