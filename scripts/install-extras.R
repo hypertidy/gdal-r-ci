@@ -92,7 +92,7 @@ dev <- c(
   "callr", "processx", "withr", "sessioninfo", "desc", "brio",
   "cli", "digest", "knitr", "rmarkdown", "quarto",
   "languageserver", "httpgd", "bench", "lobstr",
-  "Rcpp", "cpp11", "rextendr", "savvy",
+  "Rcpp", "cpp11", "rextendr",
   "reticulate"
 )
 

@@ -35,7 +35,7 @@ RUN { \
         echo "── ghcr.io/hypertidy/gdal-r-python-extras ──" ; \
         echo "GDAL $(gdal-config --version)   PROJ $(pkg-config --modversion proj)   GEOS $(geos-config --version)" ; \
         echo "R    $(R --version 2>/dev/null | head -1 | grep -oE '[0-9]+\.[0-9]+\.[0-9]+')   (kitchen sink loaded)" ; \
-        echo "Py   $(/opt/gdal-py/bin/python -c 'import sys;print(\".\".join(map(str,sys.version_info[:3])))')" ; \
+        echo "Py   $(/opt/gdal-py/bin/python -c 'import sys; print(sys.version.split()[0])')" ; \
         echo "" ; \
         echo "Docs: https://github.com/hypertidy/gdal-r-ci#gdal-r-python-extras" ; \
     } > /etc/gdal-r-ci-motd
