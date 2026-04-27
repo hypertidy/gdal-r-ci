@@ -1,0 +1,127 @@
+# Build and push ghcr.io/hypertidy/gdal-r-python
+#
+# Triggered by repository_dispatch from build-gdal-r-full when gdal-r-full
+# digest changes. Also triggerable manually.
+# Adds uv venv + Python geo stack on top of gdal-r-full.
+#
+# On a release-variant build with a changed digest, dispatches downstream
+# to build-gdal-r-python-extras. dev-variant builds do NOT dispatch
+# downstream — extras has no :dev variant by design.
+
+name: Build gdal-r-python
+
+on:
+  repository_dispatch:
+    types: [gdal-r-full-updated]
+  workflow_dispatch:
+    inputs:
+      variant:
+        description: 'Which variant to build'
+        required: false
+        default: 'release'
+        type: choice
+        options: [release, dev]
+      no_cache:
+        description: 'Disable Docker layer cache'
+        required: false
+        default: 'false'
+        type: choice
+        options: ['false', 'true']
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.client_payload.variant || inputs.variant || 'release' }}
+  cancel-in-progress: true
+
+env:
+  REGISTRY: ghcr.io
+  ORG: hypertidy
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Resolve vars
+        id: vars
+        run: |
+          VARIANT="${{ github.event.client_payload.variant || inputs.variant || 'release' }}"
+          TAG="${{ github.event.client_payload.tag_suffix }}"
+          NO_CACHE="${{ github.event.client_payload.no_cache || inputs.no_cache || 'false' }}"
+          [ -z "$TAG" ] && TAG=$([ "$VARIANT" = "dev" ] && echo "dev" || echo "latest")
+          IMAGE_VARIANT="$VARIANT"
+          echo "variant=${VARIANT}"               >> "$GITHUB_OUTPUT"
+          echo "tag_suffix=${TAG}"                >> "$GITHUB_OUTPUT"
+          echo "no_cache=${NO_CACHE}"             >> "$GITHUB_OUTPUT"
+          echo "image_variant=${IMAGE_VARIANT}"   >> "$GITHUB_OUTPUT"
+
+      - name: Get current image digest (before build)
+        id: before
+        run: |
+          docker pull ${{ env.REGISTRY }}/${{ env.ORG }}/gdal-r-python:${{ steps.vars.outputs.tag_suffix }} 2>/dev/null || true
+          DIGEST=$(docker inspect ${{ env.REGISTRY }}/${{ env.ORG }}/gdal-r-python:${{ steps.vars.outputs.tag_suffix }} \
+            --format '{{index .RepoDigests 0}}' 2>/dev/null || echo "none")
+          echo "digest=${DIGEST}" >> "$GITHUB_OUTPUT"
+
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: docker/Dockerfile.gdal-r-python
+          push: true
+          tags: ${{ env.REGISTRY }}/${{ env.ORG }}/gdal-r-python:${{ steps.vars.outputs.tag_suffix }}
+          build-args: |
+            BASE_IMAGE=${{ env.REGISTRY }}/${{ env.ORG }}/gdal-r-full:${{ steps.vars.outputs.tag_suffix }}
+            IMAGE_VARIANT=${{ steps.vars.outputs.image_variant }}
+          no-cache: ${{ steps.vars.outputs.no_cache == 'true' }}
+          cache-from: type=gha,scope=gdal-r-python-${{ steps.vars.outputs.tag_suffix }}
+          cache-to: type=gha,mode=max,scope=gdal-r-python-${{ steps.vars.outputs.tag_suffix }}
+
+      - name: Check if digest changed
+        id: changed
+        run: |
+          NEW=$(docker inspect ${{ env.REGISTRY }}/${{ env.ORG }}/gdal-r-python:${{ steps.vars.outputs.tag_suffix }} \
+            --format '{{index .RepoDigests 0}}' 2>/dev/null || echo "unknown")
+          OLD="${{ steps.before.outputs.digest }}"
+          echo "changed=$( [ "$NEW" != "$OLD" ] && echo true || echo false )" >> "$GITHUB_OUTPUT"
+
+      - name: Trigger gdal-r-python-extras build
+        # Only release variant — extras has no :dev tag by design.
+        # Digest gate is commented out to mirror build-gdal-r-full.yml; uncomment
+        # if you want to skip rebuilds when nothing actually changed.
+        if: steps.vars.outputs.variant == 'release'
+        # if: steps.vars.outputs.variant == 'release' && steps.changed.outputs.changed == 'true'
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.WORKFLOW_TRIGGER_TOKEN }}
+          script: |
+            await github.rest.repos.createDispatchEvent({
+              owner: context.repo.owner,
+              repo:  context.repo.repo,
+              event_type: 'gdal-r-python-updated',
+              client_payload: {
+                tag_suffix: '${{ steps.vars.outputs.tag_suffix }}',
+                no_cache:   '${{ steps.vars.outputs.no_cache }}'
+              }
+            })
+
+      - name: Summary
+        run: |
+          {
+            echo "## gdal-r-python:${{ steps.vars.outputs.tag_suffix }} built"
+            echo "Base: gdal-r-full:${{ steps.vars.outputs.tag_suffix }}"
+            echo "Variant: ${{ steps.vars.outputs.variant }}"
+            echo "Digest changed: ${{ steps.changed.outputs.changed }}"
+          } >> "$GITHUB_STEP_SUMMARY"

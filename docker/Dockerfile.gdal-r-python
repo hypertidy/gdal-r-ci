@@ -1,0 +1,125 @@
+# syntax=docker/dockerfile:1.7
+# ghcr.io/hypertidy/gdal-r-python:latest  /  :dev
+#
+# Adds a uv-managed Python environment at /opt/gdal-py on top of gdal-r-full.
+# Renamed from gdal-python; the chain is now strictly linear:
+#   gdal-system → gdal-r → gdal-r-full → gdal-r-python → gdal-r-python-extras
+#
+# osgeo.gdal comes from the system Python (compiled against our GDAL build
+# in gdal-system) via --system-site-packages. No PyPI GDAL package needed,
+# no version matching risk.
+#
+# --no-binary policy:
+#   MUST build from source (link system GDAL/PROJ/GEOS):
+#     rasterio, fiona, pyogrio, shapely, pyproj, geopandas, odc-geo, rioxarray
+#   WHEELS fine (pure Python, Cython, or safely bundled):
+#     numpy, pandas, xarray, zarr, fsspec, netCDF4, h5py/h5netcdf,
+#     scipy, matplotlib, dask, pyarrow, polars, duckdb, fastparquet
+#   NOTE: netCDF4 and h5py bundle their own HDF5 — do NOT use --no-binary,
+#   it will fight with system HDF5.
+#   NOTE: fastparquet kept because fsspec.implementations.reference's
+#   LazyReferenceMapper still defaults engine="fastparquet"; this is what
+#   virtualizarr's parquet read path and kerchunk.df's write path go through.
+#   Until fsspec flips the default, fastparquet is a runtime dep of the
+#   kerchunk-parquet ecosystem.
+#
+# CACHE: BuildKit cache mount on /root/.cache/uv keeps wheels out of image
+# layers entirely. UV_LINK_MODE=copy because the cache mount lives on a
+# different filesystem than the venv (uv would otherwise try to hardlink
+# across mounts and fail).
+
+ARG BASE_IMAGE=ghcr.io/hypertidy/gdal-r-full:latest
+FROM ${BASE_IMAGE}
+
+ARG IMAGE_VARIANT=release
+
+LABEL org.opencontainers.image.source="https://github.com/hypertidy/gdal-r-ci"
+LABEL org.opencontainers.image.description="gdal-r-full + Python geo stack in /opt/gdal-py"
+LABEL org.opencontainers.image.documentation="https://github.com/hypertidy/gdal-r-ci#gdal-r-python"
+
+ENV UV_LINK_MODE=copy
+ENV PYTHONDONTWRITEBYTECODE=1
+
+RUN apt-get update -qq && apt-get install -y --no-install-recommends \
+        python3-pip \
+        python3-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN pip3 install --quiet uv --break-system-packages
+
+# Create venv — --system-site-packages exposes osgeo from system Python
+RUN uv venv /opt/gdal-py --python python3 --system-site-packages
+
+# Sanity: osgeo visible and reports the GDAL we built
+RUN /opt/gdal-py/bin/python -c \
+    "from osgeo import gdal; print('osgeo.gdal:', gdal.__version__)"
+
+# ── Source-built: link system GDAL/PROJ/GEOS ──────────────────────────────────
+RUN --mount=type=cache,target=/root/.cache/uv,sharing=locked \
+    GDAL_CONFIG=/usr/local/bin/gdal-config \
+    PROJ_DIR=/usr/local \
+    uv pip install \
+        --python /opt/gdal-py/bin/python \
+        --no-binary rasterio,fiona,pyogrio,shapely,pyproj,geopandas,odc-geo,rioxarray \
+        "numpy>2" \
+        pyproj shapely fiona rasterio pyogrio geopandas odc-geo rioxarray \
+ && find /opt/gdal-py -type d -name __pycache__ -exec rm -rf {} +
+
+# ── Wheels-fine: science / IO / arrow / dask / stac / icechunk / jupyter ─────
+# Single RUN — cache mount makes rebuilds fast, find prevents __pycache__ creep.
+# Ordering within the install is just for readability.
+RUN --mount=type=cache,target=/root/.cache/uv,sharing=locked \
+    uv pip install --python /opt/gdal-py/bin/python \
+        # core scientific
+        pandas xarray scipy matplotlib cftime pytz tzdata \
+        # cloud-native I/O (fastparquet stays — fsspec LazyReferenceMapper default)
+        zarr netCDF4 h5netcdf h5py \
+        fsspec aiohttp requests s3fs \
+        kerchunk virtualizarr rechunker \
+        tifffile imagecodecs async-tiff \
+        fastparquet \
+        # Arrow / Parquet / query engines
+        pyarrow polars "ibis-framework[duckdb]" \
+        stac-geoparquet geoarrow-pyarrow \
+        # Dask
+        dask distributed cloudpickle toolz partd \
+        # STAC / cloud geospatial
+        pystac-client stackstac rio-stac \
+        earthaccess pooch \
+        # Icechunk / Zarr stores
+        icechunk obstore virtual-tiff \
+        # Build / runtime helpers (used by source-built packages)
+        setuptools wheel cython \
+        affine attrs click cligj snuggs pyparsing click-plugins \
+        # Jupyter (jupyterhub for NeCTAR, jupyterlab for interactive; no notebook)
+        jupyterlab jupyterhub jupyter-rsession-proxy \
+        ipytree lonboard \
+ && find /opt/gdal-py -type d -name __pycache__ -exec rm -rf {} + \
+ && find /opt/gdal-py -type f -name "*.pyc" -delete
+
+ENV PATH=/opt/gdal-py/bin:$PATH
+ENV VIRTUAL_ENV=/opt/gdal-py
+
+# ── Verify Python stack alignment ────────────────────────────────────────────
+COPY scripts/check-python-versions.py /opt/scripts/check-python-versions.py
+RUN if [ "${IMAGE_VARIANT}" = "release" ]; then \
+        python /opt/scripts/check-python-versions.py; \
+    else \
+        python /opt/scripts/check-python-versions.py \
+            || echo "WARNING: python alignment check failed on dev variant"; \
+    fi
+
+# ── MOTD: prints on interactive bash entry, baked at build so versions are exact
+RUN { \
+        echo "── ghcr.io/hypertidy/gdal-r-python ──" ; \
+        echo "GDAL $(gdal-config --version)   PROJ $(pkg-config --modversion proj)   GEOS $(geos-config --version)" ; \
+        echo "R    $(R --version 2>/dev/null | head -1 | grep -oE '[0-9]+\.[0-9]+\.[0-9]+')" ; \
+        echo "Py   $(/opt/gdal-py/bin/python -c 'import sys;print(\".\".join(map(str,sys.version_info[:3])))')" ; \
+        echo "" ; \
+        echo "Docs: https://github.com/hypertidy/gdal-r-ci#gdal-r-python" ; \
+    } > /etc/gdal-r-ci-motd \
+ && echo '[ -t 0 ] && [ -f /etc/gdal-r-ci-motd ] && cat /etc/gdal-r-ci-motd' \
+        >> /etc/bash.bashrc
+
+WORKDIR /workspace
+CMD ["bash"]

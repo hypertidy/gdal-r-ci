@@ -1,0 +1,185 @@
+#!/usr/bin/env Rscript
+# install-extras.R
+#
+# Kitchen-sink R packages installed on top of gdal-r-full to produce
+# gdal-r-extras. Run inside the Docker build.
+#
+# Policy:
+#   * Spatial + hypertidy CRAN packages are installed from source so they
+#     link against the custom GDAL / PROJ / GEOS already in the image.
+#   * Everything else prefers Posit Public Package Manager binaries for
+#     speed; this is the difference between a 15-minute build and a
+#     90-minute build.
+#   * Hypertidy WIP, AAD, and other GitHub-only packages are pulled from
+#     r-universe (preferred) or GitHub (fallback) via pak.
+
+# ---- 0. Bootstrap pak --------------------------------------------------------
+# pak is the install driver. Faster, parallel, real solver, handles sysreqs,
+# and respects the source-vs-binary qualifier we use below.
+if (!requireNamespace("pak", quietly = TRUE)) {
+  install.packages(
+    "pak",
+    repos = sprintf(
+      "https://r-lib.github.io/p/pak/stable/%s/%s/%s",
+      .Platform$pkgType, R.Version()$os, R.Version()$arch
+    )
+  )
+}
+
+options(
+  Ncpus = max(1L, parallel::detectCores() - 1L),
+  pak.no_extra_messages = TRUE,
+  install.packages.check.source = "no",
+  pkg.show_progress = TRUE
+)
+
+# ---- 1. Repositories ---------------------------------------------------------
+PPM        <- "https://packagemanager.posit.co/cran/__linux__/noble/latest"
+CRAN       <- "https://cloud.r-project.org"
+HYPERTIDY  <- "https://hypertidy.r-universe.dev"
+ROPENSCI   <- "https://ropensci.r-universe.dev"
+AAD        <- "https://australianantarcticdivision.r-universe.dev"
+
+# ---- 2. Package sets ---------------------------------------------------------
+
+# 2a. Spatial — MUST be source-built against this image's GDAL stack.
+spatial <- c(
+  "sf", "terra", "stars", "lwgeom", "wk", "s2", "geos", "geoarrow",
+  "gdalraster", "gdalcubes", "exactextractr", "fasterize",
+  "pizzarr", "rstac", "rsi", "tidync", "zarr"
+)
+
+# 2b. Hypertidy CRAN — source so they pick up the image's GDAL where relevant.
+hypertidy_cran <- c(
+  "vaster", "tissot", "geographiclib", "wkpool", "decido",
+  "silicate", "sfheaders", "graticule", "quadmesh", "spex",
+  "gibble", "palr", "affinity", "rbgm", "trip",
+  "RTriangle", "polyclip", "geometries", "terrainmeshr", "sooty"
+)
+
+# 2c. Cloud / Arrow / Parquet / DuckDB.
+cloud <- c(
+  "arrow", "nanoarrow", "duckdb", "duckdbfs", "duckplyr",
+  "adbcdrivermanager"
+)
+
+# 2d. Object stores & HTTP.
+http <- c(
+  "httr2", "curl", "aws.s3", "aws.signature", "AzureStor",
+  "paws.storage", "minioclient", "piggyback"
+)
+
+# 2e. Targets & parallelism.
+pipeline <- c(
+  "targets", "tarchetypes", "crew", "crew.cluster",
+  "mirai", "future", "furrr", "future.batchtools",
+  "multidplyr", "rslurm"
+)
+
+# 2f. Tidy core (deliberately à la carte; no `tidyverse` meta).
+tidy <- c(
+  "dplyr", "tidyr", "purrr", "stringr", "readr", "tibble",
+  "lubridate", "hms", "glue", "fs", "vctrs", "rlang",
+  "ggplot2", "leaflet", "DBI", "RSQLite",
+  "xml2", "jsonlite", "yaml", "base64enc", "jpeg",
+  "qs2", "fst", "archive"
+)
+
+# 2g. Dev tooling.
+dev <- c(
+  "devtools", "usethis", "roxygen2", "testthat", "tinytest",
+  "rcmdcheck", "urlchecker", "lintr", "styler", "pkgdown",
+  "callr", "processx", "withr", "sessioninfo", "desc", "brio",
+  "cli", "digest", "knitr", "rmarkdown", "quarto",
+  "languageserver", "httpgd", "bench", "lobstr",
+  "Rcpp", "cpp11", "rextendr", "savvy",
+  "reticulate"
+)
+
+# 2h. Hypertidy WIP — r-universe nightly builds preferred.
+hypertidy_dev <- c(
+  "hypertidy/vapour",
+  "hypertidy/grout",
+  "hypertidy/ximage",
+  "hypertidy/sds",
+  "hypertidy/dsn",
+  "hypertidy/controlledburn"
+)
+
+# 2i. AAD / data pipeline ecosystem.
+aad <- c(
+  #"AustralianAntarcticDivision/raadfiles",
+  #"AustralianAntarcticDivision/raadtools",
+  "AustralianAntarcticDivision/blueant",
+  "ropensci/bowerbird",
+  "mdsumner/bluelink"
+)
+
+# 2j. Other GitHub-only.
+gh_other <- c(
+  "r-lib/revdepcheck",
+  "coolbutuseless/zstdlite"
+)
+
+# ---- 3. Phase A: spatial + hypertidy_cran, source-only -----------------------
+# `?source` qualifier forces pak to build from source even if PPM has a binary.
+message("\n== Phase A: spatial + hypertidy CRAN (source) ==")
+options(repos = c(CRAN = CRAN))
+
+pak::pkg_install(
+  paste0(c(spatial, hypertidy_cran), "?source"),
+  ask = FALSE,
+  upgrade = TRUE
+)
+
+# ---- 4. Phase B: everything else, PPM binaries OK ----------------------------
+message("\n== Phase B: cloud / http / pipeline / tidy / dev (binary) ==")
+options(repos = c(PPM = PPM, CRAN = CRAN))
+
+pak::pkg_install(
+  c(cloud, http, pipeline, tidy, dev),
+  ask = FALSE,
+  upgrade = TRUE
+)
+
+# ---- 5. Phase C: r-universe / GitHub overlays --------------------------------
+message("\n== Phase C: hypertidy WIP + AAD + other GitHub ==")
+options(repos = c(
+  hypertidy = HYPERTIDY,
+  ropensci  = ROPENSCI,
+  aad       = AAD,
+  PPM       = PPM,
+  CRAN      = CRAN
+))
+
+pak::pkg_install(
+  c(hypertidy_dev, aad, gh_other),
+  ask = FALSE,
+  upgrade = TRUE
+)
+
+# # ---- 6. Sanity check ---------------------------------------------------------
+# message("\n== Sanity check: GDAL alignment across packages ==")
+#
+# sf_v   <- sf::sf_extSoftVersion()
+# terra_gdal <- terra::gdal()
+# gdalraster_v <- as.character(gdalraster::gdal_version()["GDAL_RELEASE_NAME"])
+#
+# cat(sprintf(
+#   "  sf::sf_extSoftVersion() ...... GDAL %s, GEOS %s, PROJ %s\n",
+#   sf_v[["GDAL"]], sf_v[["GEOS"]], sf_v[["PROJ.4"]]
+# ))
+# cat(sprintf("  terra::gdal() ................ %s\n", terra_gdal))
+# cat(sprintf("  gdalraster::gdal_version() ... %s\n", gdalraster_v))
+#
+# # Soft check — print loudly if they don't all agree on GDAL.
+# gdal_versions <- c(sf_v[["GDAL"]], terra_gdal, gdalraster_v)
+# if (length(unique(gdal_versions)) != 1L) {
+#   warning(
+#     "GDAL version mismatch across sf / terra / gdalraster:\n  ",
+#     paste(gdal_versions, collapse = " | "),
+#     call. = FALSE
+#   )
+# }
+#
+# message("\n== Done ==")

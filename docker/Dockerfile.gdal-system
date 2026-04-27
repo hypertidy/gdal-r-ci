@@ -65,6 +65,7 @@ RUN apt-get update -qq && apt-get install -y --no-install-recommends \
     libspdlog-dev \
     # Runtime: keep these for derived images
     libsqlite3-0 \
+    nano \
     && rm -rf /var/lib/apt/lists/*
 
 # Cache-bust token — set to github.run_id in CI so every scheduled/dispatch

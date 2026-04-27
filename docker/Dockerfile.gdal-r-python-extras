@@ -1,0 +1,44 @@
+# syntax=docker/dockerfile:1.7
+# ghcr.io/hypertidy/gdal-r-python-extras:latest
+#
+# Leaf image of the chain. Adds the everyday R kitchen sink on top of
+# gdal-r-python: hypertidy CRAN + WIP, AAD pipelines, cloud / arrow /
+# duckdb, targets ecosystem, tidy core (à la carte — no `tidyverse`
+# meta), and dev tooling. Spatial + hypertidy CRAN are source-built
+# against this image's GDAL stack; everything else takes PPM binaries
+# for speed.
+#
+# No `:dev` variant on purpose. By the time you're at this layer, the
+# GDAL story is settled at gdal-r-python:dev and the cost of rebuilding
+# kitchen-sink dependencies for canary signals is poor ROI. For
+# bleeding-edge work, base on gdal-r-python:dev directly and overlay
+# packages via a writable R_LIBS_USER path mounted at runtime.
+
+ARG BASE_IMAGE=ghcr.io/hypertidy/gdal-r-python:latest
+FROM ${BASE_IMAGE}
+
+LABEL org.opencontainers.image.source="https://github.com/hypertidy/gdal-r-ci"
+LABEL org.opencontainers.image.description="gdal-r-python + R kitchen sink (hypertidy stack, arrow, targets, dev tooling)"
+LABEL org.opencontainers.image.documentation="https://github.com/hypertidy/gdal-r-ci#gdal-r-python-extras"
+
+# ── R kitchen sink ───────────────────────────────────────────────────────────
+# pak's cache lives under /root/.cache/R; mount it the same way uv's is
+# mounted in the parent image. Source builds for spatial + hypertidy CRAN,
+# binaries from PPM for everything else — the install script handles the
+# per-phase repo / source-vs-binary policy.
+COPY scripts/install-extras.R /opt/scripts/install-extras.R
+RUN --mount=type=cache,target=/root/.cache/R,sharing=locked \
+    Rscript /opt/scripts/install-extras.R
+
+# ── Refresh MOTD for the leaf image ──────────────────────────────────────────
+RUN { \
+        echo "── ghcr.io/hypertidy/gdal-r-python-extras ──" ; \
+        echo "GDAL $(gdal-config --version)   PROJ $(pkg-config --modversion proj)   GEOS $(geos-config --version)" ; \
+        echo "R    $(R --version 2>/dev/null | head -1 | grep -oE '[0-9]+\.[0-9]+\.[0-9]+')   (kitchen sink loaded)" ; \
+        echo "Py   $(/opt/gdal-py/bin/python -c 'import sys;print(\".\".join(map(str,sys.version_info[:3])))')" ; \
+        echo "" ; \
+        echo "Docs: https://github.com/hypertidy/gdal-r-ci#gdal-r-python-extras" ; \
+    } > /etc/gdal-r-ci-motd
+
+WORKDIR /workspace
+CMD ["bash"]
