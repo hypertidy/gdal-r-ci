@@ -152,11 +152,11 @@ Sys.setenv(PKG_SYSREQS = "false")
 #   file.path(Sys.getenv("HOME"), ".Renviron")
 # )
 
-# pak::pkg_install(
-#   paste0(c(spatial, hypertidy_cran), "?source"),
-#   ask = FALSE,
-#   upgrade = FALSE
-# )
+pak::pkg_install(
+  paste0(c(spatial, hypertidy_cran), "?source"),
+  ask = FALSE,
+  upgrade = FALSE
+)
 
 
 # ---- 4. Phase B: everything else, PPM binaries OK ----------------------------
