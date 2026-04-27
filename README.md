@@ -9,29 +9,53 @@ sf and terra, with no `--no-test-load` workarounds.
 
 ## Images
 
-Four images are published to GHCR, each in `:latest` (release) and `:dev`
-(GDAL HEAD) variants:
+Five images are published to GHCR. The first four publish `:latest` (release)
+and `:dev` (GDAL HEAD) variants; the leaf publishes `:latest` only.
 
 | Image | Contents | Use for |
 |-------|----------|---------|
-| `ghcr.io/hypertidy/gdal-system:latest` | GDAL + PROJ + GEOS + drivers | Base for custom images |
-| `ghcr.io/hypertidy/gdal-r:latest` | + R + dev tooling + tinytex | R package development |
-| `ghcr.io/hypertidy/gdal-r-full:latest` | + gdalraster, sf, terra, vapour, gdalcubes | Package CI |
-| `ghcr.io/hypertidy/gdal-python:latest` | + uv venv + rasterio, fiona, xarray, zarr... | R/Python interop |
+| `ghcr.io/hypertidy/gdal-system` | GDAL + PROJ + GEOS + drivers | Base for custom images |
+| `ghcr.io/hypertidy/gdal-r` | + R + dev tooling + tinytex | R package development |
+| `ghcr.io/hypertidy/gdal-r-full` | + gdalraster, sf, terra, vapour, gdalcubes | Package CI |
+| `ghcr.io/hypertidy/gdal-r-python` | + uv venv + rasterio, fiona, xarray, zarr, kerchunk, virtualizarr… | R/Python interop |
+| `ghcr.io/hypertidy/gdal-r-python-extras` | + R kitchen sink (hypertidy stack, arrow, targets, dev tooling) | Workbench / interactive |
 
 ```
-gdal-system  →  gdal-r  →  gdal-r-full  →  gdal-python
+gdal-system  →  gdal-r  →  gdal-r-full  →  gdal-r-python  →  gdal-r-python-extras
 ```
 
 The `:dev` variants track GDAL HEAD + latest released PROJ/GEOS, rebuilt daily —
-these are the canary. The `:latest` variants track the latest releases of all three,
-rebuilt weekly.
+these are the canary. The `:latest` variants track the latest releases of all
+three, rebuilt weekly. `gdal-r-python-extras` has no `:dev` variant by design;
+for bleeding-edge work, base on `gdal-r-python:dev` directly and overlay
+packages via a writable `R_LIBS_USER` mount at runtime.
+
+### gdal-r-python
+
+Renamed from `gdal-python` in the previous version of this repo. The image is
+R-and-Python, not Python-only — the new name reflects that. `osgeo` is exposed
+from the system Python (compiled against this image's GDAL build) via
+`--system-site-packages`, so there is no PyPI GDAL package and no version-skew
+risk between bindings. Source-built packages link the system GDAL/PROJ/GEOS:
+`rasterio`, `fiona`, `pyogrio`, `shapely`, `pyproj`, `geopandas`, `odc-geo`,
+`rioxarray`. Everything else takes wheels.
+
+### gdal-r-python-extras
+
+Adds the everyday-R kitchen sink on top of `gdal-r-python` via
+[`scripts/install-extras.R`](scripts/install-extras.R). Spatial and hypertidy
+CRAN packages are source-built; everything else takes Posit Public Package
+Manager binaries. The set is curated rather than exhaustive — anything WIP or
+rarely reached for stays out and is installed on demand into a writable overlay.
 
 ## Quick start
 
 ```bash
 # Interactive R session with latest stable GDAL
 docker run --rm -ti ghcr.io/hypertidy/gdal-r-full:latest
+
+# Full workbench (R kitchen sink + Python)
+docker run --rm -ti ghcr.io/hypertidy/gdal-r-python-extras:latest
 
 # Check version alignment
 docker run --rm ghcr.io/hypertidy/gdal-r-full:latest \
@@ -41,6 +65,12 @@ docker run --rm ghcr.io/hypertidy/gdal-r-full:latest \
 docker run --rm -v $(pwd):/pkg ghcr.io/hypertidy/gdal-r-full:latest \
     Rscript -e 'rcmdcheck::rcmdcheck("/pkg", args = "--as-cran")'
 ```
+
+All images use `CMD ["bash"]` so `docker run -ti` lands you in a shell with the
+full toolchain on `PATH`. R, Python, and CLI tools are all available
+interactively without picking a host language up front. A short banner prints
+on entry showing the GDAL/PROJ/GEOS/R/Python versions baked into that specific
+image; the banner links back to the relevant section of this README.
 
 See [docs/rcmd-check-notes.md](docs/rcmd-check-notes.md) for check args and
 per-package notes (extra deps needed for sf, terra, etc).
@@ -80,11 +110,12 @@ Failures open issues automatically in this repo.
 
 ## Package lists
 
-R packages installed in each image are explicit — no kitchen sink:
+Package contents are explicit — no kitchen sink in the CI-contractual layers.
 
 - [`config/r-packages-base.txt`](config/r-packages-base.txt) — base R dev tooling in `gdal-r`
-- [`config/r-packages-required.txt`](config/r-packages-required.txt) — required geo packages in `gdal-r-full` (build fails if these fail, for `:latest` only — see below)
+- [`config/r-packages-required.txt`](config/r-packages-required.txt) — required geo packages in `gdal-r-full` (build fails if these fail, for `:latest` only)
 - [`config/r-packages-optional.txt`](config/r-packages-optional.txt) — optional geo packages in `gdal-r-full` (failures logged, build continues)
+- [`scripts/install-extras.R`](scripts/install-extras.R) — full curated R set installed in `gdal-r-python-extras` (CRAN spatial, hypertidy stack, AAD pipelines, arrow/duckdb/targets, dev tooling)
 
 For `:dev`, failures in required packages are logged but don't fail the build —
 gdalraster failing against GDAL master is canary information worth publishing
@@ -121,13 +152,32 @@ For `:dev`, GDAL is always `master` but PROJ and GEOS use the latest releases
 (not their `main` branches). We're testing GDAL API changes, not PROJ/GEOS dev,
 and keeping PROJ/GEOS at releases ensures R packages can actually build.
 
+## Build hygiene
+
+A few patterns make rebuilds fast and image sizes manageable:
+
+- **uv with BuildKit cache mounts.** `--mount=type=cache,target=/root/.cache/uv`
+  keeps wheels out of image layers entirely. Cold builds populate the cache;
+  warm rebuilds finish in minutes.
+- **`PYTHONDONTWRITEBYTECODE=1`** plus a `__pycache__` sweep at the end of every
+  install RUN. Avoids hundreds of MB of `.pyc` accumulation across layers.
+- **Source vs binary policy is explicit.** Spatial Python packages that link
+  GDAL/PROJ/GEOS are `--no-binary`; everything else takes wheels. Spatial R
+  packages and hypertidy CRAN are installed via `pak::pkg_install("...?source")`;
+  everything else takes PPM binaries.
+- **No `--system-site-packages` numpy clash.** The venv inherits `osgeo` from
+  system Python but installs its own numpy ≥ 2 over the top.
+
 ## Ongoing maintenance
 
 The infrastructure is designed to run itself:
 
 - `build-gdal-system.yml` runs weekly for release, daily for dev
 - Each image only rebuilds if its upstream digest changed, using
-  `repository_dispatch` to cascade through `gdal-system → gdal-r → gdal-r-full → gdal-python`
+  `repository_dispatch` to cascade through
+  `gdal-system → gdal-r → gdal-r-full → gdal-r-python → gdal-r-python-extras`
+- The cascade to `gdal-r-python-extras` only fires for the release variant,
+  since extras has no `:dev` tag
 - `scheduled-canary.yml` runs fortnightly, opens issues on failure
 
 When something needs human attention:
@@ -143,6 +193,26 @@ If something looks stale, trigger `build-gdal-system.yml` manually with
 `no_cache: true, variant: both`. The `CACHE_DATE` ARG guarantees cache busting
 for the system layer; downstream GHA caches fall through automatically since
 their base image digest will have changed.
+
+### Overlaying packages at runtime
+
+`gdal-r-python-extras` is curated, not exhaustive. For packages that aren't
+baked — anything WIP, or just one-off experiments — install into a writable
+library at runtime instead of rebuilding the image:
+
+```bash
+docker run --rm -ti \
+  -v $HOME/R-overlay:/opt/r-overlay \
+  -e R_LIBS_USER=/opt/r-overlay \
+  ghcr.io/hypertidy/gdal-r-python-extras:latest
+```
+
+Inside, `pak::pkg_install("hypertidy/zaro", lib = "/opt/r-overlay")` installs to
+the bind-mounted directory, which persists across container runs. The same
+pattern works on Singularity without bind-mounts because `$HOME` is writable
+by default. Use the writable-overlay path for hypertidy WIP packages
+(`zaro`, `shearwater`, `cloudcache`, `ndr`, `gdalcheck`) where rebuild cadence
+matters more than discoverability.
 
 ## Related
 
