@@ -186,28 +186,12 @@ message("\n== Phase C: hypertidy WIP + AAD + other GitHub ==")
 # )
 remotes::install_github(c(hypertidy_dev, aad, gh_other), upgrade = FALSE)
 
-# # ---- 6. Sanity check ---------------------------------------------------------
-# message("\n== Sanity check: GDAL alignment across packages ==")
-#
-# sf_v   <- sf::sf_extSoftVersion()
-# terra_gdal <- terra::gdal()
-# gdalraster_v <- as.character(gdalraster::gdal_version()["GDAL_RELEASE_NAME"])
-#
-# cat(sprintf(
-#   "  sf::sf_extSoftVersion() ...... GDAL %s, GEOS %s, PROJ %s\n",
-#   sf_v[["GDAL"]], sf_v[["GEOS"]], sf_v[["PROJ.4"]]
-# ))
-# cat(sprintf("  terra::gdal() ................ %s\n", terra_gdal))
-# cat(sprintf("  gdalraster::gdal_version() ... %s\n", gdalraster_v))
-#
-# # Soft check — print loudly if they don't all agree on GDAL.
-# gdal_versions <- c(sf_v[["GDAL"]], terra_gdal, gdalraster_v)
-# if (length(unique(gdal_versions)) != 1L) {
-#   warning(
-#     "GDAL version mismatch across sf / terra / gdalraster:\n  ",
-#     paste(gdal_versions, collapse = " | "),
-#     call. = FALSE
-#   )
-# }
-#
-# message("\n== Done ==")
+# ---- 6. Sanity check ---------------------------------------------------------
+# Reuse the shared alignment script. With pkg.sysreqs=FALSE we trust source
+# builds picked up /usr/local; this confirms it. The shared script handles
+# version-suffix normalisation and the PROJ-via-headers nuance — see comments
+# at the top of check-r-versions.R.
+message("\n== Sanity check: GDAL alignment across packages ==")
+source("/opt/scripts/check-r-versions.R")
+
+message("\n== Done ==")
