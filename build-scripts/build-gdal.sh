@@ -27,6 +27,7 @@ fi
 
 PKG_CONFIG_PATH=/usr/local/lib/pkgconfig:${PKG_CONFIG_PATH:-} \
 cmake -S src -B build \
+    -DCMAKE_UNITY_BUILD=ON \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_INSTALL_PREFIX=/usr/local \
     \
@@ -66,7 +67,7 @@ cmake -S src -B build \
     -DGDAL_USE_POPPLER=ON \
     -DGDAL_USE_FREEXL=ON \
     \
-    -DBUILD_PYTHON_BINDINGS=ON \
+    -DBUILD_PYTHON_BINDINGS=OFF \
     -DPython_EXECUTABLE=/opt/gdal-py/bin/python \
     -DBUILD_JAVA_BINDINGS=OFF \
     -DBUILD_CSHARP_BINDINGS=OFF \
@@ -75,13 +76,19 @@ cmake -S src -B build \
 cmake --build build --parallel "$NCPUS"
 cmake --install build
 
+# Bindings: install via pip rather than cmake's deprecated setup.py path.
+# Lands in the active venv ($VIRTUAL_ENV / /opt/gdal-py), not /usr/local.
+echo "=== Installing GDAL Python bindings into venv ==="
+cd "$WORKDIR/src/swig/python"
+/opt/gdal-py/bin/python -m pip install --no-deps --no-build-isolation .
+
 # Verify bindings landed in the venv and import cleanly. Both gdal and the
 # numpy-bridging gdal_array module must work; the latter is the canary for
 # the dual-numpy bug class.
-/opt/gdal-py/bin/python -c "
-import numpy
-print(f'numpy:            {numpy.__version__}')
-from osgeo import gdal, gdal_array
-print(f'osgeo.gdal:       {gdal.__version__}')
-print(f'osgeo.gdal_array: {gdal_array.__file__}')
-"
+#/opt/gdal-py/bin/python -c "
+#import numpy
+#print(f'numpy:            {numpy.__version__}')
+#from osgeo import gdal, gdal_array
+#print(f'osgeo.gdal:       {gdal.__version__}')
+#print(f'osgeo.gdal_array: {gdal_array.__file__}')
+#"

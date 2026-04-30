@@ -22,6 +22,7 @@ else
 fi
 
 cmake -S src -B build \
+    -DCMAKE_UNITY_BUILD=ON \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_INSTALL_PREFIX=/usr/local \
     -DBUILD_SHARED_LIBS=ON \

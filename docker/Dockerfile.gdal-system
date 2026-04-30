@@ -88,7 +88,7 @@ RUN wget -qO- https://astral.sh/uv/install.sh | sh \
 RUN uv venv /opt/gdal-py --python python3
 
 # numpy 2.x in the venv. GDAL's bindings build will link against this.
-RUN uv pip install --python /opt/gdal-py/bin/python "numpy>=2"
+RUN uv pip install --python /opt/gdal-py/bin/python "numpy>=2" setuptools wheel
 
 # Make the venv the default Python for every subsequent step (and for users
 # entering the image interactively). No --system-site-packages: the venv is
