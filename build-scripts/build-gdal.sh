@@ -3,6 +3,15 @@
 #
 # Uses the same PROJ installed by build-proj.sh.
 # No PROJ_RENAME_SYMBOLS. GDAL and R packages share one libproj.
+#
+# After GDAL builds and installs, the Python bindings get rebuilt against
+# numpy 2.x. Reason: GDAL's CMake build picks up whatever numpy headers are
+# present at compile time. On Ubuntu 24.04 that's apt's python3-numpy (1.x),
+# so the resulting _gdal_array.so is hard-linked against the numpy 1.x ABI.
+# Downstream venvs install numpy 2.x (the modern stack requires it), and
+# importing osgeo.gdal_array crashes with a numpy 1.x/2.x ABI mismatch.
+# Rebuilding the bindings against numpy 2.x produces a _gdal_array.so that
+# is forward-compatible with any 2.x venv numpy.
 set -euo pipefail
 
 GDAL_VERSION=${GDAL_VERSION:-master}
@@ -72,10 +81,42 @@ cmake -S src -B build \
 cmake --build build --parallel "$NCPUS"
 cmake --install build
 
-# Verify osgeo landed correctly
+# Verify osgeo landed correctly (against system numpy 1.x at this point)
 python3 -c "from osgeo import gdal; print('osgeo.gdal:', gdal.__version__)" \
     || echo "WARNING: osgeo.gdal not importable (check PYTHONPATH)"
 
-# Verify the Python bindings landed and import correctly.
-# Non-fatal — path issues are fixed in the Dockerfile ENV, not here.
-python3 -c "from osgeo import gdal; print('osgeo.gdal:', gdal.__version__)"     || echo "WARNING: osgeo.gdal not importable yet (PYTHONPATH may need setting)"
+# ── Rebuild Python bindings against numpy 2.x ─────────────────────────────────
+# See header comment for the why. This block reuses the swig sources still
+# present in $WORKDIR/src; the trap at the top will clean them up after.
+echo ""
+echo "=== Rebuilding GDAL Python bindings against numpy 2.x ==="
+
+# Ensure pip is available; on minimal Ubuntu the apt-installed Python may
+# not include it depending on which python3-* packages were pulled.
+if ! command -v pip3 >/dev/null 2>&1; then
+    python3 -m ensurepip --upgrade --break-system-packages 2>/dev/null \
+        || apt-get update -qq && apt-get install -y --no-install-recommends python3-pip
+fi
+
+# Install numpy 2.x for the system Python. --break-system-packages bypasses
+# Ubuntu 24.04's PEP 668 externally-managed marker. Safe here because this
+# IS the system Python and we want this upgrade.
+pip3 install --break-system-packages --quiet --upgrade "numpy>=2"
+
+# Rebuild and reinstall the bindings. Sources live under $WORKDIR/src/swig/python.
+cd "$WORKDIR/src/swig/python"
+
+# The bindings setup.py reads gdal-config to discover include paths and
+# library locations — both already point at /usr/local from the cmake install.
+pip3 install --break-system-packages --quiet --force-reinstall --no-deps .
+
+# Sanity check: gdal_array (the numpy-bridging module) imports cleanly.
+# This is the exact import that fails on dual-numpy systems.
+python3 -c "
+import numpy
+print(f'numpy: {numpy.__version__}')
+from osgeo import gdal, gdal_array
+print(f'osgeo.gdal:       {gdal.__version__}')
+print(f'osgeo.gdal_array: {gdal_array.__file__}')
+print('Bindings rebuilt against numpy 2.x — gdal_array imports cleanly.')
+"
