@@ -47,6 +47,8 @@ RUN apt-get update -qq && apt-get install -y --no-install-recommends \
     libopenjp2-7-dev libdeflate-dev liblzma-dev \
     libblosc-dev libzstd-dev liblz4-dev liblerc-dev \
     libxml2-dev libexpat1-dev \
+    # spatialite build deps
+    libminizip-dev librttopo-dev \
     # GDAL — HDF / NetCDF / scientific formats
     libhdf4-alt-dev libhdf5-dev \
     libnetcdf-dev netcdf-bin \
@@ -104,18 +106,24 @@ RUN bash /build-scripts/build-geos.sh && ldconfig
 COPY build-scripts/build-proj.sh /build-scripts/build-proj.sh
 RUN bash /build-scripts/build-proj.sh && ldconfig
 
-# ── 6. KEA ───────────────────────────────────────────────────────────────────
+# ── 6. Spatialite ─────────────────────────────────────────────────────────────
+# Built against /usr/local GEOS/PROJ. Apt's libspatialite-dev is removed by
+# the script — it linked Ubuntu's libgeos and would conflict at the header level.
+COPY build-scripts/build-spatialite.sh /build-scripts/build-spatialite.sh
+RUN bash /build-scripts/build-spatialite.sh && ldconfig
+
+# ── 7. KEA ───────────────────────────────────────────────────────────────────
 COPY build-scripts/build-kea.sh /build-scripts/build-kea.sh
 RUN bash /build-scripts/build-kea.sh && ldconfig
 
-# ── 7. GDAL ───────────────────────────────────────────────────────────────────
+# ── 8. GDAL ───────────────────────────────────────────────────────────────────
 # Bindings build uses /opt/gdal-py/bin/python — see build-gdal.sh.
 COPY build-scripts/build-gdal.sh /build-scripts/build-gdal.sh
 ARG GDAL_VERSION
 ARG GDAL_REPOSITORY
 RUN bash /build-scripts/build-gdal.sh && ldconfig
 
-# ── 8. Verify ─────────────────────────────────────────────────────────────────
+# ── 9. Verify ─────────────────────────────────────────────────────────────────
 RUN echo "=== Library versions ===" \
     && gdal-config --version \
     && echo "PROJ: $(pkg-config --modversion proj)" \

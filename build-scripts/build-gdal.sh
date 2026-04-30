@@ -38,6 +38,8 @@ cmake -S src -B build \
     -DGDAL_USE_PARQUET=ON \
     -DGDAL_USE_ARROWDATASET=ON \
     \
+    -DGDAL_USE_SPATIALITE=ON \
+    \
     -DGDAL_USE_HDF5=ON \
     -DGDAL_USE_HDF4=ON \
     -DGDAL_USE_NETCDF=ON \

@@ -5,7 +5,10 @@ CI infrastructure for R (and Python) geospatial packages against bleeding-edge G
 GDAL, PROJ, and GEOS are built from source on plain `ubuntu:24.04` with standard
 symbols — no internal PROJ, no dual-library setup. This means full `R CMD check`
 including `--as-cran` and PDF manual rendering works for all packages including
-sf and terra, with no `--no-test-load` workarounds.
+sf and terra, with no `--no-test-load` workarounds. The same chain produces a
+single working environment for R-and-Python interop where reticulate, rasterio,
+sf, terra, gdalraster, vapour, and the osgeo Python bindings all link the same
+GDAL, the same PROJ, the same GEOS, and the same numpy ABI.
 
 ## Images
 
@@ -14,10 +17,10 @@ and `:dev` (GDAL HEAD) variants; the leaf publishes `:latest` only.
 
 | Image | Contents | Use for |
 |-------|----------|---------|
-| `ghcr.io/hypertidy/gdal-system` | GDAL + PROJ + GEOS + drivers | Base for custom images |
+| `ghcr.io/hypertidy/gdal-system` | GDAL + PROJ + GEOS + drivers + uv venv with numpy 2.x | Base for custom images |
 | `ghcr.io/hypertidy/gdal-r` | + R + dev tooling + tinytex | R package development |
 | `ghcr.io/hypertidy/gdal-r-full` | + gdalraster, sf, terra, vapour, gdalcubes | Package CI |
-| `ghcr.io/hypertidy/gdal-r-python` | + uv venv + rasterio, fiona, xarray, zarr, kerchunk, virtualizarr… | R/Python interop |
+| `ghcr.io/hypertidy/gdal-r-python` | + rasterio, fiona, xarray, zarr, kerchunk, virtualizarr… | R/Python interop |
 | `ghcr.io/hypertidy/gdal-r-python-extras` | + R kitchen sink (hypertidy stack, arrow, targets, dev tooling) | Workbench / interactive |
 
 ```
@@ -30,15 +33,26 @@ three, rebuilt weekly. `gdal-r-python-extras` has no `:dev` variant by design;
 for bleeding-edge work, base on `gdal-r-python:dev` directly and overlay
 packages via a writable `R_LIBS_USER` mount at runtime.
 
+### gdal-system
+
+The base layer. Builds GEOS, PROJ, and GDAL from source against a single
+`/usr/local`. Also creates the uv-managed Python venv at `/opt/gdal-py` with
+numpy 2.x, *before* GDAL builds — so GDAL's Python bindings link against the
+venv's numpy ABI from the start. This means every downstream layer inherits a
+single, internally-consistent numpy 2.x environment with the osgeo bindings
+correctly bound. The venv lives at every subsequent layer; downstream layers
+just install packages into it.
+
 ### gdal-r-python
 
-Renamed from `gdal-python` in the previous version of this repo. The image is
-R-and-Python, not Python-only — the new name reflects that. `osgeo` is exposed
-from the system Python (compiled against this image's GDAL build) via
-`--system-site-packages`, so there is no PyPI GDAL package and no version-skew
-risk between bindings. Source-built packages link the system GDAL/PROJ/GEOS:
+R-and-Python, not Python-only — the new name reflects that (renamed from
+`gdal-python`). The venv inherited from `gdal-system` already contains numpy
+and the osgeo bindings. This layer adds Python geospatial packages on top:
+source-built and linking the system GDAL/PROJ/GEOS:
 `rasterio`, `fiona`, `pyogrio`, `shapely`, `pyproj`, `geopandas`, `odc-geo`,
-`rioxarray`. Everything else takes wheels.
+`rioxarray`. Everything else takes wheels. reticulate is installed and pinned
+to `/opt/gdal-py/bin/python` via `RETICULATE_PYTHON`; `py_require()` calls
+augment the existing venv rather than spawning ephemeral environments.
 
 ### gdal-r-python-extras
 
@@ -53,6 +67,9 @@ rarely reached for stays out and is installed on demand into a writable overlay.
 ```bash
 # Interactive R session with latest stable GDAL
 docker run --rm -ti ghcr.io/hypertidy/gdal-r-full:latest
+
+# Interactive R + Python (reticulate works out of the box)
+docker run --rm -ti ghcr.io/hypertidy/gdal-r-python:latest
 
 # Full workbench (R kitchen sink + Python)
 docker run --rm -ti ghcr.io/hypertidy/gdal-r-python-extras:latest
@@ -141,6 +158,24 @@ keeps the entire stack at one consistent version.
 
 See [docs/library-alignment.md](docs/library-alignment.md) for full details.
 
+## One library, one ABI
+
+Three classes of duplicate-library bug have surfaced and been closed in this
+chain. They have different specifics but share a structure:
+
+| Bug | Cause | Fix |
+|-----|-------|-----|
+| Dual PROJ | osgeo/gdal images embed PROJ with renamed symbols | Single `/usr/local` PROJ; build GDAL against it |
+| Dual GDAL | pak's `pkg_install()` resolves R packages' GDAL sysreq via apt | `options(pkg.sysreqs = FALSE)` — apt is forbidden, /usr/local satisfies |
+| Dual numpy | apt's python3-numpy is 1.x; venv installs 2.x; osgeo bindings linked against 1.x | Venv created in gdal-system; numpy 2.x installed *before* GDAL bindings build |
+
+Each had the same structural shape: two libraries claiming to be the same
+library, in one process, with code linked against either one randomly.
+The solution is always the same in shape — pick one source of truth, rebuild
+everything against it, eliminate the alternatives. Whether it's `/usr/local`
+for system libs, `pkg.sysreqs=FALSE` for pak, or the up-front venv for numpy,
+the principle is identity-not-shadowing.
+
 ## GEOS version capping
 
 The release build caps GEOS to a version known to work with the resolved GDAL
@@ -156,17 +191,48 @@ and keeping PROJ/GEOS at releases ensures R packages can actually build.
 
 A few patterns make rebuilds fast and image sizes manageable:
 
+- **Single-numpy-ABI from layer 1.** The Python venv at `/opt/gdal-py` is
+  created in `gdal-system` with numpy 2.x installed *before* GDAL builds. GDAL's
+  Python bindings link against this numpy from the start. Every downstream layer
+  inherits the same venv; no `--system-site-packages`, no post-hoc rebuilds, no
+  ABI ambiguity.
 - **uv with BuildKit cache mounts.** `--mount=type=cache,target=/root/.cache/uv`
   keeps wheels out of image layers entirely. Cold builds populate the cache;
-  warm rebuilds finish in minutes.
+  warm rebuilds finish in minutes. uv is the only pip-shaped tool in the chain
+  — no apt python3-pip, no `--break-system-packages` shenanigans.
 - **`PYTHONDONTWRITEBYTECODE=1`** plus a `__pycache__` sweep at the end of every
   install RUN. Avoids hundreds of MB of `.pyc` accumulation across layers.
 - **Source vs binary policy is explicit.** Spatial Python packages that link
   GDAL/PROJ/GEOS are `--no-binary`; everything else takes wheels. Spatial R
-  packages and hypertidy CRAN are installed via `pak::pkg_install("...?source")`;
-  everything else takes PPM binaries.
-- **No `--system-site-packages` numpy clash.** The venv inherits `osgeo` from
-  system Python but installs its own numpy ≥ 2 over the top.
+  packages and hypertidy CRAN are installed via `pak::pkg_install("...?source")`
+  with `pkg.sysreqs = FALSE`; everything else takes PPM binaries.
+- **CMake unity build** for GDAL halves compile time on the cmake step.
+
+## Local development
+
+For iterating on Dockerfile or build-script changes without burning CI minutes,
+[`test/local-test.sh`](test/local-test.sh) builds `gdal-system` locally and runs
+sanity checks on the result. Cache-friendly: subsequent runs reuse layers up to
+the first changed line. On a 32-core machine the first build is around 15
+minutes; warm rebuilds for changes near the bottom of the Dockerfile are
+seconds.
+
+```bash
+bash test/local-test.sh                  # release variant
+bash test/local-test.sh dev              # dev variant
+NCPUS=16 bash test/local-test.sh         # cap parallelism
+```
+
+To debug a failing build interactively, comment out the failing RUN step
+temporarily, build to that point, then drop in:
+
+```bash
+docker run -ti --rm -v $(pwd)/build-scripts:/build-scripts \
+    gdal-system:local bash
+```
+
+The `-v` mount lets you edit the build scripts on the host while iterating
+inside the container.
 
 ## Ongoing maintenance
 
@@ -182,10 +248,25 @@ The infrastructure is designed to run itself:
 
 When something needs human attention:
 
-- **`:dev` fails, `:latest` passes** — upstream GDAL API change. File issue against the package (e.g. terra's `gdal_algs.cpp` on `CSLConstList` type changes).
-- **`:latest` fails** — regression in a released GDAL. Rare and urgent. Check the canary logs to identify whether it's a package, GDAL, or our build infrastructure.
-- **Both fail** — probably our infrastructure. Check the build logs for the system layer, run `no_cache: true` rebuild if needed.
-- **Version alignment warning** — should never happen on `:latest` (build-time check is strict). On `:dev` it's logged and expected during upstream transitions.
+- **`:dev` fails, `:latest` passes** — upstream GDAL API change. File issue
+  against the package (e.g. terra's `gdal_algs.cpp` on `CSLConstList` type
+  changes; gdalcubes's parallel signature changes).
+- **`:latest` fails** — regression in a released GDAL. Rare and urgent. Check
+  the canary logs to identify whether it's a package, GDAL, or our build
+  infrastructure.
+- **Both fail** — probably our infrastructure. Check the build logs for the
+  system layer, run `no_cache: true` rebuild if needed.
+- **Version alignment warning** — should never happen on `:latest` (build-time
+  check is strict). On `:dev` it's logged and expected during upstream
+  transitions. Note: GDAL on `:dev` may report a version label like `3.13.0dev`
+  via `gdal-config` and `3.13.0beta2` via `GDALVersionInfo` — the alignment
+  script normalises both to `3.13.0` so cosmetic suffix differences don't
+  trigger false alarms.
+- **Suggests-related test or example failures** in canary results that don't
+  match a GDAL story — these are real bugs in the canaried packages, surfaced
+  by the deliberately-Suggests-minimal canary environment. File upstream.
+  The canary's narrowness is itself a feature; see
+  [`docs/r-cmd-check-suggests-and-ordering.md`](docs/r-cmd-check-suggests-and-ordering.md).
 
 ### Forcing a full rebuild
 
@@ -213,6 +294,11 @@ pattern works on Singularity without bind-mounts because `$HOME` is writable
 by default. Use the writable-overlay path for hypertidy WIP packages
 (`zaro`, `shearwater`, `cloudcache`, `ndr`, `gdalcheck`) where rebuild cadence
 matters more than discoverability.
+
+For Python packages, `uv pip install --python /opt/gdal-py/bin/python <pkg>`
+adds to the inherited venv. Inside R, `reticulate::py_require("<pkg>")` does
+the same via reticulate's bridge — `RETICULATE_PYTHON` is pinned so additions
+land in `/opt/gdal-py`, not in an ephemeral venv.
 
 ## Related
 

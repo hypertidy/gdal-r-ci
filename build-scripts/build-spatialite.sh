@@ -6,6 +6,8 @@
 set -euo pipefail
 
 SPATIALITE_VERSION=${SPATIALITE_VERSION:-5.1.0}
+SPATIALITE_URL=${SPATIALITE_URL:-"https://www.gaia-gis.it/gaia-sins/libspatialite-sources/libspatialite-${SPATIALITE_VERSION}.tar.gz"}
+
 NCPUS=${NCPUS:-0}
 [ "$NCPUS" = "0" ] && NCPUS=$(nproc)
 
@@ -34,8 +36,9 @@ WORKDIR=$(mktemp -d)
 trap 'rm -rf "$WORKDIR"' EXIT
 cd "$WORKDIR"
 
-wget -q "https://www.gaia-gis.it/gaia-sins/libspatialite-${SPATIALITE_VERSION}.tar.gz" \
-    -O spatialite.tar.gz
+echo "Downloading spatialite from ${SPATIALITE_URL}"
+wget -q "${SPATIALITE_URL}" -O spatialite.tar.gz \
+    || { echo "ERROR: spatialite download failed from ${SPATIALITE_URL}"; exit 1; }
 mkdir src && tar xf spatialite.tar.gz -C src --strip-components=1
 cd src
 
