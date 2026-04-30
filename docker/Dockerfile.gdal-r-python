@@ -34,13 +34,13 @@ ENV PYTHONDONTWRITEBYTECODE=1
 
 # Sanity: the inherited venv works and osgeo/numpy are aligned. Cheap check
 # that catches a broken inheritance chain immediately.
-RUN /opt/gdal-py/bin/python -c "
+RUN <<'EOF' /opt/gdal-py/bin/python
 import numpy
 from osgeo import gdal, gdal_array
 print(f'numpy:      {numpy.__version__}')
-print(f'osgeo.gdal: {gdal.__version__}')
+print(f'gdal:       {gdal.__version__}')
 print(f'gdal_array: {gdal_array.__file__}')
-"
+EOF
 
 # ── Source-built: link system GDAL/PROJ/GEOS ──────────────────────────────────
 RUN --mount=type=cache,target=/root/.cache/uv,sharing=locked \
