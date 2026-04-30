@@ -18,6 +18,7 @@ FROM ubuntu:24.04
 
 LABEL org.opencontainers.image.source="https://github.com/hypertidy/gdal-r-ci"
 LABEL org.opencontainers.image.description="GDAL/PROJ/GEOS built from source, no internal PROJ"
+LABEL org.opencontainers.image.documentation="https://github.com/hypertidy/gdal-r-ci#gdal-system"
 
 ARG GDAL_VERSION=master
 ARG GDAL_REPOSITORY=OSGeo/gdal
@@ -123,4 +124,15 @@ RUN echo "=== Library versions ===" \
 
 RUN strip --strip-unneeded /usr/local/lib/lib*.so* 2>/dev/null || true
 
+# ── MOTD: prints on interactive bash entry, baked at build so versions are exact
+RUN { \
+        echo "── ghcr.io/hypertidy/gdal-system ──" ; \
+        echo "GDAL $(gdal-config --version)   PROJ $(pkg-config --modversion proj)   GEOS $(geos-config --version)" ; \
+        echo "" ; \
+        echo "Docs: https://github.com/hypertidy/gdal-r-ci#gdal-system" ; \
+    } > /etc/gdal-r-ci-motd \
+ && echo '[ -t 0 ] && [ -f /etc/gdal-r-ci-motd ] && cat /etc/gdal-r-ci-motd' \
+        >> /etc/bash.bashrc
+
 WORKDIR /workspace
+CMD ["bash"]

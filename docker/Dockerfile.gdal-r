@@ -10,6 +10,7 @@ FROM ${BASE_IMAGE}
 
 LABEL org.opencontainers.image.source="https://github.com/hypertidy/gdal-r-ci"
 LABEL org.opencontainers.image.description="R + dev tooling on clean GDAL/PROJ/GEOS base"
+LABEL org.opencontainers.image.documentation="https://github.com/hypertidy/gdal-r-ci#gdal-r"
 
 ENV LANG=en_US.UTF-8
 ENV LC_ALL=en_US.UTF-8
@@ -77,6 +78,15 @@ RUN Rscript -e "cat('R', R.version\$major, R.version\$minor, '\n')" \
     && echo "GEOS: $(geos-config --version)"
 
 RUN strip --strip-debug /usr/local/lib/R/site-library/*/libs/*.so 2>/dev/null || true
+
+# ── MOTD: refreshed for this image (no Python yet — added in gdal-r-python)
+RUN { \
+        echo "── ghcr.io/hypertidy/gdal-r ──" ; \
+        echo "GDAL $(gdal-config --version)   PROJ $(pkg-config --modversion proj)   GEOS $(geos-config --version)" ; \
+        echo "R    $(R --version 2>/dev/null | head -1 | grep -oE '[0-9]+\.[0-9]+\.[0-9]+')" ; \
+        echo "" ; \
+        echo "Docs: https://github.com/hypertidy/gdal-r-ci#gdal-r" ; \
+    } > /etc/gdal-r-ci-motd
 
 WORKDIR /workspace
 CMD ["bash"]

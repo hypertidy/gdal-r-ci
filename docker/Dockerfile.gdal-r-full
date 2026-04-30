@@ -16,6 +16,7 @@ ARG IMAGE_VARIANT=release
 
 LABEL org.opencontainers.image.source="https://github.com/hypertidy/gdal-r-ci"
 LABEL org.opencontainers.image.description="Core GDAL R packages: gdalraster, sf, terra, vapour, gdalcubes"
+LABEL org.opencontainers.image.documentation="https://github.com/hypertidy/gdal-r-ci#gdal-r-full"
 
 COPY scripts/check-r-versions.R    /opt/scripts/check-r-versions.R
 COPY scripts/install-required.R    /opt/scripts/install-required.R
@@ -49,5 +50,14 @@ RUN if [ "${IMAGE_VARIANT}" = "release" ]; then \
     fi
 
 RUN strip --strip-debug /usr/local/lib/R/site-library/*/libs/*.so 2>/dev/null || true
+
+# ── MOTD: refreshed for this image (no Python yet — added in gdal-r-python)
+RUN { \
+        echo "── ghcr.io/hypertidy/gdal-r-full ──" ; \
+        echo "GDAL $(gdal-config --version)   PROJ $(pkg-config --modversion proj)   GEOS $(geos-config --version)" ; \
+        echo "R    $(R --version 2>/dev/null | head -1 | grep -oE '[0-9]+\.[0-9]+\.[0-9]+')   (sf, terra, gdalraster, vapour, gdalcubes)" ; \
+        echo "" ; \
+        echo "Docs: https://github.com/hypertidy/gdal-r-ci#gdal-r-full" ; \
+    } > /etc/gdal-r-ci-motd
 
 CMD ["bash"]
