@@ -29,7 +29,6 @@ fi
 # Build deps not already in /usr/local
 apt-get install -y --no-install-recommends \
     libminizip-dev \
-    librttopo-dev \
     libxml2-dev
 
 WORKDIR=$(mktemp -d)

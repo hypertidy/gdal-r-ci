@@ -47,8 +47,8 @@ RUN apt-get update -qq && apt-get install -y --no-install-recommends \
     libopenjp2-7-dev libdeflate-dev liblzma-dev \
     libblosc-dev libzstd-dev liblz4-dev liblerc-dev \
     libxml2-dev libexpat1-dev \
-    # spatialite build deps
-    libminizip-dev librttopo-dev \
+    # spatialite build deps but no librttopo because that installs geos
+    libminizip-dev \
     # GDAL — HDF / NetCDF / scientific formats
     libhdf4-alt-dev libhdf5-dev \
     libnetcdf-dev netcdf-bin \
