@@ -3,10 +3,20 @@
 # Runs fortnightly (1st and 15th) and on workflow_dispatch.
 # Uses pre-built images so no compilation of GDAL itself — just the R packages.
 #
-# Matrix: {gdalraster, sf, terra, vapour, gdalcubes} × {latest, dev}
+# Matrix: {gdalraster, sf, terra, vapour, gdalcubes}
+#       × {cran, github}
+#       × {latest, dev}
 #
-# Failure in :dev but not :latest → upstream GDAL API change, file issue.
-# Failure in :latest → something broke in a stable release, urgent.
+# Source axis tells different stories per cell:
+#   cran    — what users actually have installed
+#   github  — what maintainers are pushing toward
+# Diverging results across the source axis indicate the package's CRAN release
+# is out of step with its development repo (e.g. CRAN has fixes not yet pushed,
+# or HEAD has fixes not yet released).
+#
+# Variant axis tells:
+#   latest  — released GDAL — failure here is urgent
+#   dev     — GDAL master — failure here is canary, file upstream
 #
 # Full R CMD check runs for all packages — no --no-test-load, no skipping.
 # This is only possible because we have a single PROJ with standard symbols.
@@ -23,6 +33,12 @@ on:
         required: false
         default: 'all'
         type: string
+      sources:
+        description: 'Sources to test'
+        required: false
+        default: 'both'
+        type: choice
+        options: [both, cran, github]
       gdal-variants:
         description: 'Image variants to test against'
         required: false
@@ -42,6 +58,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       packages: ${{ steps.set.outputs.packages }}
+      sources:  ${{ steps.set.outputs.sources }}
       variants: ${{ steps.set.outputs.variants }}
     steps:
       - id: set
@@ -54,6 +71,15 @@ jobs:
           fi
           echo "packages=$(echo "$PKGS" | tr ',' '\n' | jq -R . | jq -sc .)" >> "$GITHUB_OUTPUT"
 
+          SSEL="${{ inputs.sources }}"
+          if [ "$SSEL" = "cran" ]; then
+            echo 'sources=["cran"]' >> "$GITHUB_OUTPUT"
+          elif [ "$SSEL" = "github" ]; then
+            echo 'sources=["github"]' >> "$GITHUB_OUTPUT"
+          else
+            echo 'sources=["cran","github"]' >> "$GITHUB_OUTPUT"
+          fi
+
           VSEL="${{ inputs.gdal-variants }}"
           if [ "$VSEL" = "latest" ]; then
             echo 'variants=["latest"]' >> "$GITHUB_OUTPUT"
@@ -64,7 +90,7 @@ jobs:
           fi
 
   check:
-    name: ${{ matrix.package }} / gdal-r-full:${{ matrix.gdal-variant }}
+    name: ${{ matrix.package }} (${{ matrix.source }}) / gdal-r-full:${{ matrix.gdal-variant }}
     needs: setup
     runs-on: ubuntu-latest
     timeout-minutes: 60
@@ -75,34 +101,49 @@ jobs:
       fail-fast: false
       matrix:
         package: ${{ fromJson(needs.setup.outputs.packages) }}
+        source:  ${{ fromJson(needs.setup.outputs.sources) }}
         gdal-variant: ${{ fromJson(needs.setup.outputs.variants) }}
 
     steps:
       - name: Print environment
         run: |
-          echo "=== ${{ matrix.package }} against gdal-r-full:${{ matrix.gdal-variant }} ==="
+          echo "=== ${{ matrix.package }} (${{ matrix.source }}) against gdal-r-full:${{ matrix.gdal-variant }} ==="
           gdal-config --version
           echo "PROJ: $(pkg-config --modversion proj)"
           echo "GEOS: $(geos-config --version)"
           R --version | head -1
 
-      - name: Clone package
+      - name: Fetch package
         run: |
-          case "${{ matrix.package }}" in
-            gdalraster) git clone --depth 1 https://github.com/firelab/gdalraster.git pkg ;;
-            sf)         git clone --depth 1 https://github.com/r-spatial/sf.git pkg ;;
-            terra)      git clone --depth 1 https://github.com/rspatial/terra.git pkg ;;
-            vapour)     git clone --depth 1 https://github.com/hypertidy/vapour.git pkg ;;
-            gdalcubes)
-              git clone --depth 1 https://github.com/appelmar/gdalcubes.git pkg-full
-              # gdalcubes R package lives in R-package/ subdirectory
-              if [ -d pkg-full/R-package ]; then
-                mv pkg-full/R-package pkg; rm -rf pkg-full
-              else
-                mv pkg-full pkg
-              fi
+          mkdir -p pkg
+          case "${{ matrix.source }}--${{ matrix.package }}" in
+            cran--gdalraster|cran--sf|cran--terra|cran--vapour|cran--gdalcubes)
+              # CRAN source tarball — already in correct shape
+              Rscript -e "
+                pkg <- '${{ matrix.package }}'
+                td  <- 'pkg'
+                download.packages(pkg, destdir = td, type = 'source', repos = 'https://cloud.r-project.org')
+              "
+              # Move the downloaded tarball to a known name; build later
+              mv pkg/*.tar.gz pkg/source.tar.gz
+              # Extract for build step
+              tar -xzf pkg/source.tar.gz -C pkg --strip-components=1
+              rm pkg/source.tar.gz
               ;;
-            *) echo "Unknown package: ${{ matrix.package }}"; exit 1 ;;
+            github--gdalraster) git clone --depth 1 https://github.com/firelab/gdalraster.git pkg-clone && mv pkg-clone/* pkg-clone/.git pkg/ && rmdir pkg-clone ;;
+            github--sf)         git clone --depth 1 https://github.com/r-spatial/sf.git pkg-clone     && mv pkg-clone/* pkg-clone/.git pkg/ && rmdir pkg-clone ;;
+            github--terra)      git clone --depth 1 https://github.com/rspatial/terra.git pkg-clone   && mv pkg-clone/* pkg-clone/.git pkg/ && rmdir pkg-clone ;;
+            github--vapour)     git clone --depth 1 https://github.com/hypertidy/vapour.git pkg-clone && mv pkg-clone/* pkg-clone/.git pkg/ && rmdir pkg-clone ;;
+            github--gdalcubes)
+              git clone --depth 1 https://github.com/appelmar/gdalcubes.git pkg-full
+              if [ -d pkg-full/R-package ]; then
+                mv pkg-full/R-package/* pkg-full/R-package/.* pkg/ 2>/dev/null || true
+              else
+                mv pkg-full/* pkg-full/.* pkg/ 2>/dev/null || true
+              fi
+              rm -rf pkg-full
+              ;;
+            *) echo "Unknown combination: ${{ matrix.source }}--${{ matrix.package }}"; exit 1 ;;
           esac
 
       - name: Install R dependencies
@@ -142,7 +183,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.package }}-${{ matrix.gdal-variant }}-${{ github.run_id }}
+          name: ${{ matrix.package }}-${{ matrix.source }}-${{ matrix.gdal-variant }}-${{ github.run_id }}
           path: pkg/*.Rcheck
           retention-days: 30
 
@@ -157,13 +198,7 @@ jobs:
           {
             echo "## Canary check — $(date -u '+%Y-%m-%d')"
             echo ""
-            echo "| Package | :latest | :dev |"
-            echo "|---------|---------|------|"
-            echo "| gdalraster | — | — |"
-            echo "| sf         | — | — |"
-            echo "| terra      | — | — |"
-            echo "| vapour     | — | — |"
-            echo "| gdalcubes  | — | — |"
+            echo "Cells: package × source × GDAL variant — see job results above for per-cell pass/fail."
             echo ""
             echo "Overall: ${{ needs.check.result }}"
           } >> "$GITHUB_STEP_SUMMARY"
@@ -179,12 +214,16 @@ jobs:
               repo:  context.repo.repo,
               title: `Canary check failed — ${date}`,
               body: [
-                'The scheduled canary check detected failures.',
+                'The scheduled canary check detected failures across the package × source × GDAL-variant matrix.',
                 '',
                 `Workflow run: ${process.env.GITHUB_SERVER_URL}/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID}`,
                 '',
-                'Check individual job logs to determine whether the failure is in `:latest` or `:dev` only.',
-                'A `:dev`-only failure typically means an upstream GDAL API change that has not yet reached a release.',
+                'Diagnostic patterns:',
+                '- Same cell red on both sources → bug exists in CRAN release and GitHub HEAD (real bug).',
+                '- Red on github only, green on cran → GitHub HEAD has a regression CRAN doesn\'t (or HEAD is stale relative to CRAN).',
+                '- Red on cran only, green on github → CRAN release lags behind a fix already on GitHub.',
+                '- Red on :dev only → upstream GDAL API change. File issue against the package, not us.',
+                '- Red on :latest → released-GDAL regression. Urgent.',
               ].join('\n'),
               labels: ['canary', 'automated'],
             });
