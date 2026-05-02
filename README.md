@@ -10,6 +10,8 @@ single working environment for R-and-Python interop where reticulate, rasterio,
 sf, terra, gdalraster, vapour, and the osgeo Python bindings all link the same
 GDAL, the same PROJ, the same GEOS, and the same numpy ABI.
 
+See a short demonstration of use of the `gdal-r-python` image here: https://gist.github.com/mdsumner/1b38b300f7dc6e0a8cdfa3cd8fbc84ce
+
 ## Images
 
 Five images are published to GHCR. The first four publish `:latest` (release)
