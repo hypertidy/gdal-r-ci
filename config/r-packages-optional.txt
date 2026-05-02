@@ -5,7 +5,7 @@
 
 # GitHub HEAD for all — we want to catch compile failures against latest GDAL
 # before they hit CRAN users
-sf
-terra
-vapour
-gdalcubes
+r-spatial/sf
+rspatial/terra
+hypertidy/vapour
+appelmar/gdalcubes
