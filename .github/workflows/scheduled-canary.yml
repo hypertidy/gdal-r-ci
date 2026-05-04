@@ -214,8 +214,12 @@ jobs:
           echo "=== pkg/ contents ==="
           ls -la
           echo ""
-          for f in *.Rcheck/00check.log *.Rcheck/00install.out; do
-            [ -f "$f" ] && echo "=== $f ===" && cat "$f"
+          echo "=== Rcheck/ contents ==="
+          find *.Rcheck -type f | head -50
+          echo ""
+          echo "=== Key log files ==="
+          for f in *.Rcheck/00check.log *.Rcheck/00install.out *.Rcheck/00build.out *.Rcheck/tests/*.Rout *.Rcheck/tests/*.Rout.fail; do
+            [ -f "$f" ] && echo "" && echo "=== $f ===" && cat "$f"
           done
 
       - name: Upload results
@@ -223,8 +227,8 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.package }}-${{ matrix.source }}-${{ matrix.gdal-variant }}-${{ github.run_id }}
-          path: pkg/*.Rcheck
-          retention-days: 30
+          path: pkg
+          retention-days: 90
 
   summary:
     name: Summary
