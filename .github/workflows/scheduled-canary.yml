@@ -14,7 +14,7 @@
 # is out of step with its development repo (e.g. CRAN has fixes not yet pushed,
 # or HEAD has fixes not yet released).
 #
-# Variant axis tells:
+# Variant axis:
 #   latest  — released GDAL — failure here is urgent
 #   dev     — GDAL master — failure here is canary, file upstream
 #
@@ -113,38 +113,74 @@ jobs:
           echo "GEOS: $(geos-config --version)"
           R --version | head -1
 
-      - name: Fetch package
+      - name: Fetch package source
+        id: fetch
         run: |
-          mkdir -p pkg
-          case "${{ matrix.source }}--${{ matrix.package }}" in
-            cran--gdalraster|cran--sf|cran--terra|cran--vapour|cran--gdalcubes)
-              # CRAN source tarball — already in correct shape
-              Rscript -e "
-                pkg <- '${{ matrix.package }}'
-                td  <- 'pkg'
-                download.packages(pkg, destdir = td, type = 'source', repos = 'https://cloud.r-project.org')
-              "
-              # Move the downloaded tarball to a known name; build later
-              mv pkg/*.tar.gz pkg/source.tar.gz
-              # Extract for build step
-              tar -xzf pkg/source.tar.gz -C pkg --strip-components=1
-              rm pkg/source.tar.gz
-              ;;
-            github--gdalraster) git clone --depth 1 https://github.com/firelab/gdalraster.git pkg-clone && mv pkg-clone/* pkg-clone/.git pkg/ && rmdir pkg-clone ;;
-            github--sf)         git clone --depth 1 https://github.com/r-spatial/sf.git pkg-clone     && mv pkg-clone/* pkg-clone/.git pkg/ && rmdir pkg-clone ;;
-            github--terra)      git clone --depth 1 https://github.com/rspatial/terra.git pkg-clone   && mv pkg-clone/* pkg-clone/.git pkg/ && rmdir pkg-clone ;;
-            github--vapour)     git clone --depth 1 https://github.com/hypertidy/vapour.git pkg-clone && mv pkg-clone/* pkg-clone/.git pkg/ && rmdir pkg-clone ;;
-            github--gdalcubes)
-              git clone --depth 1 https://github.com/appelmar/gdalcubes.git pkg-full
-              if [ -d pkg-full/R-package ]; then
-                mv pkg-full/R-package/* pkg-full/R-package/.* pkg/ 2>/dev/null || true
+          set -e
+          # Three steps in this fetch:
+          #   1. Get sources somewhere on disk.
+          #   2. Move/copy to ./pkg/ — that's where downstream steps look.
+          #   3. Verify pkg/DESCRIPTION exists; fail loudly if not.
+          # No fancy directory shuffling — clone or extract directly.
+
+          PKG="${{ matrix.package }}"
+          SRC="${{ matrix.source }}"
+
+          if [ "$SRC" = "cran" ]; then
+            # Download CRAN source tarball into a fresh directory.
+            mkdir -p _dl
+            Rscript -e "
+              download.packages('$PKG', destdir = '_dl',
+                                type = 'source',
+                                repos = 'https://cloud.r-project.org')
+            "
+            tarball=$(ls _dl/*.tar.gz | head -1)
+            [ -n "$tarball" ] || { echo "No tarball downloaded"; exit 1; }
+            tar -xzf "$tarball" -C _dl
+            # The tarball extracts to <pkg>-<version>/ ; locate it and rename.
+            extracted_dir=$(find _dl -maxdepth 1 -type d -name "$PKG*" | head -1)
+            [ -d "$extracted_dir" ] || { echo "Could not find extracted directory"; ls -la _dl; exit 1; }
+            mv "$extracted_dir" pkg
+            rm -rf _dl
+
+          elif [ "$SRC" = "github" ]; then
+            case "$PKG" in
+              gdalraster) repo="https://github.com/firelab/gdalraster.git" ;;
+              sf)         repo="https://github.com/r-spatial/sf.git" ;;
+              terra)      repo="https://github.com/rspatial/terra.git" ;;
+              vapour)     repo="https://github.com/hypertidy/vapour.git" ;;
+              gdalcubes)  repo="https://github.com/appelmar/gdalcubes.git" ;;
+              *) echo "Unknown package: $PKG"; exit 1 ;;
+            esac
+
+            if [ "$PKG" = "gdalcubes" ]; then
+              # gdalcubes R package lives in R-package/ subdirectory of the repo.
+              git clone --depth 1 "$repo" _gh
+              if [ -d _gh/R-package ]; then
+                cp -r _gh/R-package pkg
               else
-                mv pkg-full/* pkg-full/.* pkg/ 2>/dev/null || true
+                # Fallback if upstream layout changes.
+                cp -r _gh pkg
               fi
-              rm -rf pkg-full
-              ;;
-            *) echo "Unknown combination: ${{ matrix.source }}--${{ matrix.package }}"; exit 1 ;;
-          esac
+              rm -rf _gh
+            else
+              git clone --depth 1 "$repo" pkg
+            fi
+
+          else
+            echo "Unknown source: $SRC"; exit 1
+          fi
+
+          # Verify what we got.
+          echo "=== pkg/ contents ==="
+          ls -la pkg/ | head -20
+          if [ ! -f pkg/DESCRIPTION ]; then
+            echo "ERROR: pkg/DESCRIPTION not found after fetch"
+            exit 1
+          fi
+          echo ""
+          echo "=== DESCRIPTION first lines ==="
+          head -10 pkg/DESCRIPTION
 
       - name: Install R dependencies
         working-directory: pkg
@@ -175,6 +211,9 @@ jobs:
         if: failure()
         working-directory: pkg
         run: |
+          echo "=== pkg/ contents ==="
+          ls -la
+          echo ""
           for f in *.Rcheck/00check.log *.Rcheck/00install.out; do
             [ -f "$f" ] && echo "=== $f ===" && cat "$f"
           done
