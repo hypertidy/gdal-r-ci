@@ -18,7 +18,7 @@ on:
       - '.github/workflows/build-gdal-system.yml'
   schedule:
     - cron: '0 17 * * 0'   # Sun 17:00 UTC = Mon 03:00 AEST → release
-    - cron: '0 18 * * *'   # daily 18:00 UTC = next day 04:00 AEST → dev
+    - cron: '0 18 */4 * *'   # daily 18:00 UTC = next day 04:00 AEST every four days → dev
   workflow_dispatch:
     inputs:
       variant:
