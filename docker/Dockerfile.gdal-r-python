@@ -71,6 +71,8 @@ RUN --mount=type=cache,target=/root/.cache/uv,sharing=locked \
         affine attrs click cligj snuggs pyparsing click-plugins \
         jupyterlab jupyterhub jupyter-rsession-proxy \
         ipytree lonboard pyresample \
+        'marimo[sandbox]>=0.23.4' \
+        marimo-jupyter-extension \
  && find /opt/gdal-py -type d -name __pycache__ -exec rm -rf {} + \
  && find /opt/gdal-py -type f -name "*.pyc" -delete
 
