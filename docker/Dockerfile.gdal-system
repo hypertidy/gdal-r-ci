@@ -33,9 +33,6 @@ ENV PKG_CONFIG_PATH=/usr/local/lib/pkgconfig
 ENV LC_ALL=C.UTF-8
 ENV LANG=C.UTF-8
 
-## eprtk for  muparser
-RUN curl -fsSL https://raw.githubusercontent.com/ArashPartow/exprtk/master/exprtk.hpp \
-        -o /usr/local/include/exprtk.hpp
 
 
 # ── 1. Build-time and runtime apt dependencies ───────────────────────────────
@@ -68,6 +65,10 @@ RUN apt-get update -qq && apt-get install -y --no-install-recommends \
     nano \
     libmuparser-dev  \
     && rm -rf /var/lib/apt/lists/*
+
+## eprtk for  muparser
+RUN curl -fsSL https://raw.githubusercontent.com/ArashPartow/exprtk/master/exprtk.hpp \
+        -o /usr/local/include/exprtk.hpp
 
 ARG CACHE_DATE=unknown
 
