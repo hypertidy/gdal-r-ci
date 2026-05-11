@@ -118,7 +118,7 @@ aad <- c(
 gh_other <- c(
   "r-lib/revdepcheck",
   "coolbutuseless/zstdlite",
-  "mdsumner/gdalcubes"  ## the CSLConstList in release has bitten 
+  "mdsumner/gdalcubes_R"  ## the CSLConstList in release has bitten 
 )
 
 # ---- 3. Phase A: spatial + hypertidy_cran, source-only -----------------------
