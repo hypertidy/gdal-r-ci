@@ -32,6 +32,12 @@ on:
         required: false
         default: 'all'
         type: string
+      open_issue:
+         description: 'Open issue on failure (default: only for scheduled runs)'
+         required: false
+         default: 'false'
+         type: choice
+         options: ['false', 'true']
       sources:
         description: 'Sources to test'
         required: false
@@ -327,7 +333,7 @@ jobs:
           echo "any_failure=$ANY_FAIL" >> "$GITHUB_OUTPUT"
 
       - name: Open issue on failure
-        if: steps.table.outputs.any_failure != '0' && github.event_name == 'schedule'
+        if: steps.table.outputs.any_failure != '0' && (github.event_name == 'schedule' || inputs.open_issue == 'true')
         uses: actions/github-script@v7
         with:
           script: |
