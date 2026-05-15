@@ -11,15 +11,14 @@
 #   cran    — what users actually have installed
 #   github  — what maintainers are pushing toward
 # Diverging results across the source axis indicate the package's CRAN release
-# is out of step with its development repo (e.g. CRAN has fixes not yet pushed,
-# or HEAD has fixes not yet released).
+# is out of step with its development repo.
 #
 # Variant axis:
 #   latest  — released GDAL — failure here is urgent
 #   dev     — GDAL master — failure here is canary, file upstream
 #
-# Full R CMD check runs for all packages — no --no-test-load, no skipping.
-# This is only possible because we have a single PROJ with standard symbols.
+# Each cell writes a small status file. The summary job aggregates these into
+# a per-cell pass/fail grid in the issue body, so triage is one glance.
 
 name: Scheduled canary check
 
@@ -117,17 +116,10 @@ jobs:
         id: fetch
         run: |
           set -e
-          # Three steps in this fetch:
-          #   1. Get sources somewhere on disk.
-          #   2. Move/copy to ./pkg/ — that's where downstream steps look.
-          #   3. Verify pkg/DESCRIPTION exists; fail loudly if not.
-          # No fancy directory shuffling — clone or extract directly.
-
           PKG="${{ matrix.package }}"
           SRC="${{ matrix.source }}"
 
           if [ "$SRC" = "cran" ]; then
-            # Download CRAN source tarball into a fresh directory.
             mkdir -p _dl
             Rscript -e "
               download.packages('$PKG', destdir = '_dl',
@@ -137,7 +129,6 @@ jobs:
             tarball=$(ls _dl/*.tar.gz | head -1)
             [ -n "$tarball" ] || { echo "No tarball downloaded"; exit 1; }
             tar -xzf "$tarball" -C _dl
-            # The tarball extracts to <pkg>-<version>/ ; locate it and rename.
             extracted_dir=$(find _dl -maxdepth 1 -type d -name "$PKG*" | head -1)
             [ -d "$extracted_dir" ] || { echo "Could not find extracted directory"; ls -la _dl; exit 1; }
             mv "$extracted_dir" pkg
@@ -154,12 +145,10 @@ jobs:
             esac
 
             if [ "$PKG" = "gdalcubes" ]; then
-              # gdalcubes R package lives in R-package/ subdirectory of the repo.
               git clone --depth 1 "$repo" _gh
               if [ -d _gh/R-package ]; then
                 cp -r _gh/R-package pkg
               else
-                # Fallback if upstream layout changes.
                 cp -r _gh pkg
               fi
               rm -rf _gh
@@ -171,16 +160,12 @@ jobs:
             echo "Unknown source: $SRC"; exit 1
           fi
 
-          # Verify what we got.
           echo "=== pkg/ contents ==="
           ls -la pkg/ | head -20
           if [ ! -f pkg/DESCRIPTION ]; then
             echo "ERROR: pkg/DESCRIPTION not found after fetch"
             exit 1
           fi
-          echo ""
-          echo "=== DESCRIPTION first lines ==="
-          head -10 pkg/DESCRIPTION
 
       - name: Install R dependencies
         working-directory: pkg
@@ -198,13 +183,12 @@ jobs:
         run: R CMD build --no-build-vignettes .
 
       - name: Check
+        id: rcheck
         working-directory: pkg
         env:
           _R_CHECK_FORCE_SUGGESTS_: 'false'
         run: |
           tarball=$(ls -1 *.tar.gz | head -1)
-          # Full R CMD check — no skipping, no --no-test-load
-          # A clean single-PROJ environment makes this safe for all packages
           R CMD check --no-manual --ignore-vignettes "$tarball"
 
       - name: Show logs on failure
@@ -214,54 +198,157 @@ jobs:
           echo "=== pkg/ contents ==="
           ls -la
           echo ""
-          echo "=== Rcheck/ contents ==="
-          find *.Rcheck -type f | head -50
+          for f in *.Rcheck/00check.log *.Rcheck/00install.out *.Rcheck/00build.out; do
+            [ -f "$f" ] && echo "=== $f ===" && cat "$f"
+          done
           echo ""
-          echo "=== Key log files ==="
-          for f in *.Rcheck/00check.log *.Rcheck/00install.out *.Rcheck/00build.out *.Rcheck/tests/*.Rout *.Rcheck/tests/*.Rout.fail; do
-            [ -f "$f" ] && echo "" && echo "=== $f ===" && cat "$f"
+          for f in *.Rcheck/tests/*.Rout *.Rcheck/tests/*.Rout.fail; do
+            [ -f "$f" ] && echo "=== $f ===" && cat "$f"
           done
 
-      - name: Upload results
+      - name: Record cell result
+        if: always()
+        # Writes a tiny status file the summary job will collect. The filename
+        # encodes the cell coordinates; the contents are a single status word
+        # plus optionally a one-line reason scraped from check output.
+        run: |
+          mkdir -p /tmp/canary-status
+          CELL="${{ matrix.package }}__${{ matrix.source }}__${{ matrix.gdal-variant }}"
+          STATUS="${{ job.status }}"
+
+          # Try to extract a one-line summary of why the check failed, if it did.
+          REASON=""
+          if [ "$STATUS" != "success" ]; then
+            CHECK_LOG=$(ls pkg/*.Rcheck/00check.log 2>/dev/null | head -1)
+            if [ -f "$CHECK_LOG" ]; then
+              # Last "ERROR" or "WARNING" line is usually the operative diagnostic.
+              REASON=$(grep -E '^\* checking .* (ERROR|WARNING)$' "$CHECK_LOG" | tail -1 | sed 's/^\* checking //' | sed 's/ \.\.\./:/')
+            fi
+            if [ -z "$REASON" ]; then
+              # Fall back to install.out for build failures
+              INSTALL_LOG=$(ls pkg/*.Rcheck/00install.out 2>/dev/null | head -1)
+              if [ -f "$INSTALL_LOG" ]; then
+                REASON=$(grep -E '(^ERROR:|^configure: error:|cannot find|undefined)' "$INSTALL_LOG" | head -1 | cut -c1-120)
+              fi
+            fi
+            if [ -z "$REASON" ]; then REASON="(see job log)"; fi
+          fi
+
+          # Format: STATUS|REASON (single line)
+          echo "${STATUS}|${REASON}" > "/tmp/canary-status/${CELL}.txt"
+          cat "/tmp/canary-status/${CELL}.txt"
+
+      - name: Upload cell status
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: status-${{ matrix.package }}-${{ matrix.source }}-${{ matrix.gdal-variant }}
+          path: /tmp/canary-status/
+          retention-days: 30
+
+      - name: Upload full check directory
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.package }}-${{ matrix.source }}-${{ matrix.gdal-variant }}-${{ github.run_id }}
-          path: pkg
-          retention-days: 90
+          path: pkg/*.Rcheck
+          retention-days: 30
 
   summary:
     name: Summary
-    needs: check
+    needs: [setup, check]
     runs-on: ubuntu-latest
     if: always()
     steps:
-      - name: Write job summary
+      - name: Download all cell statuses
+        uses: actions/download-artifact@v4
+        with:
+          pattern: status-*
+          path: status/
+          merge-multiple: true
+
+      - name: Build summary table
+        id: table
         run: |
+          # Build a markdown table: rows = packages, columns = source × variant.
+          # Read each status file and slot into the grid.
+
+          PACKAGES='${{ needs.setup.outputs.packages }}'
+          SOURCES='${{ needs.setup.outputs.sources }}'
+          VARIANTS='${{ needs.setup.outputs.variants }}'
+
+          # Header
+          HEADER="| package |"
+          SEP="|---|"
+          for src in $(echo "$SOURCES" | jq -r '.[]'); do
+            for var in $(echo "$VARIANTS" | jq -r '.[]'); do
+              HEADER="$HEADER ${src}/${var} |"
+              SEP="${SEP}---|"
+            done
+          done
+
           {
-            echo "## Canary check — $(date -u '+%Y-%m-%d')"
-            echo ""
-            echo "Cells: package × source × GDAL variant — see job results above for per-cell pass/fail."
-            echo ""
-            echo "Overall: ${{ needs.check.result }}"
-          } >> "$GITHUB_STEP_SUMMARY"
+            echo "$HEADER"
+            echo "$SEP"
+            for pkg in $(echo "$PACKAGES" | jq -r '.[]'); do
+              ROW="| ${pkg} |"
+              for src in $(echo "$SOURCES" | jq -r '.[]'); do
+                for var in $(echo "$VARIANTS" | jq -r '.[]'); do
+                  CELL_FILE="status/${pkg}__${src}__${var}.txt"
+                  if [ -f "$CELL_FILE" ]; then
+                    STATUS=$(cut -d'|' -f1 "$CELL_FILE")
+                    REASON=$(cut -d'|' -f2- "$CELL_FILE")
+                    case "$STATUS" in
+                      success) MARK="✓" ;;
+                      failure) MARK="✗ $REASON" ;;
+                      cancelled) MARK="⊘ cancelled" ;;
+                      *) MARK="? $STATUS" ;;
+                    esac
+                  else
+                    MARK="—"
+                  fi
+                  ROW="$ROW $MARK |"
+                done
+              done
+              echo "$ROW"
+            done
+          } > summary-table.md
+
+          echo "=== Summary table ==="
+          cat summary-table.md
+
+          # Also write to GitHub step summary
+          echo "## Canary check — $(date -u '+%Y-%m-%d')" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          cat summary-table.md >> "$GITHUB_STEP_SUMMARY"
+
+          # Compute whether anything failed (drives the issue-creation step)
+          ANY_FAIL=$(grep -l '^failure' status/*.txt 2>/dev/null | wc -l)
+          echo "any_failure=$ANY_FAIL" >> "$GITHUB_OUTPUT"
 
       - name: Open issue on failure
-        if: needs.check.result == 'failure' && github.event_name == 'schedule'
+        if: steps.table.outputs.any_failure != '0' && github.event_name == 'schedule'
         uses: actions/github-script@v7
         with:
           script: |
+            const fs = require('fs');
+            const table = fs.readFileSync('summary-table.md', 'utf8');
             const date = new Date().toISOString().split('T')[0];
             await github.rest.issues.create({
               owner: context.repo.owner,
               repo:  context.repo.repo,
               title: `Canary check failed — ${date}`,
               body: [
-                'The scheduled canary check detected failures across the package × source × GDAL-variant matrix.',
+                'The scheduled canary check detected failures.',
+                '',
+                '### Per-cell results',
+                '',
+                table,
                 '',
                 `Workflow run: ${process.env.GITHUB_SERVER_URL}/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID}`,
                 '',
-                'Diagnostic patterns:',
+                '### Diagnostic patterns',
+                '',
                 '- Same cell red on both sources → bug exists in CRAN release and GitHub HEAD (real bug).',
                 '- Red on github only, green on cran → GitHub HEAD has a regression CRAN doesn\'t (or HEAD is stale relative to CRAN).',
                 '- Red on cran only, green on github → CRAN release lags behind a fix already on GitHub.',
