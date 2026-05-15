@@ -33,6 +33,8 @@ ENV PKG_CONFIG_PATH=/usr/local/lib/pkgconfig
 ENV LC_ALL=C.UTF-8
 ENV LANG=C.UTF-8
 
+
+
 # ── 1. Build-time and runtime apt dependencies ───────────────────────────────
 RUN apt-get update -qq && apt-get install -y --no-install-recommends \
     # Toolchain
@@ -61,7 +63,12 @@ RUN apt-get update -qq && apt-get install -y --no-install-recommends \
     # Runtime
     libsqlite3-0 \
     nano \
+    libmuparser-dev  \
     && rm -rf /var/lib/apt/lists/*
+
+## eprtk for  muparser
+RUN curl -fsSL https://raw.githubusercontent.com/ArashPartow/exprtk/master/exprtk.hpp \
+        -o /usr/local/include/exprtk.hpp
 
 ARG CACHE_DATE=unknown
 
@@ -97,6 +104,7 @@ RUN uv pip install --python /opt/gdal-py/bin/python "numpy>=2" setuptools wheel
 # self-contained, and downstream layers extend it cleanly.
 ENV PATH=/opt/gdal-py/bin:$PATH
 ENV VIRTUAL_ENV=/opt/gdal-py
+
 
 # ── 4. GEOS ───────────────────────────────────────────────────────────────────
 COPY build-scripts/build-geos.sh /build-scripts/build-geos.sh

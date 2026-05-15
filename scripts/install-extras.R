@@ -45,7 +45,7 @@ AAD        <- "https://australianantarcticdivision.r-universe.dev"
 # 2a. Spatial — MUST be source-built against this image's GDAL stack.
 spatial <- c(
   "sf", "terra", "stars", "lwgeom", "wk", "s2", "geos", "geoarrow",
-  "gdalraster", "gdalcubes", "exactextractr", "fasterize",
+  "gdalraster", "exactextractr", "fasterize",
   "pizzarr", "rstac", "rsi", "tidync", "zarr"
 )
 
@@ -117,7 +117,8 @@ aad <- c(
 # 2j. Other GitHub-only.
 gh_other <- c(
   "r-lib/revdepcheck",
-  "coolbutuseless/zstdlite"
+  "coolbutuseless/zstdlite",
+  "mdsumner/gdalcubes_R"  ## the CSLConstList in release has bitten 
 )
 
 # ---- 3. Phase A: spatial + hypertidy_cran, source-only -----------------------

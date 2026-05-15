@@ -42,6 +42,8 @@ print(f'gdal:       {gdal.__version__}')
 print(f'gdal_array: {gdal_array.__file__}')
 EOF
 
+RUN apt-get update -qq && apt-get install -y --no-install-recommends python3.12-venv
+
 # ── Source-built: link system GDAL/PROJ/GEOS ──────────────────────────────────
 RUN --mount=type=cache,target=/root/.cache/uv,sharing=locked \
     GDAL_CONFIG=/usr/local/bin/gdal-config \
@@ -55,6 +57,7 @@ RUN --mount=type=cache,target=/root/.cache/uv,sharing=locked \
 # ── Wheels-fine: science / IO / arrow / dask / stac / icechunk / jupyter ─────
 RUN --mount=type=cache,target=/root/.cache/uv,sharing=locked \
     uv pip install --python /opt/gdal-py/bin/python \
+        build \
         pandas xarray scipy matplotlib cftime pytz tzdata \
         zarr netCDF4 h5netcdf h5py \
         fsspec aiohttp requests s3fs \
@@ -71,6 +74,9 @@ RUN --mount=type=cache,target=/root/.cache/uv,sharing=locked \
         affine attrs click cligj snuggs pyparsing click-plugins \
         jupyterlab jupyterhub jupyter-rsession-proxy \
         ipytree lonboard pyresample \
+        'marimo[sandbox]>=0.23.4' \
+        marimo-jupyter-extension \
+        rasterix \
  && find /opt/gdal-py -type d -name __pycache__ -exec rm -rf {} + \
  && find /opt/gdal-py -type f -name "*.pyc" -delete
 
