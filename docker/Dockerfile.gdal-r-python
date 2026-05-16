@@ -101,9 +101,8 @@ RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs \
 RUN --mount=type=cache,target=/opt/cargo/registry \
     --mount=type=cache,target=/opt/cargo/git \
     NOT_CRAN=true PIZZARR_FEATURES=s3,gcs \
-    R -e 'install.packages("qs2")' \
     R -e 'install.packages("pizzarr", \
-            repos = "https://zarr-developers.r-universe.dev", \
+            repos = c("https://zarr-developers.r-universe.dev", "https://cloud.r-project.org"), \
             type = "source")'
 
 # Optional: fail the build if the toolchain ever drifts below 1.91
