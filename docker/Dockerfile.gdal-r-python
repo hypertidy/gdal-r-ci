@@ -89,6 +89,27 @@ RUN R -q -e 'install.packages("reticulate", repos = "https://cloud.r-project.org
 ENV RETICULATE_PYTHON=/opt/gdal-py/bin/python
 ENV RETICULATE_USE_MANAGED_VENV=no
 
+# -- rust-for-pizzarr: should be ok with icechunk on wheels above ------
+ENV CARGO_HOME=/opt/cargo \
+    RUSTUP_HOME=/opt/rustup \
+    PATH=/opt/cargo/bin:$PATH
+
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs \
+    | sh -s -- -y --default-toolchain stable --profile minimal --no-modify-path \
+ && rustc --version && cargo --version
+
+RUN --mount=type=cache,target=/opt/cargo/registry \
+    --mount=type=cache,target=/opt/cargo/git \
+    NOT_CRAN=true PIZZARR_FEATURES=s3,gcs \
+    R -e 'install.packages("pizzarr", \
+            repos = "https://zarr-developers.r-universe.dev", \
+            type = "source")'
+
+# Optional: fail the build if the toolchain ever drifts below 1.91
+RUN rustc --version \
+    | awk '{ split($2, a, "."); if (a[1]*100 + a[2] < 191) exit 1 }'
+
+
 # ── Verify Python stack alignment ────────────────────────────────────────────
 COPY scripts/check-python-versions.py /opt/scripts/check-python-versions.py
 RUN if [ "${IMAGE_VARIANT}" = "release" ]; then \
