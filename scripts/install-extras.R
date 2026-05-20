@@ -118,7 +118,7 @@ aad <- c(
 gh_other <- c(
   "r-lib/revdepcheck",
   "coolbutuseless/zstdlite",
-  "mdsumner/gdalcubes_R"  ## the CSLConstList in release has bitten 
+  "mdsumner/gdalcubes_R"  ## the CSLConstList in release has bitten
 )
 
 # ---- 3. Phase A: spatial + hypertidy_cran, source-only -----------------------
@@ -187,6 +187,13 @@ message("\n== Phase C: hypertidy WIP + AAD + other GitHub ==")
 # )
 remotes::install_github(c(hypertidy_dev, aad, gh_other), upgrade = FALSE)
 
+
+## --- bioconductor
+
+if (!require("BiocManager", quietly = TRUE)) {
+    try(install.packages("BiocManager"))
+}
+try(BiocManager::install(c("rhdf5filters", "Rhdf5lib"), update = FALSE))
 # ---- 6. Sanity check ---------------------------------------------------------
 # Reuse the shared alignment script. With pkg.sysreqs=FALSE we trust source
 # builds picked up /usr/local; this confirms it. The shared script handles
