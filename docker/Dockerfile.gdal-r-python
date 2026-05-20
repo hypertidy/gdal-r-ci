@@ -54,6 +54,23 @@ RUN --mount=type=cache,target=/root/.cache/uv,sharing=locked \
         pyproj shapely fiona rasterio pyogrio geopandas odc-geo rioxarray \
  && find /opt/gdal-py -type d -name __pycache__ -exec rm -rf {} +
 
+# ── tappa: terra in Python ─────────────────────────────────────────────────
+# GitHub-only, no PyPI release. Built via scikit-build-core against system
+# GDAL/PROJ/GEOS. Added after the main source-built block so its cache
+# invalidation is independent.
+RUN --mount=type=cache,target=/root/.cache/uv,sharing=locked \
+    GDAL_CONFIG=/usr/local/bin/gdal-config \
+    PROJ_DIR=/usr/local \
+    uv pip install \
+        --python /opt/gdal-py/bin/python \
+        --no-build-isolation \
+        "scikit-build-core" "pybind11>=2.12" \
+ && uv pip install \
+        --python /opt/gdal-py/bin/python \
+        --no-build-isolation \
+        "git+https://github.com/rspatial/tappa.git" \
+ && find /opt/gdal-py -type d -name __pycache__ -exec rm -rf {} +
+
 # ── Wheels-fine: science / IO / arrow / dask / stac / icechunk / jupyter ─────
 RUN --mount=type=cache,target=/root/.cache/uv,sharing=locked \
     uv pip install --python /opt/gdal-py/bin/python \
