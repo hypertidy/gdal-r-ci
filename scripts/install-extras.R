@@ -117,8 +117,7 @@ aad <- c(
 # 2j. Other GitHub-only.
 gh_other <- c(
   "r-lib/revdepcheck",
-  "coolbutuseless/zstdlite",
-  "mdsumner/gdalcubes_R"  ## the CSLConstList in release has bitten
+  "coolbutuseless/zstdlite"
 )
 
 # ---- 3. Phase A: spatial + hypertidy_cran, source-only -----------------------
