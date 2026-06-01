@@ -33,6 +33,9 @@ options(
   pkg.show_progress = TRUE
 )
 
+Sys.setenv(R_PROGRESSR_ENABLE = "false")
+Sys.setenv(PKG_PROGRESS_BARS = "false")
+
 # ---- 1. Repositories ---------------------------------------------------------
 PPM        <- "https://packagemanager.posit.co/cran/__linux__/noble/latest"
 CRAN       <- "https://cloud.r-project.org"
