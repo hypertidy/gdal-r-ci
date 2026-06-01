@@ -65,11 +65,13 @@ RUN --mount=type=cache,target=/root/.cache/uv,sharing=locked \
         --python /opt/gdal-py/bin/python \
         --no-build-isolation \
         "scikit-build-core" "pybind11>=2.12" \
- && uv pip install \
-        --python /opt/gdal-py/bin/python \
-        --no-build-isolation \
-        "git+https://github.com/rspatial/tappa.git" \
- && find /opt/gdal-py -type d -name __pycache__ -exec rm -rf {} +
+# && find /opt/gdal-py -type d -name __pycache__ -exec rm -rf {} +
+
+# && uv pip install \
+#        --python /opt/gdal-py/bin/python \
+#        --no-build-isolation \
+#        "git+https://github.com/rspatial/tappa.git" \
+# && find /opt/gdal-py -type d -name __pycache__ -exec rm -rf {} +
 
 # ── Wheels-fine: science / IO / arrow / dask / stac / icechunk / jupyter ─────
 RUN --mount=type=cache,target=/root/.cache/uv,sharing=locked \
