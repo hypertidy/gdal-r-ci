@@ -96,6 +96,9 @@ RUN wget -qO- https://astral.sh/uv/install.sh | sh \
 # the base interpreter (we still rely on apt's python3-dev for headers).
 RUN uv venv /opt/gdal-py --python python3
 
+## add pip for GDAL > 3.13
+RUN uv pip install --python /opt/gdal-py/bin/python pip
+
 # numpy 2.x in the venv. GDAL's bindings build will link against this.
 RUN uv pip install --python /opt/gdal-py/bin/python "numpy>=2" setuptools wheel
 
