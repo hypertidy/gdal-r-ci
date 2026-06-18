@@ -73,6 +73,7 @@ cmake -S src -B build \
     -DPython_EXECUTABLE=/opt/gdal-py/bin/python \
     -DBUILD_JAVA_BINDINGS=OFF \
     -DBUILD_CSHARP_BINDINGS=OFF \
+    -DGDAL_USE_PCODEC=ON \
     -DBUILD_TESTING=OFF
 
 cmake --build build --parallel "$NCPUS"

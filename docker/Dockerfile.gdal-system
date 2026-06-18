@@ -109,6 +109,18 @@ ENV PATH=/opt/gdal-py/bin:$PATH
 ENV VIRTUAL_ENV=/opt/gdal-py
 
 
+## RUST
+# Rust toolchain for GDAL's optional Rust-based features (pcodec via cargo)
+ENV RUSTUP_HOME=/usr/local/rustup \
+    CARGO_HOME=/usr/local/cargo \
+    PATH=/usr/local/cargo/bin:$PATH
+ENV PCO_DISMISS_BUILD_WARNINGS=1
+
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | \
+    sh -s -- -y --default-toolchain stable --no-modify-path \
+    && cargo --version && rustc --version
+
+
 # ── 4. GEOS ───────────────────────────────────────────────────────────────────
 COPY build-scripts/build-geos.sh /build-scripts/build-geos.sh
 RUN bash /build-scripts/build-geos.sh && ldconfig
