@@ -91,6 +91,7 @@ RUN --mount=type=cache,target=/root/.cache/uv,sharing=locked \
         'marimo[sandbox]>=0.23.4' \
         marimo-jupyter-extension \
         rasterix \
+        gdalxarray \
  && find /opt/gdal-py -type d -name __pycache__ -exec rm -rf {} + \
  && find /opt/gdal-py -type f -name "*.pyc" -delete
 
