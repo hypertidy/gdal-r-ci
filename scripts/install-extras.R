@@ -63,7 +63,7 @@ hypertidy_cran <- c(
 # 2c. Cloud / Arrow / Parquet / DuckDB.
 cloud <- c(
   "arrow", "nanoarrow", "duckdb", "duckdbfs", "duckplyr",
-  "adbcdrivermanager"
+  "adbcdrivermanager", "redux"
 )
 
 # 2d. Object stores & HTTP.
