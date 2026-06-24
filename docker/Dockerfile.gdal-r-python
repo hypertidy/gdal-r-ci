@@ -42,7 +42,7 @@ print(f'gdal:       {gdal.__version__}')
 print(f'gdal_array: {gdal_array.__file__}')
 EOF
 
-RUN apt-get update -qq && apt-get install -y --no-install-recommends python3.12-venv
+RUN apt-get update -qq && apt-get install -y --no-install-recommends python3.12-venv libhiredis-dev 
 
 # ── Source-built: link system GDAL/PROJ/GEOS ──────────────────────────────────
 RUN --mount=type=cache,target=/root/.cache/uv,sharing=locked \
