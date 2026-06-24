@@ -76,7 +76,7 @@ http <- c(
 pipeline <- c(
   "targets", "tarchetypes", "crew", "crew.cluster",
   "mirai", "future", "furrr", "future.batchtools",
-  "multidplyr", "rslurm"
+  "multidplyr", "rslurm", "carrier"
 )
 
 # 2f. Tidy core (deliberately à la carte; no `tidyverse` meta).
