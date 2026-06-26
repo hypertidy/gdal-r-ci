@@ -92,7 +92,7 @@ RUN --mount=type=cache,target=/root/.cache/uv,sharing=locked \
         'marimo[sandbox]>=0.23.4' \
         marimo-jupyter-extension \
         rasterix \
-        git+https://github.com/gdalxarray@main \
+        git+https://github.com/hypertidy/gdalxarray@main \
         coiled \
         frisky>=0.3.0 \
         dask-array>=0.3.0 \
