@@ -93,7 +93,10 @@ RUN --mount=type=cache,target=/root/.cache/uv,sharing=locked \
         rasterix \
         gdalxarray \
         coiled \
-        frisky \
+        frisky>=0.3.0 \
+        dask-array>=0.3.0 \
+        git+https://github.com/dask/dask@main \
+        git+https://github.com/pydata/xarray@main \
  && find /opt/gdal-py -type d -name __pycache__ -exec rm -rf {} + \
  && find /opt/gdal-py -type f -name "*.pyc" -delete
 
