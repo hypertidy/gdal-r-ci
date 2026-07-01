@@ -105,7 +105,8 @@ hypertidy_dev <- c(
   "hypertidy/ximage",
   "hypertidy/sds",
   "hypertidy/dsn",
-  "hypertidy/controlledburn"
+  "hypertidy/controlledburn", 
+  "hypertidy/vrtstack"
 )
 
 # 2i. AAD / data pipeline ecosystem.
