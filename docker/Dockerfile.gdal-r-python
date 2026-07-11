@@ -96,7 +96,7 @@ RUN --mount=type=cache,target=/root/.cache/uv,sharing=locked \
         coiled \
         frisky  \
         dask-array \
-        sedona.db sedonadb_zarr \
+        sedona sedonadb sedonadb_zarr \
         git+https://github.com/dask/dask@6c8edcef067fa5f04adcd398e0de0b20b74c7abb  \
         git+https://github.com/pydata/xarray@71cfb13ac7e05a8d37f63291436fa90820af9304 \
  && find /opt/gdal-py -type d -name __pycache__ -exec rm -rf {} + \
