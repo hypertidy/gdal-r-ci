@@ -45,10 +45,11 @@ RUN mkdir -p /opt/cargo && printf '[target.x86_64-unknown-linux-gnu]\nrustflags 
 
 # ── cargo-nextest ─────────────────────────────────────────────────────────────
 # Faster / nicer test runner; mount the registry cache to avoid re-fetching
-# crates on every image rebuild.
+# crates on every image rebuild. Version pinned: 0.9.100 is the last release
+# that supports rustc 1.85; 0.9.101+ requires 1.91.
 RUN --mount=type=cache,target=/opt/cargo/registry \
     --mount=type=cache,target=/opt/cargo/git \
-    cargo install cargo-nextest --locked \
+    cargo install cargo-nextest@0.9.100 --locked \
  && cargo nextest --version
 
 # ── MOTD ──────────────────────────────────────────────────────────────────────
