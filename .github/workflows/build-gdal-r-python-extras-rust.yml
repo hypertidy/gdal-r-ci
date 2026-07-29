@@ -1,0 +1,77 @@
+# Build and push ghcr.io/hypertidy/gdal-r-python-extras-rust
+#
+# Triggered by repository_dispatch from build-gdal-r-python-extras on every
+# successful extras build. Also triggerable manually.
+#
+# Adds a pinned Rust dev toolchain (1.85.0) with clippy, rustfmt,
+# rust-analyzer, lld, and cargo-nextest on top of gdal-r-python-extras.
+#
+# Leaf image of the chain — only :latest, no :dev variant.
+
+name: Build gdal-r-python-extras-rust
+
+on:
+  repository_dispatch:
+    types: [gdal-r-python-extras-updated]
+  workflow_dispatch:
+    inputs:
+      no_cache:
+        description: 'Disable Docker layer cache'
+        required: false
+        default: 'false'
+        type: choice
+        options: ['false', 'true']
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: true
+
+env:
+  REGISTRY: ghcr.io
+  ORG: hypertidy
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Resolve vars
+        id: vars
+        run: |
+          # Always :latest — extras-rust has no :dev variant.
+          TAG="latest"
+          NO_CACHE="${{ github.event.client_payload.no_cache || inputs.no_cache || 'false' }}"
+          echo "tag_suffix=${TAG}"  >> "$GITHUB_OUTPUT"
+          echo "no_cache=${NO_CACHE}" >> "$GITHUB_OUTPUT"
+
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: docker/Dockerfile.extras-rust
+          push: true
+          tags: ${{ env.REGISTRY }}/${{ env.ORG }}/gdal-r-python-extras-rust:${{ steps.vars.outputs.tag_suffix }}
+          no-cache: ${{ steps.vars.outputs.no_cache == 'true' }}
+          cache-from: type=gha,scope=gdal-r-python-extras-rust-${{ steps.vars.outputs.tag_suffix }}
+          cache-to: type=gha,mode=max,scope=gdal-r-python-extras-rust-${{ steps.vars.outputs.tag_suffix }}
+
+      - name: Summary
+        run: |
+          {
+            echo "## gdal-r-python-extras-rust:${{ steps.vars.outputs.tag_suffix }} built"
+            echo "Base: gdal-r-python-extras:${{ steps.vars.outputs.tag_suffix }}"
+            echo "Rust: 1.85.0 (clippy, rustfmt, rust-analyzer, lld, cargo-nextest)"
+          } >> "$GITHUB_STEP_SUMMARY"

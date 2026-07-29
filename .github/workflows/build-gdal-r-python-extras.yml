@@ -6,9 +6,10 @@
 # Adds the R kitchen sink (hypertidy stack, arrow, targets, dev tooling) on
 # top of gdal-r-python via scripts/install-extras.R.
 #
-# Leaf image of the chain — only :latest, no :dev variant. For bleeding-edge
-# work, base directly on gdal-r-python:dev and overlay packages via a
-# writable R_LIBS_USER mount at runtime.
+# No longer the leaf of the chain — on a successful build this workflow
+# dispatches gdal-r-python-extras-updated to trigger gdal-r-python-extras-rust.
+# Only :latest, no :dev variant. For bleeding-edge work, base directly on
+# gdal-r-python:dev and overlay packages via a writable R_LIBS_USER mount.
 
 name: Build gdal-r-python-extras
 
@@ -81,3 +82,10 @@ jobs:
             echo "## gdal-r-python-extras:${{ steps.vars.outputs.tag_suffix }} built"
             echo "Base: gdal-r-python:${{ steps.vars.outputs.tag_suffix }}"
           } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Dispatch extras-rust build
+        uses: peter-evans/repository-dispatch@v3
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          event-type: gdal-r-python-extras-updated
+          client-payload: '{"no_cache": "${{ steps.vars.outputs.no_cache }}"}'

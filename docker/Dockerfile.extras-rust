@@ -1,0 +1,65 @@
+# syntax=docker/dockerfile:1.7
+# ghcr.io/hypertidy/gdal-r-python-extras-rust:latest
+#
+# Rust dev layer on top of gdal-r-python-extras. Adds a pinned stable
+# toolchain (1.85.0) with the standard dev components — clippy, rustfmt,
+# rust-analyzer — plus lld as the linker and cargo-nextest as the test
+# runner.
+#
+# What is NOT baked here: cargo-edit (cargo add is built in since 1.62),
+# sccache (a named volume at /opt/cargo/registry does that job at runtime),
+# and audit/deny tooling (worthwhile eventually, not day one).
+#
+# The parent image (gdal-r-python, via gdal-r-python-extras) already
+# installed a minimal Rust toolchain at CARGO_HOME=/opt/cargo,
+# RUSTUP_HOME=/opt/rustup. This layer adds the pinned dev toolchain on top
+# of that, so PATH and the env vars are already set.
+
+FROM ghcr.io/hypertidy/gdal-r-python-extras:latest
+
+LABEL org.opencontainers.image.source="https://github.com/hypertidy/gdal-r-ci"
+LABEL org.opencontainers.image.description="gdal-r-python-extras + Rust 1.85.0 dev toolchain (clippy, rustfmt, rust-analyzer, lld, cargo-nextest)"
+LABEL org.opencontainers.image.documentation="https://github.com/hypertidy/gdal-r-ci#gdal-r-python-extras-rust"
+
+# ── Pinned dev toolchain + lld ────────────────────────────────────────────────
+# 1.85.0 is pinned deliberately. Projects consuming this image should commit a
+# rust-toolchain.toml pinning the same version — that way a toolchain bump here
+# is visible in the project diff and both sides stay in lockstep.
+# rust-analyzer as a rustup component costs almost nothing and makes the
+# image devcontainer-ready. lld dramatically cuts incremental link times.
+RUN apt-get update -qq && apt-get install -y --no-install-recommends lld \
+ && rm -rf /var/lib/apt/lists/*
+
+RUN rustup toolchain install 1.85.0 \
+      --component clippy \
+      --component rustfmt \
+      --component rust-analyzer \
+ && rustup default 1.85.0 \
+ && rustc --version && cargo --version
+
+# ── Wire lld as the default linker ───────────────────────────────────────────
+# Placed in CARGO_HOME so it applies to every cargo invocation in the image
+# without needing a per-project .cargo/config.toml.
+RUN mkdir -p /opt/cargo && printf '[target.x86_64-unknown-linux-gnu]\nrustflags = ["-C", "link-arg=-fuse-ld=lld"]\n' \
+    > /opt/cargo/config.toml
+
+# ── cargo-nextest ─────────────────────────────────────────────────────────────
+# Faster / nicer test runner; mount the registry cache to avoid re-fetching
+# crates on every image rebuild.
+RUN --mount=type=cache,target=/opt/cargo/registry \
+    --mount=type=cache,target=/opt/cargo/git \
+    cargo install cargo-nextest --locked \
+ && cargo nextest --version
+
+# ── MOTD ──────────────────────────────────────────────────────────────────────
+RUN { \
+        echo "── ghcr.io/hypertidy/gdal-r-python-extras-rust ──" ; \
+        echo "GDAL $(gdal-config --version)   PROJ $(pkg-config --modversion proj)   GEOS $(geos-config --version)" ; \
+        echo "R    $(R --version 2>/dev/null | head -1 | grep -oE '[0-9]+\.[0-9]+\.[0-9]+')" ; \
+        echo "Rust $(rustc --version)   nextest $(cargo nextest --version)" ; \
+        echo "" ; \
+        echo "Docs: https://github.com/hypertidy/gdal-r-ci#gdal-r-python-extras-rust" ; \
+    } > /etc/gdal-r-ci-motd
+
+WORKDIR /workspace
+CMD ["bash"]
