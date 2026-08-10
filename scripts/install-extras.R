@@ -49,8 +49,8 @@ AAD        <- "https://australianantarcticdivision.r-universe.dev"
 spatial <- c(
   "sf", "terra", "stars", "lwgeom", "wk", "s2", "geos", "geoarrow",
   "gdalraster", "exactextractr", "fasterize",
-  "pizzarr", "rstac", "rsi", "tidync", "zarr", 
-  "a5R", "h3r", "dggridR", "icosa"
+  "pizzarr", "rstac", "rsi", "tidync", "zarr"
+  #,"a5R", "h3r", "dggridR", "icosa"
 )
 
 # 2b. Hypertidy CRAN — source so they pick up the image's GDAL where relevant.
@@ -123,8 +123,8 @@ aad <- c(
 # 2j. Other GitHub-only.
 gh_other <- c(
   "r-lib/revdepcheck",
-  "coolbutuseless/zstdlite", 
-  "crazycapivara/h3-r"
+  "coolbutuseless/zstdlite" 
+  #,"crazycapivara/h3-r"
 )
 
 # ---- 3. Phase A: spatial + hypertidy_cran, source-only -----------------------
