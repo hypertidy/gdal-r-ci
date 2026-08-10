@@ -50,7 +50,7 @@ spatial <- c(
   "sf", "terra", "stars", "lwgeom", "wk", "s2", "geos", "geoarrow",
   "gdalraster", "exactextractr", "fasterize",
   "pizzarr", "rstac", "rsi", "tidync", "zarr", 
-  "a5r", "h3r", "dggridR", "icosa"
+  "a5R", "h3r", "dggridR", "icosa"
 )
 
 # 2b. Hypertidy CRAN — source so they pick up the image's GDAL where relevant.
