@@ -200,7 +200,7 @@ if (!require("BiocManager", quietly = TRUE)) {
     try(install.packages("BiocManager"))
 }
 try(BiocManager::install(c("rhdf5filters", "Rhdf5lib"), update = FALSE))
-system("git clone --branch remote-chunk-refs https://github.com/mdsumner/rhdf5")
+system("git clone --branch remote-chunk-refs https://github.com/Huber-group-EMBL/rhdf5")
 try(remotes::install_local("rhdf5"))
 system("rm -rf rhdf5")
 
