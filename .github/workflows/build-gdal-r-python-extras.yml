@@ -83,9 +83,9 @@ jobs:
             echo "Base: gdal-r-python:${{ steps.vars.outputs.tag_suffix }}"
           } >> "$GITHUB_STEP_SUMMARY"
 
-      - name: Dispatch extras-rust build
-        uses: peter-evans/repository-dispatch@v4.0.1
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          event-type: gdal-r-python-extras-updated
-          client-payload: '{"no_cache": "${{ steps.vars.outputs.no_cache }}"}'
+      #- name: Dispatch extras-rust build
+      #  uses: peter-evans/repository-dispatch@v4.0.1
+      #  with:
+      #    token: ${{ secrets.GITHUB_TOKEN }}
+      #    event-type: gdal-r-python-extras-updated
+      #    client-payload: '{"no_cache": "${{ steps.vars.outputs.no_cache }}"}'
