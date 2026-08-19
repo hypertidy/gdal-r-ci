@@ -199,8 +199,8 @@ remotes::install_github(c(hypertidy_dev, aad, gh_other), upgrade = FALSE)
 if (!require("BiocManager", quietly = TRUE)) {
     try(install.packages("BiocManager"))
 }
-try(BiocManager::install(c("rhdf5filters", "Rhdf5lib"), update = FALSE))
-system("git clone --branch remote-chunk-refs https://github.com/Huber-group-EMBL/rhdf5")
+try(BiocManager::install(c("rhdf5filters", "Rhdf5lib"), force  = TRUE, update = TRUE))
+system("git clone https://github.com/Huber-group-EMBL/rhdf5")
 try(remotes::install_local("rhdf5"))
 system("rm -rf rhdf5")
 
