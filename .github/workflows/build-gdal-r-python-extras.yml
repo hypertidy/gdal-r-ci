@@ -84,7 +84,7 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Dispatch extras-rust build
-        uses: peter-evans/repository-dispatch@v3
+        uses: peter-evans/repository-dispatch@v4.0.1
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           event-type: gdal-r-python-extras-updated
