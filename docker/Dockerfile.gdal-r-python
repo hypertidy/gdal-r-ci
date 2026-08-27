@@ -86,7 +86,7 @@ RUN --mount=type=cache,target=/root/.cache/uv,sharing=locked \
         cloudpickle toolz partd \
         pystac-client stackstac rio-stac \
         earthaccess pooch \
-        icechunk obstore virtual-tiff \
+        icechunk obstore virtual-tiff arraylake \
         cython \
         affine attrs click cligj snuggs pyparsing click-plugins \
         jupyterlab jupyterhub jupyter-rsession-proxy \
