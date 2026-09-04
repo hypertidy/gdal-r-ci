@@ -11,7 +11,7 @@
 #     rasterio, fiona, pyogrio, shapely, pyproj, geopandas, odc-geo, rioxarray
 #   WHEELS fine (pure Python, Cython, or safely bundled):
 #     pandas, xarray, zarr, fsspec, netCDF4, h5py/h5netcdf, scipy,
-#     matplotlib, dask, pyarrow, polars, duckdb, fastparquet
+#     matplotlib, dask,  polars, duckdb, fastparquet
 #   NOTE: netCDF4 and h5py bundle their own HDF5 — do NOT use --no-binary,
 #   it will fight with system HDF5.
 #
@@ -24,6 +24,12 @@ ARG BASE_IMAGE=ghcr.io/hypertidy/gdal-r-full:latest
 FROM ${BASE_IMAGE}
 
 ARG IMAGE_VARIANT=release
+
+# pyarrow must match the Arrow C++ major version installed in gdal-system.
+RUN echo "pyarrow==$(pkg-config --modversion arrow | cut -d. -f1).*" \
+        > /opt/pyarrow-constraint.txt \
+ && cat /opt/pyarrow-constraint.txt
+
 
 LABEL org.opencontainers.image.source="https://github.com/hypertidy/gdal-r-ci"
 LABEL org.opencontainers.image.description="gdal-r-full + Python geo stack in /opt/gdal-py"
@@ -51,8 +57,41 @@ RUN --mount=type=cache,target=/root/.cache/uv,sharing=locked \
     uv pip install \
         --python /opt/gdal-py/bin/python \
         --no-binary rasterio,fiona,pyogrio,shapely,pyproj,geopandas,odc-geo,rioxarray \
-        pyproj shapely fiona rasterio pyogrio geopandas odc-geo rioxarray \
+        pyproj shapely fiona rasterio pyogrio geopandas odc-geo rioxarray pyarrow \
  && find /opt/gdal-py -type d -name __pycache__ -exec rm -rf {} +
+
+# -- pyarrow: link system Arrow C++ (one libarrow per process) ----------------
+# Flags mirror what the Apache apt packages actually install (see
+# ArrowOptions.cmake plus ls of the libdir): core, compute, dataset, acero,
+# parquet, plus ORC/S3/GCS/Azure/HDFS which are compiled into libarrow.so.
+# Flight, Gandiva, CUDA, Substrait are separate debs that are not installed.
+RUN --mount=type=cache,target=/root/.cache/uv,sharing=locked \
+    uv pip install --python /opt/gdal-py/bin/python \
+        cython "cmake>=3.25" ninja setuptools setuptools_scm \
+ && ARROW_HOME=/usr \
+    PYARROW_BUNDLE_ARROW_CPP=0 \
+    PYARROW_PARALLEL=$(nproc) \
+    PYARROW_WITH_PARQUET=1 \
+    PYARROW_WITH_PARQUET_ENCRYPTION=1 \
+    PYARROW_WITH_DATASET=1 \
+    PYARROW_WITH_ACERO=1 \
+    PYARROW_WITH_ORC=1 \
+    PYARROW_WITH_S3=1 \
+    PYARROW_WITH_GCS=1 \
+    PYARROW_WITH_AZURE=1 \
+    PYARROW_WITH_HDFS=1 \
+    PYARROW_WITH_FLIGHT=0 \
+    PYARROW_WITH_GANDIVA=0 \
+    PYARROW_WITH_SUBSTRAIT=0 \
+    PYARROW_WITH_CUDA=0 \
+    uv pip install --python /opt/gdal-py/bin/python \
+        --no-build-isolation \
+        --no-binary pyarrow \
+        --constraint /opt/pyarrow-constraint.txt \
+        pyarrow \
+ && find /opt/gdal-py -type d -name __pycache__ -exec rm -rf {} +
+
+
 
 # ── tappa: terra in Python ─────────────────────────────────────────────────
 # GitHub-only, no PyPI release. Built via scikit-build-core against system
@@ -74,6 +113,8 @@ RUN --mount=type=cache,target=/root/.cache/uv,sharing=locked \
         setuptools wheel numpy imagecodecs \
  && uv pip install --python /opt/gdal-py/bin/python \
         --no-build-isolation-package imagecodecs-numcodecs \
+        --constraint /opt/pyarrow-constraint.txt \
+        --no-binary pyarrow \
         build \
         pandas xarray scipy matplotlib cftime pytz tzdata \
         zarr netCDF4 h5netcdf h5py \
@@ -81,7 +122,7 @@ RUN --mount=type=cache,target=/root/.cache/uv,sharing=locked \
         kerchunk virtualizarr rechunker \
         tifffile imagecodecs async-tiff \
         fastparquet \
-        pyarrow polars "ibis-framework[duckdb]" \
+        polars "ibis-framework[duckdb]" \
         stac-geoparquet geoarrow-pyarrow \
         cloudpickle toolz partd \
         pystac-client stackstac rio-stac \
@@ -144,12 +185,45 @@ RUN if [ "${IMAGE_VARIANT}" = "release" ]; then \
             || echo "WARNING: python alignment check failed on dev variant"; \
     fi
 
+# GDAL first, then pyarrow (the reticulate / gdalxarray order)
+RUN <<'EOF' /opt/gdal-py/bin/python
+import re, subprocess, pathlib
+from osgeo import gdal
+import pyarrow as pa
+import pyarrow.parquet, pyarrow.dataset
+
+cpp = subprocess.check_output(["pkg-config", "--modversion", "arrow"], text=True).strip()
+print(f"pyarrow {pa.__version__}  cpp {pa.cpp_version}  system {cpp}")
+assert pa.cpp_version.split(".")[0] == cpp.split(".")[0], "pyarrow/libarrow major mismatch"
+
+pkg = pathlib.Path(pa.__file__).parent
+bundled = list(pkg.glob("libarrow*.so*")) + list(pkg.glob("libparquet*.so*"))
+assert not bundled, f"bundled Arrow C++ found: {bundled}"
+
+maps = open("/proc/self/maps").read()
+libs = sorted({m for m in re.findall(r"\S*libarrow\.so\S*", maps)})
+print("libarrow mapped:", libs)
+assert len(libs) == 1 and libs[0].startswith("/usr/lib/x86_64-linux-gnu/"), libs
+EOF
+
+# pyarrow first, then GDAL's Parquet driver
+RUN <<'EOF' /opt/gdal-py/bin/python
+import re
+import pyarrow as pa
+from osgeo import gdal, ogr
+assert ogr.GetDriverByName("Parquet") is not None, "GDAL lacks Parquet driver"
+libs = {m for m in re.findall(r"\S*libarrow\.so\S*", open("/proc/self/maps").read())}
+assert len(libs) == 1, libs
+print("ok: single libarrow with pyarrow loaded first")
+EOF
+
+
 # ── MOTD: refreshed for this image (file overwrite; bashrc was set in gdal-system)
 RUN { \
         echo "── ghcr.io/hypertidy/gdal-r-python ──" ; \
         echo "GDAL $(gdal-config --version)   PROJ $(pkg-config --modversion proj)   GEOS $(geos-config --version)" ; \
         echo "R    $(R --version 2>/dev/null | head -1 | grep -oE '[0-9]+\.[0-9]+\.[0-9]+')" ; \
-        echo "Py   $(/opt/gdal-py/bin/python -c 'import sys; print(sys.version.split()[0])')   numpy $(/opt/gdal-py/bin/python -c 'import numpy; print(numpy.__version__)')" ; \
+        echo "Py   $(/opt/gdal-py/bin/python -c 'import sys; print(sys.version.split()[0])')   numpy $(/opt/gdal-py/bin/python -c 'import numpy; print(numpy.__version__)')   pyarrow $(/opt/gdal-py/bin/python -c 'import pyarrow; print(pyarrow.__version__)') (libarrow $(pkg-config --modversion arrow))" ; \
         echo "" ; \
         echo "Docs: https://github.com/hypertidy/gdal-r-ci#gdal-r-python" ; \
     } > /etc/gdal-r-ci-motd

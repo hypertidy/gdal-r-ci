@@ -63,7 +63,7 @@ hypertidy_cran <- c(
 
 # 2c. Cloud / Arrow / Parquet / DuckDB.
 cloud <- c(
-  "arrow", "nanoarrow", "duckdb", "duckdbfs", "duckplyr",
+  "nanoarrow", "duckdb", "duckdbfs", "duckplyr",
   "adbcdrivermanager", "redux"
 )
 
@@ -106,8 +106,8 @@ hypertidy_dev <- c(
   "hypertidy/ximage",
   "hypertidy/sds",
   "hypertidy/dsn",
-  "hypertidy/controlledburn", 
-  "hypertidy/vrtstack", 
+  "hypertidy/controlledburn",
+  "hypertidy/vrtstack",
   "hypertidy/blocklist"
 )
 
@@ -123,7 +123,7 @@ aad <- c(
 # 2j. Other GitHub-only.
 gh_other <- c(
   "r-lib/revdepcheck",
-  "coolbutuseless/zstdlite" 
+  "coolbutuseless/zstdlite"
   #,"crazycapivara/h3-r"
 )
 
@@ -140,6 +140,7 @@ options(
   pkg.sysreqs_db_update = FALSE
 )
 Sys.setenv(PKG_SYSREQS = "false")
+
 
 
 
@@ -169,6 +170,11 @@ pak::pkg_install(
 # ---- 4. Phase B: everything else, PPM binaries OK ----------------------------
 message("\n== Phase B: cloud / http / pipeline / tidy / dev (binary) ==")
 options(repos = c(PPM = PPM, CRAN = CRAN))
+
+Sys.setenv(LIBARROW_BINARY = "false",
+           ARROW_USE_PKG_CONFIG = "true",
+           ARROW_R_DEV = "false")
+install.packages("arrow", type = "source")
 
 pak::pkg_install(
   c(cloud, http, pipeline, tidy, dev),
