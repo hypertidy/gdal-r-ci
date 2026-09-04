@@ -50,15 +50,6 @@ EOF
 
 RUN apt-get update -qq && apt-get install -y --no-install-recommends python3.12-venv libhiredis-dev
 
-# ── Source-built: link system GDAL/PROJ/GEOS ──────────────────────────────────
-RUN --mount=type=cache,target=/root/.cache/uv,sharing=locked \
-    GDAL_CONFIG=/usr/local/bin/gdal-config \
-    PROJ_DIR=/usr/local \
-    uv pip install \
-        --python /opt/gdal-py/bin/python \
-        --no-binary rasterio,fiona,pyogrio,shapely,pyproj,geopandas,odc-geo,rioxarray \
-        pyproj shapely fiona rasterio pyogrio geopandas odc-geo rioxarray pyarrow \
- && find /opt/gdal-py -type d -name __pycache__ -exec rm -rf {} +
 
 # -- pyarrow: link system Arrow C++ (one libarrow per process) ----------------
 # Flags mirror what the Apache apt packages actually install (see
@@ -91,6 +82,16 @@ RUN --mount=type=cache,target=/root/.cache/uv,sharing=locked \
         pyarrow \
  && find /opt/gdal-py -type d -name __pycache__ -exec rm -rf {} +
 
+
+# ── Source-built: link system GDAL/PROJ/GEOS ──────────────────────────────────
+RUN --mount=type=cache,target=/root/.cache/uv,sharing=locked \
+    GDAL_CONFIG=/usr/local/bin/gdal-config \
+    PROJ_DIR=/usr/local \
+    uv pip install \
+        --python /opt/gdal-py/bin/python \
+        --no-binary rasterio,fiona,pyogrio,shapely,pyproj,geopandas,odc-geo,rioxarray \
+        pyproj shapely fiona rasterio pyogrio geopandas odc-geo rioxarray \
+ && find /opt/gdal-py -type d -name __pycache__ -exec rm -rf {} +
 
 
 # ── tappa: terra in Python ─────────────────────────────────────────────────
