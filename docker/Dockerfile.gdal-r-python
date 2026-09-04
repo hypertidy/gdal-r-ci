@@ -7,11 +7,16 @@
 # packages into it. No --system-site-packages, no post-hoc rebuilds.
 #
 # --no-binary policy:
-#   MUST build from source (link system GDAL/PROJ/GEOS):
-#     rasterio, fiona, pyogrio, shapely, pyproj, geopandas, odc-geo, rioxarray
+#   MUST build from source (link system GDAL/PROJ/GEOS/Arrow):
+#     rasterio, fiona, pyogrio, shapely, pyproj, geopandas, odc-geo, rioxarray,
+#     pyarrow (links the apt libarrow/libparquet that GDAL's Parquet driver
+#     already loads; a wheel would put a second Arrow C++ in the process.
+#     pyarrow major version MUST equal the Arrow C++ major version.)
 #   WHEELS fine (pure Python, Cython, or safely bundled):
 #     pandas, xarray, zarr, fsspec, netCDF4, h5py/h5netcdf, scipy,
-#     matplotlib, dask,  polars, duckdb, fastparquet
+#     matplotlib, dask, polars, duckdb, fastparquet
+#     (polars, duckdb, sedonadb carry their own Arrow implementations, not
+#     libarrow, so they do not conflict.)
 #   NOTE: netCDF4 and h5py bundle their own HDF5 — do NOT use --no-binary,
 #   it will fight with system HDF5.
 #
@@ -50,13 +55,13 @@ EOF
 
 RUN apt-get update -qq && apt-get install -y --no-install-recommends python3.12-venv libhiredis-dev
 
-## scikit to build pyarrow and tappa from source
+# ── Build tools for source-built extensions ─────────────────────────────────
+# scikit-build-core / pybind11 are for tappa (GitHub-only, no PyPI release,
+# built against system GDAL/PROJ/GEOS). Installed early so every later
+# --no-build-isolation install can find them.
 RUN --mount=type=cache,target=/root/.cache/uv,sharing=locked \
-    GDAL_CONFIG=/usr/local/bin/gdal-config \
-    PROJ_DIR=/usr/local \
     uv pip install \
         --python /opt/gdal-py/bin/python \
-        --no-build-isolation \
         "scikit-build-core" "pybind11>=2.12" \
  && find /opt/gdal-py -type d -name __pycache__ -exec rm -rf {} +
 
@@ -102,12 +107,6 @@ RUN --mount=type=cache,target=/root/.cache/uv,sharing=locked \
         --no-binary rasterio,fiona,pyogrio,shapely,pyproj,geopandas,odc-geo,rioxarray \
         pyproj shapely fiona rasterio pyogrio geopandas odc-geo rioxarray \
  && find /opt/gdal-py -type d -name __pycache__ -exec rm -rf {} +
-
-
-# ── tappa: terra in Python ─────────────────────────────────────────────────
-# GitHub-only, no PyPI release. Built via scikit-build-core against system
-# GDAL/PROJ/GEOS. Added after the main source-built block so its cache
-# invalidation is independent.
 
 ENV DASK_ARRAY__QUERY_PLANNING=True
 
@@ -200,13 +199,24 @@ print(f"pyarrow {pa.__version__}  cpp {pa.cpp_version}  system {cpp}")
 assert pa.cpp_version.split(".")[0] == cpp.split(".")[0], "pyarrow/libarrow major mismatch"
 
 pkg = pathlib.Path(pa.__file__).parent
-bundled = list(pkg.glob("libarrow*.so*")) + list(pkg.glob("libparquet*.so*"))
+# libarrow_python*.so is pyarrow's own glue layer (Python <-> Arrow
+# conversion), always built and installed alongside the extension; it links
+# TO the system libarrow. Anything else under libarrow*/libparquet* would be
+# a bundled copy of Arrow C++.
+bundled = [p for p in list(pkg.glob("libarrow*.so*")) + list(pkg.glob("libparquet*.so*"))
+           if not p.name.startswith("libarrow_python")]
 assert not bundled, f"bundled Arrow C++ found: {bundled}"
+
+ldd = subprocess.check_output(["ldd", str(pkg / "libarrow_python.so")], text=True)
+print(ldd)
+assert re.search(r"libarrow\.so\.\d+ => /(usr/)?lib/x86_64-linux-gnu/", ldd), \
+    "libarrow_python not linked to system libarrow"
 
 maps = open("/proc/self/maps").read()
 libs = sorted({m for m in re.findall(r"\S*libarrow\.so\S*", maps)})
 print("libarrow mapped:", libs)
-assert len(libs) == 1 and libs[0].startswith("/usr/lib/x86_64-linux-gnu/"), libs
+SYSLIB = ("/usr/lib/x86_64-linux-gnu/", "/lib/x86_64-linux-gnu/")  # merged-usr
+assert len(libs) == 1 and libs[0].startswith(SYSLIB), libs
 EOF
 
 # pyarrow first, then GDAL's Parquet driver
