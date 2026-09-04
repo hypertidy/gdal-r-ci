@@ -50,6 +50,16 @@ EOF
 
 RUN apt-get update -qq && apt-get install -y --no-install-recommends python3.12-venv libhiredis-dev
 
+## scikit to build pyarrow and tappa from source
+RUN --mount=type=cache,target=/root/.cache/uv,sharing=locked \
+    GDAL_CONFIG=/usr/local/bin/gdal-config \
+    PROJ_DIR=/usr/local \
+    uv pip install \
+        --python /opt/gdal-py/bin/python \
+        --no-build-isolation \
+        "scikit-build-core" "pybind11>=2.12" \
+ && find /opt/gdal-py -type d -name __pycache__ -exec rm -rf {} +
+
 
 # -- pyarrow: link system Arrow C++ (one libarrow per process) ----------------
 # Flags mirror what the Apache apt packages actually install (see
@@ -98,14 +108,6 @@ RUN --mount=type=cache,target=/root/.cache/uv,sharing=locked \
 # GitHub-only, no PyPI release. Built via scikit-build-core against system
 # GDAL/PROJ/GEOS. Added after the main source-built block so its cache
 # invalidation is independent.
-RUN --mount=type=cache,target=/root/.cache/uv,sharing=locked \
-    GDAL_CONFIG=/usr/local/bin/gdal-config \
-    PROJ_DIR=/usr/local \
-    uv pip install \
-        --python /opt/gdal-py/bin/python \
-        --no-build-isolation \
-        "scikit-build-core" "pybind11>=2.12" \
- && find /opt/gdal-py -type d -name __pycache__ -exec rm -rf {} +
 
 ENV DASK_ARRAY__QUERY_PLANNING=True
 
