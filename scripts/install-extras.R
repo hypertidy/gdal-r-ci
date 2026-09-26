@@ -118,7 +118,8 @@ aad <- c(
   #"AustralianAntarcticDivision/raadtools",
   "AustralianAntarcticDivision/blueant",
   "ropensci/bowerbird",
-  "mdsumner/bluelink"
+  "mdsumner/bluelink", 
+  "mdsumner/aatgrid"
 )
 
 # 2j. Other GitHub-only.
