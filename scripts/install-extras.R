@@ -58,7 +58,8 @@ hypertidy_cran <- c(
   "vaster", "tissot", "geographiclib", "wkpool", "decido",
   "silicate", "sfheaders", "graticule", "quadmesh", "spex",
   "gibble", "palr", "affinity", "rbgm", "trip",
-  "RTriangle", "polyclip", "geometries", "terrainmeshr", "sooty"
+  "RTriangle", "polyclip", "geometries", "terrainmeshr", "sooty", 
+  "vapour", "dsn", "grout", "ximage"
 )
 
 # 2c. Cloud / Arrow / Parquet / DuckDB.
@@ -101,11 +102,7 @@ dev <- c(
 
 # 2h. Hypertidy WIP — r-universe nightly builds preferred.
 hypertidy_dev <- c(
-  "hypertidy/vapour",
-  "hypertidy/grout",
-  "hypertidy/ximage",
   "hypertidy/sds",
-  "hypertidy/dsn",
   "hypertidy/controlledburn",
   "hypertidy/vrtstack",
   "hypertidy/blocklist", 
