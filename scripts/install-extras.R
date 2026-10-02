@@ -196,7 +196,7 @@ message("\n== Phase C: hypertidy WIP + AAD + other GitHub ==")
 #   ask = FALSE,
 #   upgrade = FALSE
 # )
-remotes::install_github(c(hypertidy_dev, aad, gh_other), upgrade = FALSE)
+remotes::install_github(c(hypertidy_dev, aad, gh_other), upgrade = "always")
 
 
 ## --- bioconductor
