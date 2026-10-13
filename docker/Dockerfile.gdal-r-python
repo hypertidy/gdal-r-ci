@@ -69,8 +69,16 @@ RUN --mount=type=cache,target=/root/.cache/uv,sharing=locked \
 # -- pyarrow: link system Arrow C++ (one libarrow per process) ----------------
 # Flags mirror what the Apache apt packages actually install (see
 # ArrowOptions.cmake plus ls of the libdir): core, compute, dataset, acero,
-# parquet, plus ORC/S3/GCS/Azure/HDFS which are compiled into libarrow.so.
+# parquet, plus ORC/GCS/Azure/HDFS which are compiled into libarrow.so.
 # Flight, Gandiva, CUDA, Substrait are separate debs that are not installed.
+#
+# S3 is OFF deliberately. Arrow 26 split S3 into its own CMake package
+# (ArrowS3) and pyarrow 26 does `find_package(ArrowS3 REQUIRED)` when
+# PYARROW_WITH_S3=1 — but the Apache apt repo for Arrow 26 ships no S3 dev
+# package / ArrowS3 config, so that find_package can never be satisfied here
+# (S3 is compiled into libarrow.so, yet the standalone config is absent).
+# pyarrow's own S3 filesystem is therefore disabled; GDAL's /vsis3, the s3fs
+# package, and obstore all provide S3 access and are unaffected.
 RUN --mount=type=cache,target=/root/.cache/uv,sharing=locked \
     uv pip install --python /opt/gdal-py/bin/python \
         cython "cmake>=3.25" ninja setuptools setuptools_scm \
@@ -82,7 +90,7 @@ RUN --mount=type=cache,target=/root/.cache/uv,sharing=locked \
     PYARROW_WITH_DATASET=1 \
     PYARROW_WITH_ACERO=1 \
     PYARROW_WITH_ORC=1 \
-    PYARROW_WITH_S3=1 \
+    PYARROW_WITH_S3=0 \
     PYARROW_WITH_GCS=1 \
     PYARROW_WITH_AZURE=1 \
     PYARROW_WITH_HDFS=1 \
