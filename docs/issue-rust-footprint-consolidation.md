@@ -51,5 +51,6 @@ Chain: `gdal-system → gdal-r → gdal-r-full → gdal-r-python → gdal-r-pyth
 ## Notes
 
 - No code change proposed here yet — this is a scoping/investigation issue.
-- Related: the pyarrow single-`libarrow` work in `mod.md` is a good template
+- Related: the pyarrow single-`libarrow` work in
+  [`docs/pyarrow-system-arrow-build.md`](pyarrow-system-arrow-build.md) is a good template
   for the kind of "one runtime per process / one toolchain per image" cleanup.
