@@ -137,6 +137,7 @@ RUN --mount=type=cache,target=/root/.cache/uv,sharing=locked \
         'marimo[sandbox]>=0.23.4' \
         marimo-jupyter-extension \
         rasterix \
+        ggsql \
         git+https://github.com/hypertidy/gdalxarray@main \
         coiled \
         frisky  \

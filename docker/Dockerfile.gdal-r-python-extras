@@ -23,8 +23,11 @@ LABEL org.opencontainers.image.documentation="https://github.com/hypertidy/gdal-
 
 
 # Extra apt deps that R packages need at build time
+# unixodbc-dev: the R ggsql package links an ODBC reader (SystemRequirements:
+# unixODBC); needed for both the PPM binary (libodbc at runtime) and a source
+# build (headers).
 RUN apt-get update -qq && apt-get install -y --no-install-recommends \
-    libarchive-dev libcairo2-dev libgit2-dev libx11-dev  libglpk-dev   \
+    libarchive-dev libcairo2-dev libgit2-dev libx11-dev  libglpk-dev  unixodbc-dev \
     && rm -rf /var/lib/apt/lists/*
 
 

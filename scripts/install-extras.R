@@ -85,7 +85,7 @@ pipeline <- c(
 tidy <- c(
   "dplyr", "tidyr", "purrr", "stringr", "readr", "tibble",
   "lubridate", "hms", "glue", "fs", "vctrs", "rlang",
-  "ggplot2", "leaflet", "DBI", "RSQLite",
+  "ggplot2", "leaflet", "ggsql", "DBI", "RSQLite",
   "xml2", "jsonlite", "yaml", "base64enc", "jpeg",
   "qs2", "fst", "archive"
 )

@@ -10,12 +10,10 @@ single working environment for R-and-Python interop where reticulate, rasterio,
 sf, terra, gdalraster, vapour, and the osgeo Python bindings all link the same
 GDAL, the same PROJ, the same GEOS, and the same numpy ABI.
 
-See a short demonstration of use of the `gdal-r-python` image here: https://gist.github.com/mdsumner/1b38b300f7dc6e0a8cdfa3cd8fbc84ce
-
 ## Images
 
-Five images are published to GHCR. The first four publish `:latest` (release)
-and `:dev` (GDAL HEAD) variants; the leaf publishes `:latest` only.
+Six images are published to GHCR. The first four publish `:latest` (release)
+and `:dev` (GDAL HEAD) variants; the two leaf images publish `:latest` only.
 
 | Image | Contents | Use for |
 |-------|----------|---------|
@@ -24,16 +22,18 @@ and `:dev` (GDAL HEAD) variants; the leaf publishes `:latest` only.
 | `ghcr.io/hypertidy/gdal-r-full` | + gdalraster, sf, terra, vapour, gdalcubes | Package CI |
 | `ghcr.io/hypertidy/gdal-r-python` | + rasterio, fiona, xarray, zarr, kerchunk, virtualizarr… | R/Python interop |
 | `ghcr.io/hypertidy/gdal-r-python-extras` | + R kitchen sink (hypertidy stack, arrow, targets, dev tooling) | Workbench / interactive |
+| `ghcr.io/hypertidy/gdal-r-python-extras-rust` | + Rust 1.85.0 (clippy, rustfmt, rust-analyzer, lld, cargo-nextest) | Rust + geospatial dev |
 
 ```
-gdal-system  →  gdal-r  →  gdal-r-full  →  gdal-r-python  →  gdal-r-python-extras
+gdal-system  →  gdal-r  →  gdal-r-full  →  gdal-r-python  →  gdal-r-python-extras  →  gdal-r-python-extras-rust
 ```
 
 The `:dev` variants track GDAL HEAD + latest released PROJ/GEOS, rebuilt daily —
 these are the canary. The `:latest` variants track the latest releases of all
-three, rebuilt weekly. `gdal-r-python-extras` has no `:dev` variant by design;
-for bleeding-edge work, base on `gdal-r-python:dev` directly and overlay
-packages via a writable `R_LIBS_USER` mount at runtime.
+three, rebuilt weekly. `gdal-r-python-extras` and `gdal-r-python-extras-rust`
+have no `:dev` variants by design; for bleeding-edge work, base on
+`gdal-r-python:dev` directly and overlay packages via a writable `R_LIBS_USER`
+mount at runtime.
 
 ### gdal-system
 
@@ -63,6 +63,27 @@ Adds the everyday-R kitchen sink on top of `gdal-r-python` via
 CRAN packages are source-built; everything else takes Posit Public Package
 Manager binaries. The set is curated rather than exhaustive — anything WIP or
 rarely reached for stays out and is installed on demand into a writable overlay.
+
+### gdal-r-python-extras-rust
+
+Extends `gdal-r-python-extras` with a pinned Rust dev toolchain
+([`docker/Dockerfile.extras-rust`](docker/Dockerfile.extras-rust)):
+
+- Rust 1.85.0 via rustup, with `clippy`, `rustfmt`, and `rust-analyzer` components
+- `lld` as the default linker (wired into `CARGO_HOME/config.toml`) — cuts
+  incremental link times noticeably on large crates
+- `cargo-nextest` for a faster, more informative test runner
+
+The critical reason to extend `-extras` rather than a lighter base: GDAL, PROJ,
+and GEOS are already present at `/usr/local` as the single source of truth.
+Rust crates like `proj-sys` and `gdal-sys` will link against those via
+`pkg-config` instead of doing their own bundled cmake builds — which means
+`cargo build` skips a 10-minute compile step and, more importantly, rwarp's
+PROJ is byte-for-byte the same PROJ that `gdalwarp` uses as an oracle.
+
+Commit a `rust-toolchain.toml` pinning `1.85.0` in any project that consumes
+this image. The image pre-caches the toolchain; the toml is the repo-side pin.
+Drift becomes a `git diff`.
 
 ## Quick start
 
@@ -301,6 +322,81 @@ For Python packages, `uv pip install --python /opt/gdal-py/bin/python <pkg>`
 adds to the inherited venv. Inside R, `reticulate::py_require("<pkg>")` does
 the same via reticulate's bridge — `RETICULATE_PYTHON` is pinned so additions
 land in `/opt/gdal-py`, not in an ephemeral venv.
+
+## Host VM + container workflow for Rust projects
+
+The recommended pattern for interactive Rust development against this image is
+a clean split: the **host VM** is the pantry (credentials, raad conventions,
+data acquisition, anything that touches the outside world); the **container** is
+the clean room (build, warp, validate, produce artefacts). The host filesystem
+enters the container as a bind mount; nothing else crosses the boundary
+unintentionally.
+
+### Basic invocation
+
+From your project directory on the host VM:
+
+```bash
+cd ~/rwarp-reentry
+docker run --rm -ti \
+  -v "$(pwd)":/work -w /work \
+  ghcr.io/hypertidy/gdal-r-python-extras-rust:latest
+```
+
+The project source is live-edited on the host; `cargo build`, `cargo nextest
+run`, and `gdalwarp` cross-checks run inside the container against the
+image's GDAL/PROJ/GEOS stack.
+
+### Persisting the build cache
+
+With `--rm`, anything not bind-mounted evaporates on exit — including
+`target/` and the crates.io registry. Named volumes fix this without
+touching the host:
+
+```bash
+docker run --rm -ti \
+  -v "$(pwd)":/work -w /work \
+  -v rwarp-target:/work/target \
+  -v cargo-cache:/usr/local/cargo/registry \
+  ghcr.io/hypertidy/gdal-r-python-extras-rust:latest
+```
+
+`rwarp-target` overlays on top of the bind mount at `/work/target`, so
+incremental builds survive `--rm` without ever appearing on the host.
+Host builds (if any) and container builds can never contaminate each
+other's fingerprints — `CARGO_TARGET_DIR` on the host is irrelevant
+inside the container, and the volumes are container-local by definition.
+
+### File ownership
+
+Docker runs as root by default. Anything written to `/work` lands on
+your VM owned by root. Two options — pick one early, retrofitting is
+tedious:
+
+1. Add `-u $(id -u):$(id -g)` to run as your UID. You may need to
+   `docker run --rm -u 0 -v rwarp-target:/work/target <image> chown -R
+   <uid>:<gid> /work/target` once to fix the named volume ownership.
+2. Accept root-in-container and keep outputs in a dedicated `out/`
+   directory that you `chown -R` on the host as needed.
+
+### Pinning the image by digest
+
+For work that produces figures or artefacts you want to be reproducible
+months later, pin the image digest rather than `:latest`:
+
+```bash
+# get the current digest
+docker inspect --format='{{index .RepoDigests 0}}' \
+  ghcr.io/hypertidy/gdal-r-python-extras-rust:latest
+
+# use in Makefile / justfile
+IMAGE := ghcr.io/hypertidy/gdal-r-python-extras-rust@sha256:<digest>
+```
+
+A discipline worth adopting from day one: have artefact-producing
+`make`/`just` recipes echo the image digest plus the full command line
+into a sidecar `.txt` next to each output. "Which GDAL and which rwarp
+made this figure" then has a mechanical answer.
 
 ## Related
 
