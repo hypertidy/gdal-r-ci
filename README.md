@@ -2,7 +2,7 @@
 
 CI infrastructure for R (and Python) geospatial packages against bleeding-edge GDAL.
 
-GDAL, PROJ, and GEOS are built from source on plain `ubuntu:24.04` with standard
+GDAL, PROJ, and GEOS are built from source on plain `ubuntu:26.04` with standard
 symbols — no internal PROJ, no dual-library setup. This means full `R CMD check`
 including `--as-cran` and PDF manual rendering works for all packages including
 sf and terra, with no `--no-test-load` workarounds. The same chain produces a
@@ -175,11 +175,26 @@ We build GDAL ourselves against a single system PROJ at `/usr/local`, so there i
 one `libproj.so` and everything links it. Full `R CMD check` works for all packages.
 
 Spatialite is also built from source — the apt package is compiled against the
-system GEOS 3.12.1, and its headers at `/usr/include/geos_c.h` conflict with our
-`/usr/local/include/geos_c.h` (3.13.1+). Building spatialite against our GEOS
+system GEOS (3.14.1 on 26.04), and its headers at `/usr/include/geos_c.h` conflict
+with our `/usr/local/include/geos_c.h`. Building spatialite against our GEOS
 keeps the entire stack at one consistent version.
 
 See [docs/library-alignment.md](docs/library-alignment.md) for full details.
+
+### Base image and build args
+
+The chain is based on Ubuntu 26.04 (resolute), which brings current format
+libraries (HDF5 1.14, netCDF 4.9.3, poppler 26), Python 3.14, gcc 15 and
+CMake 4. Two build args on `gdal-system` exist for rollback and fallback:
+
+- `UBUNTU_VERSION` (default `26.04`): `24.04` rebuilds the chain on noble.
+- `ARROW_SOURCE` (default `apache`): the Apache Arrow apt repo. `ubuntu` uses
+  the distro's own Arrow packages instead (23.x on 26.04).
+  `gdal-r-python`'s pyarrow pin follows `pkg-config`, so either works.
+
+`scripts/install-extras.R` picks the Posit Package Manager binary repo from
+the image's codename and falls back to PPM's source mirror if there is no
+binary index for it (override with `PPM_URL`).
 
 ## One library, one ABI
 

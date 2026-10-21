@@ -21,7 +21,7 @@ RUN apt-get update -qq && apt-get install -y --no-install-recommends \
     dirmngr gnupg \
     # R package build-time needs
     libcurl4-openssl-dev libssl-dev libxml2-dev \
-    libfontconfig1-dev libfreetype6-dev \
+    libfontconfig1-dev libfreetype-dev \
     libharfbuzz-dev libfribidi-dev \
     libpng-dev libjpeg-dev \
     libudunits2-dev \

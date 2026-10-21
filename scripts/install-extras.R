@@ -37,7 +37,29 @@ Sys.setenv(R_PROGRESSR_ENABLE = "false")
 Sys.setenv(PKG_PROGRESS_BARS = "false")
 
 # ---- 1. Repositories ---------------------------------------------------------
-PPM        <- "https://packagemanager.posit.co/cran/__linux__/noble/latest"
+# PPM Linux binaries are per distro release, so take the codename from the
+# image (resolute on 26.04, noble on 24.04) rather than hardcoding it.
+# Override with PPM_URL. If PPM has no index for this codename, fall back to
+# PPM's plain CRAN source mirror: slower (source builds), but correct.
+ppm_codename <- local({
+  osr <- tryCatch(readLines("/etc/os-release"), error = function(e) character())
+  cn <- sub("^VERSION_CODENAME=", "", grep("^VERSION_CODENAME=", osr, value = TRUE))
+  if (length(cn) == 1L && nzchar(cn)) cn else "noble"
+})
+PPM <- Sys.getenv(
+  "PPM_URL",
+  sprintf("https://packagemanager.posit.co/cran/__linux__/%s/latest", ppm_codename)
+)
+ppm_ok <- tryCatch(
+  nrow(utils::available.packages(repos = PPM)) > 0,
+  error = function(e) FALSE,
+  warning = function(w) FALSE
+)
+if (!ppm_ok) {
+  message("PPM: no index at ", PPM, "; falling back to source mirror")
+  PPM <- "https://packagemanager.posit.co/cran/latest"
+}
+message("PPM: using ", PPM)
 CRAN       <- "https://cloud.r-project.org"
 HYPERTIDY  <- "https://hypertidy.r-universe.dev"
 ROPENSCI   <- "https://ropensci.r-universe.dev"

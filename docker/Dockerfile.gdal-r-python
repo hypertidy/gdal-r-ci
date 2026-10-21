@@ -53,7 +53,9 @@ print(f'gdal:       {gdal.__version__}')
 print(f'gdal_array: {gdal_array.__file__}')
 EOF
 
-RUN apt-get update -qq && apt-get install -y --no-install-recommends python3.12-venv libhiredis-dev
+# python3-venv tracks the system python (3.14 on 26.04, 3.12 on 24.04).
+RUN apt-get update -qq && apt-get install -y --no-install-recommends python3-venv libhiredis-dev \
+ && rm -rf /var/lib/apt/lists/*
 
 # ── Build tools for source-built extensions ─────────────────────────────────
 # scikit-build-core / pybind11 are for tappa (GitHub-only, no PyPI release,

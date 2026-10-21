@@ -12,8 +12,9 @@ SPATIALITE_URL=${SPATIALITE_URL:-"https://www.gaia-gis.it/gaia-sins/libspatialit
 NCPUS=${NCPUS:-0}
 [ "$NCPUS" = "0" ] && NCPUS=$(nproc)
 
-# Remove apt spatialite — it was compiled against system GEOS 3.12.1
-# and would conflict with our /usr/local GEOS at the header level
+# Remove apt spatialite: it is compiled against the system GEOS (3.12.1 on
+# 24.04, 3.14.1 on 26.04), not our /usr/local GEOS, and would conflict at
+# the header level
 if dpkg -l libspatialite-dev >/dev/null 2>&1; then
     apt-get remove -y libspatialite-dev libspatialite8t64 2>/dev/null || \
     apt-get remove -y libspatialite-dev libspatialite7 2>/dev/null || \
@@ -47,6 +48,11 @@ cd src
 
 # Configure: point explicitly at /usr/local for GEOS/PROJ
 # disable RTTOPO if not available (optional topology support)
+# gcc >= 14 makes implicit function declarations an error, and spatialite
+# 5.1.0 has some. Debian/Ubuntu build the same unpatched 5.1.0 with exactly
+# this flag appended (debian/rules: DEB_CFLAGS_MAINT_APPEND); harmless on
+# older gcc.
+CFLAGS="${CFLAGS:--O2} -Wno-error=implicit-function-declaration" \
 PKG_CONFIG_PATH=/usr/local/lib/pkgconfig:${PKG_CONFIG_PATH:-} \
 ./configure \
     --prefix=/usr/local \

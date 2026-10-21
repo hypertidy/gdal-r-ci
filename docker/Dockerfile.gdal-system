@@ -1,7 +1,8 @@
 # ghcr.io/hypertidy/gdal-system:latest  (release branch)
 # ghcr.io/hypertidy/gdal-system:dev     (dev branch)
 #
-# Builds GEOS, PROJ, and GDAL from source on plain Ubuntu 24.04.
+# Builds GEOS, PROJ, and GDAL from source on plain Ubuntu (26.04 by default;
+# --build-arg UBUNTU_VERSION=24.04 rebuilds on noble if a rollback is needed).
 # All three are installed to /usr/local with standard symbols.
 # R packages (sf, terra, vapour, gdalraster) link the same libproj/libgdal
 # as GDAL itself — one PROJ, no dual-library crashes, full R CMD check works.
@@ -14,7 +15,8 @@
 # every downstream layer; gdal-r and gdal-r-full inherit it but don't use
 # it (~80 MB cost, accepted for architectural cleanliness).
 
-FROM ubuntu:24.04
+ARG UBUNTU_VERSION=26.04
+FROM ubuntu:${UBUNTU_VERSION}
 
 LABEL org.opencontainers.image.source="https://github.com/hypertidy/gdal-r-ci"
 LABEL org.opencontainers.image.description="GDAL/PROJ/GEOS built from source, no internal PROJ"
@@ -34,7 +36,7 @@ ENV LC_ALL=C.UTF-8
 ENV LANG=C.UTF-8
 
 # CACHE_DATE is set to the CI run id, so every CI build starts fresh from the
-# apt layer down (security updates and noble point releases get picked up).
+# apt layer down (security updates and Ubuntu point releases get picked up).
 # Previously it sat after this layer, so the apt layer was only refreshed by a
 # no_cache rebuild. Local builds that leave the default keep the full cache.
 ARG CACHE_DATE=unknown
@@ -56,7 +58,10 @@ RUN apt-get update -qq && apt-get install -y --no-install-recommends \
     # spatialite build deps but no librttopo because that installs geos
     libminizip-dev \
     # GDAL — HDF / NetCDF / scientific formats
-    libhdf4-alt-dev libhdf5-dev \
+    # HDF4: 26.04's libhdf4-dev already renames its netCDF API (hdf4_netcdf.h),
+    # which is what libhdf4-alt-dev was for on 24.04 (where it still exists).
+    $(. /etc/os-release; [ "$VERSION_ID" = "24.04" ] && echo libhdf4-alt-dev || echo libhdf4-dev) \
+    libhdf5-dev \
     libnetcdf-dev netcdf-bin \
     # GDAL — vector / database drivers
     libpq-dev libmysqlclient-dev \
@@ -77,15 +82,26 @@ RUN curl -fsSL https://raw.githubusercontent.com/ArashPartow/exprtk/master/exprt
 # ── 2. Apache Arrow (GeoParquet support) ─────────────────────────────────────
 # apt lists were removed at the end of layer 1, so refresh before installing gpg
 # (it only worked before because gpg was already pulled in as a dependency).
+#
+# ARROW_SOURCE=apache (default): the Apache apt repo, current Arrow release.
+#   Arrow has shipped ubuntu-resolute packaging since 25.0.0. If the repo has
+#   no index for this Ubuntu codename, apt-get update fails loudly here, rather
+#   than the image silently changing Arrow major version.
+# ARROW_SOURCE=ubuntu: Ubuntu's own Arrow packages (23.x on 26.04), as a
+#   fallback. pyarrow's version pin in gdal-r-python follows pkg-config, so
+#   either source keeps one libarrow per process.
+ARG ARROW_SOURCE=apache
 RUN apt-get update -qq \
     && apt-get install -y --no-install-recommends gpg \
-    && wget -q https://dist.apache.org/repos/dist/release/arrow/KEYS \
-        -O /tmp/arrow-keyring.asc \
-    && gpg --dearmor < /tmp/arrow-keyring.asc \
-        > /usr/share/keyrings/apache-arrow-keyring.gpg \
-    && rm /tmp/arrow-keyring.asc \
-    && echo "deb [signed-by=/usr/share/keyrings/apache-arrow-keyring.gpg] https://packages.apache.org/artifactory/arrow/ubuntu $(lsb_release -cs) main" \
-        > /etc/apt/sources.list.d/apache-arrow.list \
+    && if [ "${ARROW_SOURCE}" = "apache" ]; then \
+         wget -q https://dist.apache.org/repos/dist/release/arrow/KEYS \
+             -O /tmp/arrow-keyring.asc \
+         && gpg --dearmor < /tmp/arrow-keyring.asc \
+             > /usr/share/keyrings/apache-arrow-keyring.gpg \
+         && rm /tmp/arrow-keyring.asc \
+         && echo "deb [signed-by=/usr/share/keyrings/apache-arrow-keyring.gpg] https://packages.apache.org/artifactory/arrow/ubuntu $(lsb_release -cs) main" \
+             > /etc/apt/sources.list.d/apache-arrow.list ; \
+       fi \
     && apt-get update -qq \
     && apt-get install -y --no-install-recommends \
         libarrow-dev libparquet-dev libarrow-dataset-dev libarrow-acero-dev \
@@ -159,6 +175,8 @@ RUN echo "=== Library versions ===" \
     && gdal-config --version \
     && echo "PROJ: $(pkg-config --modversion proj)" \
     && echo "GEOS: $(geos-config --version)" \
+    && echo "Arrow: $(pkg-config --modversion arrow)" \
+    && echo "Base: $(. /etc/os-release; echo $PRETTY_NAME)" \
     && echo "" \
     && echo "=== numpy + osgeo (one ABI through both) ===" \
     && /opt/gdal-py/bin/python -c "import numpy; print('numpy:', numpy.__version__)" \

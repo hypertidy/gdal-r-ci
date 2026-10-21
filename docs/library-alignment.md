@@ -25,7 +25,7 @@ The previous gdal-r-ci worked around this with `--no-test-load` and by skipping
 
 ## What we do instead
 
-We build GDAL ourselves from `ubuntu:24.04`, linking it against the same PROJ
+We build GDAL ourselves from `ubuntu:26.04`, linking it against the same PROJ
 we install to `/usr/local` without any symbol renaming. The result:
 
 ```
@@ -46,7 +46,7 @@ is a real environment problem, not an expected artefact.
 ## Why we don't use pak / r2u / RSPM binaries
 
 - **r2u** provides CRAN packages compiled against Ubuntu's system GDAL (~3.4 on 22.04,
-  ~3.8 on 24.04). Those binaries will crash or silently misbehave when loaded in
+  ~3.8 on 24.04, newer on 26.04). Those binaries will crash or silently misbehave when loaded in
   a container with a different GDAL version.
 - **pak** with binary fallback has the same risk — a binary fetched from RSPM was
   compiled against whatever GDAL was current at RSPM's build time.
@@ -57,7 +57,7 @@ This is slower; that is why we pre-build images weekly and cache them in GHCR.
 ## Build order
 
 ```
-ubuntu:24.04
+ubuntu:26.04
   apt: build tools, format libraries (HDF5, NetCDF, Arrow, etc.)
   → GEOS from source  → /usr/local
   → PROJ from source  → /usr/local  (standard symbols, projsync grids)

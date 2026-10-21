@@ -1,6 +1,6 @@
 # Build and push ghcr.io/hypertidy/gdal-system
 #
-# Builds GDAL/PROJ/GEOS from source on ubuntu:24.04.
+# Builds GDAL/PROJ/GEOS from source on ubuntu:26.04 (UBUNTU_VERSION build arg).
 # Triggers downstream builds via repository_dispatch when the digest changes.
 #
 # Schedule:
