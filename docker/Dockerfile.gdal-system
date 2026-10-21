@@ -33,7 +33,11 @@ ENV PKG_CONFIG_PATH=/usr/local/lib/pkgconfig
 ENV LC_ALL=C.UTF-8
 ENV LANG=C.UTF-8
 
-
+# CACHE_DATE is set to the CI run id, so every CI build starts fresh from the
+# apt layer down (security updates and noble point releases get picked up).
+# Previously it sat after this layer, so the apt layer was only refreshed by a
+# no_cache rebuild. Local builds that leave the default keep the full cache.
+ARG CACHE_DATE=unknown
 
 # ── 1. Build-time and runtime apt dependencies ───────────────────────────────
 RUN apt-get update -qq && apt-get install -y --no-install-recommends \
@@ -70,10 +74,11 @@ RUN apt-get update -qq && apt-get install -y --no-install-recommends \
 RUN curl -fsSL https://raw.githubusercontent.com/ArashPartow/exprtk/master/exprtk.hpp \
         -o /usr/local/include/exprtk.hpp
 
-ARG CACHE_DATE=unknown
-
 # ── 2. Apache Arrow (GeoParquet support) ─────────────────────────────────────
-RUN apt-get install -y --no-install-recommends gpg \
+# apt lists were removed at the end of layer 1, so refresh before installing gpg
+# (it only worked before because gpg was already pulled in as a dependency).
+RUN apt-get update -qq \
+    && apt-get install -y --no-install-recommends gpg \
     && wget -q https://dist.apache.org/repos/dist/release/arrow/KEYS \
         -O /tmp/arrow-keyring.asc \
     && gpg --dearmor < /tmp/arrow-keyring.asc \
@@ -116,8 +121,11 @@ ENV RUSTUP_HOME=/usr/local/rustup \
     PATH=/usr/local/cargo/bin:$PATH
 ENV PCO_DISMISS_BUILD_WARNINGS=1
 
+# --profile minimal: rustc + cargo + rust-std only. The default profile also
+# installs rust-docs (and clippy/rustfmt), which nothing in the build uses and
+# which cost a few hundred MB in every downstream image.
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | \
-    sh -s -- -y --default-toolchain stable --no-modify-path \
+    sh -s -- -y --default-toolchain stable --profile minimal --no-modify-path \
     && cargo --version && rustc --version
 
 
@@ -157,9 +165,14 @@ RUN echo "=== Library versions ===" \
     && /opt/gdal-py/bin/python -c "from osgeo import gdal_array; print('gdal_array OK:', gdal_array.__file__)" \
     && echo "" \
     && echo "=== Key GDAL drivers ===" \
-    && gdal-config --formats | tr ' ' '\n' | grep -iE 'arrow|parquet|netcdf|hdf|zarr|kea|gpkg' | sort
+    && gdal-config --formats | tr ' ' '\n' | grep -iE 'arrow|parquet|netcdf|hdf|zarr|kea|gpkg' | sort \
+    && echo "" \
+    && echo "=== Size report (for trimming decisions; see build logs) ===" \
+    && { du -sh /usr/local/share/proj /usr/local/lib /usr/local/rustup /usr/local/cargo /opt/gdal-py 2>/dev/null || true; }
 
-RUN strip --strip-unneeded /usr/local/lib/lib*.so* 2>/dev/null || true
+# Libraries are stripped at install time inside each build script
+# (cmake --install --strip / make install-strip). A separate strip RUN here
+# would only add a second, stripped copy of every library in a new layer.
 
 # ── MOTD ─────────────────────────────────────────────────────────────────────
 RUN { \

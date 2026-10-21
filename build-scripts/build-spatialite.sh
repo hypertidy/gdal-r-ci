@@ -1,7 +1,8 @@
 #!/bin/bash
 # build-spatialite.sh — build libspatialite from source
 #
-# Must run AFTER GEOS, PROJ, and GDAL are installed to /usr/local.
+# Must run AFTER GEOS and PROJ are installed to /usr/local, and BEFORE GDAL
+# (GDAL's SQLite/GPKG drivers link it).
 # Removes the apt-installed libspatialite-dev first to avoid header confusion.
 set -euo pipefail
 
@@ -26,10 +27,13 @@ if dpkg -l libgeos-dev >/dev/null 2>&1; then
     echo "Removed system libgeos-dev"
 fi
 
-# Build deps not already in /usr/local
+# Build deps not already in /usr/local (normally already present from the
+# main apt layer; the lists were removed there, so refresh before installing)
+apt-get update -qq
 apt-get install -y --no-install-recommends \
     libminizip-dev \
     libxml2-dev
+rm -rf /var/lib/apt/lists/*
 
 WORKDIR=$(mktemp -d)
 trap 'rm -rf "$WORKDIR"' EXIT
@@ -52,7 +56,8 @@ PKG_CONFIG_PATH=/usr/local/lib/pkgconfig:${PKG_CONFIG_PATH:-} \
     --disable-static
 
 make "-j${NCPUS}"
-make install
+# install-strip: strip at install time, in the same layer (see build-geos.sh).
+make install-strip
 ldconfig
 
 echo "spatialite: $(spatialite --version 2>&1 | head -1 || echo 'installed')"

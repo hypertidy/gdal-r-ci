@@ -21,6 +21,7 @@ LABEL org.opencontainers.image.documentation="https://github.com/hypertidy/gdal-
 COPY scripts/check-r-versions.R    /opt/scripts/check-r-versions.R
 COPY scripts/install-required.R    /opt/scripts/install-required.R
 COPY scripts/install-optional.R    /opt/scripts/install-optional.R
+COPY scripts/strip-r-libs.sh      /opt/scripts/strip-r-libs.sh
 COPY config/r-packages-required.txt /tmp/r-packages-required.txt
 COPY config/r-packages-optional.txt  /tmp/r-packages-optional.txt
 
@@ -30,15 +31,17 @@ RUN echo "${IMAGE_VARIANT}" > /opt/image_variant.txt
 # ── SET A: Required packages ──────────────────────────────────────────────────
 # For release: failure is fatal (something is genuinely broken)
 # For dev: failure is logged but build continues (canary signal, not a blocker)
-RUN if [ "${IMAGE_VARIANT}" = "release" ]; then \
+RUN touch /tmp/r-stamp \
+ && if [ "${IMAGE_VARIANT}" = "release" ]; then \
         Rscript /opt/scripts/install-required.R; \
     else \
         Rscript /opt/scripts/install-required.R \
             || echo "WARNING: required package install failed on dev variant — canary signal"; \
-    fi
+    fi \
+ && bash /opt/scripts/strip-r-libs.sh /tmp/r-stamp
 
 # ── SET B: Optional packages ─────────────────────────────────────────────────
-RUN Rscript /opt/scripts/install-optional.R
+RUN touch /tmp/r-stamp && Rscript /opt/scripts/install-optional.R && bash /opt/scripts/strip-r-libs.sh /tmp/r-stamp
 
 # ── Version alignment check ───────────────────────────────────────────────────
 # Non-fatal on dev — misalignment may be expected during bleeding-edge transitions
@@ -48,8 +51,6 @@ RUN if [ "${IMAGE_VARIANT}" = "release" ]; then \
         Rscript /opt/scripts/check-r-versions.R \
             || echo "WARNING: version misalignment on dev variant — check logs"; \
     fi
-
-RUN strip --strip-debug /usr/local/lib/R/site-library/*/libs/*.so 2>/dev/null || true
 
 # ── MOTD: refreshed for this image (no Python yet — added in gdal-r-python)
 RUN { \

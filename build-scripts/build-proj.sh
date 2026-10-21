@@ -31,7 +31,9 @@ cmake -S src -B build \
     -DENABLE_CURL=ON
 
 cmake --build build --parallel "$NCPUS"
-cmake --install build
+# --strip: strip at install time, in the same layer. A separate strip RUN
+# later would copy every library up into a new layer and grow the image.
+cmake --install build --strip
 
 # Download datum shift grids.
 # --bbox with global extent fetches the most commonly needed grids without

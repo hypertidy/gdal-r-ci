@@ -162,7 +162,10 @@ RUN --mount=type=cache,target=/root/.cache/uv,sharing=locked \
 # and short-circuits the uv-managed-venv logic that py_require() would
 # otherwise trigger. RETICULATE_USE_MANAGED_VENV=no is belt-and-braces against
 # future reticulate versions changing discovery precedence.
-RUN R -q -e 'install.packages("reticulate", repos = "https://cloud.r-project.org")'
+COPY scripts/strip-r-libs.sh /opt/scripts/strip-r-libs.sh
+RUN touch /tmp/r-stamp \
+ && R -q -e 'install.packages("reticulate", repos = "https://cloud.r-project.org")' \
+ && bash /opt/scripts/strip-r-libs.sh /tmp/r-stamp
 ENV RETICULATE_PYTHON=/opt/gdal-py/bin/python
 ENV RETICULATE_USE_MANAGED_VENV=no
 
@@ -177,10 +180,12 @@ RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs \
 
 RUN --mount=type=cache,target=/opt/cargo/registry \
     --mount=type=cache,target=/opt/cargo/git \
+    touch /tmp/r-stamp && \
     NOT_CRAN=true PIZZARR_FEATURES=s3,gcs \
     R -e 'install.packages("pizzarr", \
             repos = c("https://zarr-developers.r-universe.dev", "https://cloud.r-project.org"), \
-            type = "source")'
+            type = "source")' && \
+    bash /opt/scripts/strip-r-libs.sh /tmp/r-stamp
 
 # Optional: fail the build if the toolchain ever drifts below 1.91
 RUN rustc --version \

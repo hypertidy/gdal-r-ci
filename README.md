@@ -230,6 +230,12 @@ A few patterns make rebuilds fast and image sizes manageable:
   packages and hypertidy CRAN are installed via `pak::pkg_install("...?source")`
   with `pkg.sysreqs = FALSE`; everything else takes PPM binaries.
 - **CMake unity build** for GDAL halves compile time on the cmake step.
+- **Strip in the same layer that installs.** C/C++ libraries are installed with
+  `cmake --install --strip` / `make install-strip`, and R package shared objects
+  are stripped by [`scripts/strip-r-libs.sh`](scripts/strip-r-libs.sh) at the end
+  of the same `RUN` that installed them. A strip in a later `RUN` would copy
+  every touched file up into a new layer and make the image bigger, not smaller.
+- **Minimal Rust profile** in gdal-system (rustc, cargo, rust-std only).
 
 ## Local development
 
@@ -357,7 +363,7 @@ touching the host:
 docker run --rm -ti \
   -v "$(pwd)":/work -w /work \
   -v rwarp-target:/work/target \
-  -v cargo-cache:/usr/local/cargo/registry \
+  -v cargo-cache:/opt/cargo/registry \
   ghcr.io/hypertidy/gdal-r-python-extras-rust:latest
 ```
 

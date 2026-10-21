@@ -59,8 +59,15 @@ RUN echo 'options(repos = c(CRAN = "https://cloud.r-project.org"))' >> /etc/R/Rp
 # Tell R where our libraries live
 RUN echo '/usr/local/lib' >> /etc/ld.so.conf.d/gdal-r-local.conf && ldconfig
 
+# strip-r-libs.sh strips the R shared objects created by the RUN it is called
+# from (see the script header for why it must be the same RUN). Each image
+# COPYs it itself rather than relying on the base image, so a layer can be
+# rebuilt against an older base without breaking.
+COPY scripts/strip-r-libs.sh /opt/scripts/strip-r-libs.sh
+
 COPY config/r-packages-base.txt /tmp/r-packages-base.txt
-RUN Rscript -e "pkgs <- readLines('/tmp/r-packages-base.txt'); pkgs <- pkgs[!grepl('^#', pkgs) & nchar(trimws(pkgs)) > 0]; install.packages(pkgs, type = 'source', Ncpus = parallel::detectCores())"
+RUN touch /tmp/r-stamp && Rscript -e "pkgs <- readLines('/tmp/r-packages-base.txt'); pkgs <- pkgs[!grepl('^#', pkgs) & nchar(trimws(pkgs)) > 0]; install.packages(pkgs, type = 'source', Ncpus = parallel::detectCores())" \
+    && bash /opt/scripts/strip-r-libs.sh /tmp/r-stamp
 
 RUN R -e "tinytex::install_tinytex(bundle = 'TinyTeX-1', force = TRUE)"
 
@@ -76,8 +83,6 @@ RUN Rscript -e "cat('R', R.version\$major, R.version\$minor, '\n')" \
     && echo "gdal-config: $(gdal-config --version)" \
     && echo "PROJ: $(pkg-config --modversion proj)" \
     && echo "GEOS: $(geos-config --version)"
-
-RUN strip --strip-debug /usr/local/lib/R/site-library/*/libs/*.so 2>/dev/null || true
 
 # ── MOTD: refreshed for this image (no Python yet — added in gdal-r-python)
 RUN { \

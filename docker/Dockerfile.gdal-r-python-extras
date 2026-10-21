@@ -37,6 +37,7 @@ RUN apt-get update -qq && apt-get install -y --no-install-recommends \
 # binaries from PPM for everything else — the install script handles the
 # per-phase repo / source-vs-binary policy.
 COPY scripts/install-extras.R /opt/scripts/install-extras.R
+COPY scripts/strip-r-libs.sh /opt/scripts/strip-r-libs.sh
 
 RUN --mount=type=secret,id=gh_pat \
     echo "secret file exists: $([ -f /run/secrets/gh_pat ] && echo yes || echo no)" && \
@@ -49,7 +50,9 @@ RUN --mount=type=cache,target=/root/.cache/R,sharing=locked \
     echo "GITHUB_PAT length in shell: ${#GITHUB_PAT}" && \
     echo "GITHUB_PAT=${GITHUB_PAT}" > /root/.Renviron && \
     echo "GITHUB_TOKEN=${GITHUB_PAT}" >> /root/.Renviron && \
+    touch /tmp/r-stamp && \
     Rscript /opt/scripts/install-extras.R && \
+    bash /opt/scripts/strip-r-libs.sh /tmp/r-stamp && \
     rm -f /root/.Renviron
 
 # ── Refresh MOTD for the leaf image ──────────────────────────────────────────
@@ -61,8 +64,6 @@ RUN { \
         echo "" ; \
         echo "Docs: https://github.com/hypertidy/gdal-r-ci#gdal-r-python-extras" ; \
     } > /etc/gdal-r-ci-motd
-
-RUN strip --strip-debug /usr/local/lib/R/site-library/*/libs/*.so 2>/dev/null || true
 
 WORKDIR /workspace
 CMD ["bash"]

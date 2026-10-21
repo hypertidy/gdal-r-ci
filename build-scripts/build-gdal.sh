@@ -77,7 +77,8 @@ cmake -S src -B build \
     -DBUILD_TESTING=OFF
 
 cmake --build build --parallel "$NCPUS"
-cmake --install build
+# --strip: strip at install time, in the same layer (see build-geos.sh).
+cmake --install build --strip
 
 # Bindings: install via uv (consistent with rest of chain) into the venv.
 # Lands at /opt/gdal-py/lib/python3.x/site-packages/osgeo/, not /usr/local.

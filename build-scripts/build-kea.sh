@@ -25,4 +25,5 @@ cmake . \
     -DLIBKEA_WITH_GDAL=OFF
 
 make "-j${NCPUS}"
-make install
+# install/strip: strip at install time, in the same layer (see build-geos.sh).
+make install/strip
