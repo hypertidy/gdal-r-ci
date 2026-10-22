@@ -1,0 +1,111 @@
+{
+ "run": {
+  "id": 38709509580,
+  "created": "2026-10-15T08:58:28Z",
+  "conclusion": "failure",
+  "url": "https://github.com/hypertidy/gdal-r-ci/actions/runs/38709509580",
+  "event": "schedule"
+ },
+ "cells": [
+  {
+   "name": "sf (cran) / gdal-r-full:dev",
+   "conclusion": "success",
+   "url": "https://github.com/hypertidy/gdal-r-ci/actions/runs/38709509580/job/116337167039"
+  },
+  {
+   "name": "terra (github) / gdal-r-full:latest",
+   "conclusion": "success",
+   "url": "https://github.com/hypertidy/gdal-r-ci/actions/runs/38709509580/job/116337167081"
+  },
+  {
+   "name": "terra (cran) / gdal-r-full:latest",
+   "conclusion": "success",
+   "url": "https://github.com/hypertidy/gdal-r-ci/actions/runs/38709509580/job/116337167097"
+  },
+  {
+   "name": "sf (github) / gdal-r-full:dev",
+   "conclusion": "failure",
+   "url": "https://github.com/hypertidy/gdal-r-ci/actions/runs/38709509580/job/116337167129"
+  },
+  {
+   "name": "gdalraster (github) / gdal-r-full:dev",
+   "conclusion": "success",
+   "url": "https://github.com/hypertidy/gdal-r-ci/actions/runs/38709509580/job/116337167143"
+  },
+  {
+   "name": "gdalraster (github) / gdal-r-full:latest",
+   "conclusion": "success",
+   "url": "https://github.com/hypertidy/gdal-r-ci/actions/runs/38709509580/job/116337167152"
+  },
+  {
+   "name": "sf (cran) / gdal-r-full:latest",
+   "conclusion": "success",
+   "url": "https://github.com/hypertidy/gdal-r-ci/actions/runs/38709509580/job/116337167195"
+  },
+  {
+   "name": "gdalraster (cran) / gdal-r-full:dev",
+   "conclusion": "success",
+   "url": "https://github.com/hypertidy/gdal-r-ci/actions/runs/38709509580/job/116337167201"
+  },
+  {
+   "name": "gdalcubes (github) / gdal-r-full:dev",
+   "conclusion": "success",
+   "url": "https://github.com/hypertidy/gdal-r-ci/actions/runs/38709509580/job/116337167204"
+  },
+  {
+   "name": "vapour (cran) / gdal-r-full:dev",
+   "conclusion": "success",
+   "url": "https://github.com/hypertidy/gdal-r-ci/actions/runs/38709509580/job/116337167218"
+  },
+  {
+   "name": "gdalraster (cran) / gdal-r-full:latest",
+   "conclusion": "success",
+   "url": "https://github.com/hypertidy/gdal-r-ci/actions/runs/38709509580/job/116337167220"
+  },
+  {
+   "name": "sf (github) / gdal-r-full:latest",
+   "conclusion": "failure",
+   "url": "https://github.com/hypertidy/gdal-r-ci/actions/runs/38709509580/job/116337167229"
+  },
+  {
+   "name": "gdalcubes (cran) / gdal-r-full:latest",
+   "conclusion": "failure",
+   "url": "https://github.com/hypertidy/gdal-r-ci/actions/runs/38709509580/job/116337167232"
+  },
+  {
+   "name": "terra (github) / gdal-r-full:dev",
+   "conclusion": "success",
+   "url": "https://github.com/hypertidy/gdal-r-ci/actions/runs/38709509580/job/116337167291"
+  },
+  {
+   "name": "vapour (github) / gdal-r-full:latest",
+   "conclusion": "success",
+   "url": "https://github.com/hypertidy/gdal-r-ci/actions/runs/38709509580/job/116337167294"
+  },
+  {
+   "name": "vapour (github) / gdal-r-full:dev",
+   "conclusion": "success",
+   "url": "https://github.com/hypertidy/gdal-r-ci/actions/runs/38709509580/job/116337167332"
+  },
+  {
+   "name": "terra (cran) / gdal-r-full:dev",
+   "conclusion": "success",
+   "url": "https://github.com/hypertidy/gdal-r-ci/actions/runs/38709509580/job/116337167334"
+  },
+  {
+   "name": "gdalcubes (github) / gdal-r-full:latest",
+   "conclusion": "success",
+   "url": "https://github.com/hypertidy/gdal-r-ci/actions/runs/38709509580/job/116337167358"
+  },
+  {
+   "name": "gdalcubes (cran) / gdal-r-full:dev",
+   "conclusion": "failure",
+   "url": "https://github.com/hypertidy/gdal-r-ci/actions/runs/38709509580/job/116337167410"
+  },
+  {
+   "name": "vapour (cran) / gdal-r-full:latest",
+   "conclusion": "success",
+   "url": "https://github.com/hypertidy/gdal-r-ci/actions/runs/38709509580/job/116337167570"
+  }
+ ]
+}
