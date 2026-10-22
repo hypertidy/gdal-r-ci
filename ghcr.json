@@ -527,5 +527,16 @@
    "variant": "latest",
    "compressed": 4362020771
   }
+ ],
+ "gdal-conda": [
+  {
+   "digest": "sha256:7e68de73b94dc046736275383cf1e56408d067097f5af292c599a32effd66637",
+   "created": "2026-10-22T11:24:10Z",
+   "tags": [
+    "latest"
+   ],
+   "variant": "latest",
+   "compressed": 944140966
+  }
  ]
 }
