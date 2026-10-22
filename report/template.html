@@ -424,17 +424,35 @@ $("#src").href = "https://github.com/" + (meta.repo || "") + "/tree/main/report"
 /* ---- canary ---- */
 (function () {
   const c = D.canary || {};
-  if (!c.run) { $("#canary").innerHTML = '<p class="small">No completed canary run found' +
-    (c.error ? " (" + esc(c.error) + ")" : "") + ".</p>"; return; }
   const k = (x) => x === "success" ? "good" : x === "failure" ? "bad" : "na";
-  let h = "<p>Latest run " + esc(c.run.created) + " (" + esc(c.run.event) + "): " +
-    pill(k(c.run.conclusion), c.run.conclusion) + ' &middot; <a href="' + esc(c.run.url) +
-    '">open run</a></p><table>';
-  for (const cell of c.cells || []) {
-    h += "<tr><td>" + esc(cell.name) + "</td><td>" + pill(k(cell.conclusion), cell.conclusion || "?") +
-      '</td><td><a href="' + esc(cell.url) + '">log</a></td></tr>';
+  function runTable(title, run, cells) {
+    if (!run) return "";
+    let h = "<h3>" + esc(title) + "</h3><p>" + esc(run.created) + " (" + esc(run.event) + "): " +
+      pill(k(run.conclusion), run.conclusion) + ' &middot; <a href="' + esc(run.url) +
+      '">open run</a></p><table>';
+    for (const cell of cells || []) {
+      h += "<tr><td>" + esc(cell.name) + "</td><td>" + pill(k(cell.conclusion), cell.conclusion || "?") +
+        '</td><td><a href="' + esc(cell.url) + '">log</a></td></tr>';
+      const dg = cell.diagnosis;
+      if (dg && (dg.reason || dg.snippets)) {
+        h += '<tr><td colspan="3"><details><summary class="small">' +
+          esc(dg.reason || "diagnosis") + "</summary>";
+        for (const [f, txt] of Object.entries(dg.snippets || {})) {
+          h += '<p class="small mono">' + esc(f) + '</p><pre class="mono" style="white-space:pre-wrap;' +
+            'background:var(--code-bg);padding:8px;border-radius:6px;max-height:320px;overflow:auto">' +
+            esc(txt) + "</pre>";
+        }
+        h += "</details></td></tr>";
+      }
+    }
+    return h + "</table>";
   }
-  $("#canary").innerHTML = h + "</table>";
+  let h = runTable("Full canary (Docker and conda images)", c.run, c.cells) +
+    runTable("After the latest gdal-conda build (conda cells only)",
+      c.conda_run, c.conda_run && c.conda_run.cells);
+  if (!h) h = '<p class="small">No completed canary run found' +
+    (c.error ? " (" + esc(c.error) + ")" : "") + ".</p>";
+  $("#canary").innerHTML = h;
 })();
 </script>
 </body>
