@@ -7,12 +7,17 @@
 # digest-keyed cache of registry lookups).
 #
 # Runs after the end of each cascade (gdal-r-python for :dev, extras for
-# :latest), weekly, and on demand. Pages must be enabled once with
+# :latest), weekly, on demand, and when report/ or this workflow changes. Pages must be enabled once with
 # Settings > Pages > Source: GitHub Actions.
 
 name: Image report
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - 'report/**'
+      - '.github/workflows/report.yml'
   workflow_run:
     workflows: ["Build gdal-r-python", "Build gdal-r-python-extras"]
     types: [completed]
