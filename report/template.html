@@ -152,7 +152,8 @@ button.theme { font: inherit; font-size: 12px; background: var(--surface-1);
       <code>/opt/gdal-py</code> interpreter). Registry sizes come from the image manifest;
       the size history is recovered from earlier GHCR package versions by digest, with the
       variant read from the image history (<code>GDAL_VERSION=master</code> marks
-      <code>:dev</code>). Raw data: <a href="data/latest.json">latest.json</a>,
+      <code>:dev</code> in the Docker chain, the <code>ENV=dev</code> build arg in
+      gdal-conda). Raw data: <a href="data/latest.json">latest.json</a>,
       <a href="data/history.jsonl">history.jsonl</a>, <a href="data/ghcr.json">ghcr.json</a>,
       <a href="data/canary.json">canary.json</a>. Source:
       <a id="src" href="#">report/</a>.</p>

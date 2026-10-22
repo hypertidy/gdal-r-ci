@@ -1,0 +1,105 @@
+# syntax=docker/dockerfile:1.7
+# ghcr.io/hypertidy/gdal-conda:latest   (ENV=release: conda-forge as users get it)
+# ghcr.io/hypertidy/gdal-conda:dev      (ENV=dev: GDAL master from gdal-master)
+#
+# The conda-forge counterpart to the Docker chain, built from the pixi
+# workspace in conda/. Two stages: the pixi image solves and installs the
+# environment and builds the source R packages; the final image is plain
+# Ubuntu plus that one environment, copied to the SAME prefix (conda
+# environments are not relocatable after install).
+#
+# Activation: conda packages ship activate.d scripts (GDAL_DATA, PROJ_DATA,
+# UDUNITS2_XML_PATH, compiler variables, ...). The build stage captures
+# pixi's shell-hook as /opt/gdal-conda/activate.sh, which the final image
+# sources via BASH_ENV (non-interactive bash, e.g. GitHub Actions container
+# steps), /etc/bash.bashrc (interactive) and the entrypoint (docker run).
+# The runtime-critical variables are also plain ENV so `sh` users see them.
+
+ARG PIXI_VERSION=0.82.1
+ARG UBUNTU_VERSION=26.04
+
+FROM ghcr.io/prefix-dev/pixi:${PIXI_VERSION} AS build
+ARG ENV=release
+WORKDIR /opt/gdal-conda
+
+COPY conda/pixi.toml conda/pixi.lock conda/install-r.R conda/smoke.R ./
+
+# release installs exactly the committed lock (--locked fails if pixi.toml
+# and pixi.lock disagree). dev re-solves its environment first so GDAL is
+# today's gdal-master build.
+RUN --mount=type=cache,target=/root/.cache/rattler,sharing=locked \
+    if [ "$ENV" = "dev" ]; then \
+      pixi update --environment dev && pixi install --environment dev; \
+    else \
+      pixi install --environment "$ENV" --locked; \
+    fi
+
+# Source-built R packages, then the one-GDAL smoke test across R and Python.
+RUN --mount=type=secret,id=gh_pat \
+    if [ -s /run/secrets/gh_pat ]; then export GITHUB_PAT="$(cat /run/secrets/gh_pat)"; fi; \
+    pixi run --environment "$ENV" install-r \
+ && pixi run --environment "$ENV" smoke
+
+# Capture activation for the final image; keep only exports and the
+# activate.d sources (no completions, no pixi() wrapper, no prompt).
+RUN pixi shell-hook --environment "$ENV" --shell bash --change-ps1 false \
+      | grep -E '^(export |\. )' > /opt/gdal-conda/activate.sh \
+ && pixi list --environment "$ENV" > /opt/gdal-conda/packages.txt \
+ && rm -rf "/opt/gdal-conda/.pixi/envs/$ENV/pkgs" \
+ && find "/opt/gdal-conda/.pixi/envs/$ENV" -name '__pycache__' -type d -prune -exec rm -rf {} +
+
+
+FROM ubuntu:${UBUNTU_VERSION}
+ARG ENV=release
+
+LABEL org.opencontainers.image.source="https://github.com/hypertidy/gdal-r-ci"
+LABEL org.opencontainers.image.description="GDAL + R + Python from conda-forge (pixi environment in conda/)"
+LABEL org.opencontainers.image.documentation="https://github.com/hypertidy/gdal-r-ci#gdal-conda"
+
+# Minimal system layer: certificates, timezone data, and git/curl for
+# fetching package sources in CI. Everything else comes from the environment.
+RUN apt-get update -qq \
+ && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+      ca-certificates tzdata git curl \
+ && rm -rf /var/lib/apt/lists/*
+
+COPY --from=build /opt/gdal-conda/.pixi/envs/${ENV} /opt/gdal-conda/.pixi/envs/${ENV}
+COPY --from=build /opt/gdal-conda/pixi.toml /opt/gdal-conda/pixi.lock \
+                  /opt/gdal-conda/activate.sh /opt/gdal-conda/packages.txt \
+                  /opt/gdal-conda/smoke.R /opt/gdal-conda/
+
+ENV CONDA_PREFIX=/opt/gdal-conda/.pixi/envs/${ENV} \
+    PIXI_ENVIRONMENT_NAME=${ENV}
+ENV PATH=${CONDA_PREFIX}/bin:${PATH} \
+    GDAL_DATA=${CONDA_PREFIX}/share/gdal \
+    GDAL_DRIVER_PATH=${CONDA_PREFIX}/lib/gdalplugins \
+    CPL_ZIP_ENCODING=UTF-8 \
+    PROJ_DATA=${CONDA_PREFIX}/share/proj \
+    PROJ_NETWORK=ON \
+    UDUNITS2_XML_PATH=${CONDA_PREFIX}/share/udunits/udunits2.xml \
+    RETICULATE_PYTHON=${CONDA_PREFIX}/bin/python \
+    RETICULATE_USE_MANAGED_VENV=no \
+    BASH_ENV=/opt/gdal-conda/activate.sh \
+    LANG=C.UTF-8 \
+    LC_ALL=C.UTF-8
+
+RUN printf '#!/bin/bash\n. /opt/gdal-conda/activate.sh\nexec "$@"\n' > /usr/local/bin/gdal-conda-entrypoint \
+ && chmod +x /usr/local/bin/gdal-conda-entrypoint \
+ && echo '. /opt/gdal-conda/activate.sh' >> /etc/bash.bashrc
+
+# Verify the copied environment in the final image, not just the build stage.
+RUN bash -c 'gdal-config --version && Rscript /opt/gdal-conda/smoke.R'
+
+RUN { \
+        echo "-- ghcr.io/hypertidy/gdal-conda (${ENV}) --" ; \
+        echo "GDAL $(gdal-config --version)   PROJ $(pkg-config --modversion proj)   GEOS $(geos-config --version)" ; \
+        echo "R    $(Rscript -e 'cat(as.character(getRversion()))')   Py $(python -c 'import sys; print(sys.version.split()[0])')" ; \
+        echo "Environment: ${CONDA_PREFIX}  (packages: /opt/gdal-conda/packages.txt)" ; \
+        echo "" ; \
+        echo "Docs: https://github.com/hypertidy/gdal-r-ci#gdal-conda" ; \
+    } > /etc/gdal-r-ci-motd \
+ && echo '[ -t 0 ] && [ -f /etc/gdal-r-ci-motd ] && cat /etc/gdal-r-ci-motd' >> /etc/bash.bashrc
+
+WORKDIR /workspace
+ENTRYPOINT ["/usr/local/bin/gdal-conda-entrypoint"]
+CMD ["bash"]

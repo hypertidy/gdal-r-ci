@@ -1,0 +1,104 @@
+# Build and push ghcr.io/hypertidy/gdal-conda:{latest,dev}
+#
+# The conda-forge counterpart to the Docker chain, from the pixi workspace in
+# conda/. :latest is the release environment from the committed pixi.lock;
+# :dev re-solves against today's gdal-master build.
+#
+# Schedule:
+#   release  weekly (Mon 18:41 UTC)
+#   dev      every second day (19:41 UTC)
+# Also on pushes to main that touch conda/, the Dockerfile or this workflow.
+
+name: Build gdal-conda
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'conda/**'
+      - 'docker/Dockerfile.gdal-conda'
+      - '.github/workflows/build-gdal-conda.yml'
+  schedule:
+    - cron: '41 18 * * 1'     # release
+    - cron: '41 19 */2 * *'   # dev
+  workflow_dispatch:
+    inputs:
+      variant:
+        description: 'Which environment to build'
+        required: false
+        default: 'both'
+        type: choice
+        options: [both, release, dev]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  REGISTRY: ghcr.io
+  ORG: hypertidy
+
+jobs:
+  setup:
+    runs-on: ubuntu-latest
+    outputs:
+      envs: ${{ steps.set.outputs.envs }}
+    steps:
+      - id: set
+        run: |
+          EVENT="${{ github.event_name }}"
+          if [ "$EVENT" = "workflow_dispatch" ]; then
+            V="${{ inputs.variant }}"
+          elif [ "$EVENT" = "schedule" ]; then
+            if [ "${{ github.event.schedule }}" = "41 18 * * 1" ]; then V=release; else V=dev; fi
+          else
+            V=both
+          fi
+          if [ "$V" = "both" ]; then
+            echo 'envs=["release","dev"]' >> "$GITHUB_OUTPUT"
+          else
+            echo "envs=[\"$V\"]" >> "$GITHUB_OUTPUT"
+          fi
+
+  build:
+    needs: setup
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      fail-fast: false
+      matrix:
+        env: ${{ fromJson(needs.setup.outputs.envs) }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Tag
+        id: tag
+        run: |
+          if [ "${{ matrix.env }}" = "release" ]; then echo "tag=latest" >> "$GITHUB_OUTPUT"
+          else echo "tag=dev" >> "$GITHUB_OUTPUT"; fi
+
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: docker/Dockerfile.gdal-conda
+          push: true
+          tags: ${{ env.REGISTRY }}/${{ env.ORG }}/gdal-conda:${{ steps.tag.outputs.tag }}
+          build-args: |
+            ENV=${{ matrix.env }}
+          secrets: |
+            gh_pat=${{ secrets.GITHUB_TOKEN }}
+          cache-from: type=gha,scope=gdal-conda-${{ matrix.env }}
+          cache-to: type=gha,mode=max,scope=gdal-conda-${{ matrix.env }}
+          labels: |
+            org.opencontainers.image.revision=${{ github.sha }}

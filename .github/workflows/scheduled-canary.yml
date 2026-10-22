@@ -6,6 +6,13 @@
 # Matrix: {gdalraster, sf, terra, vapour, gdalcubes}
 #       × {cran, github}
 #       × {latest, dev}
+#       x {gdal-r-full, gdal-conda}
+#
+# Image axis: gdal-r-full is the Docker chain (GDAL built from source on
+# Ubuntu); gdal-conda is the conda-forge environment (conda/). The same
+# package/source/variant cell going red on one image only points at the
+# packaging, not the package. After each gdal-conda build, the conda cells
+# run on their own (no issue is opened for those runs).
 #
 # Source axis tells different stories per cell:
 #   cran    — what users actually have installed
@@ -25,6 +32,9 @@ name: Scheduled canary check
 on:
   schedule:
     - cron: '0 4 1,15 * *'
+  workflow_run:
+    workflows: ["Build gdal-conda"]
+    types: [completed]
   workflow_dispatch:
     inputs:
       packages:
@@ -50,21 +60,29 @@ on:
         default: 'both'
         type: choice
         options: [both, latest, dev]
+      images:
+        description: 'Images to test in'
+        required: false
+        default: 'both'
+        type: choice
+        options: [both, gdal-r-full, gdal-conda]
 
 env:
   ALL_PACKAGES: 'gdalraster,sf,terra,vapour,gdalcubes'
 
 concurrency:
-  group: ${{ github.workflow }}
+  group: ${{ github.workflow }}-${{ github.event_name }}
   cancel-in-progress: true
 
 jobs:
   setup:
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
     outputs:
       packages: ${{ steps.set.outputs.packages }}
       sources:  ${{ steps.set.outputs.sources }}
       variants: ${{ steps.set.outputs.variants }}
+      images:   ${{ steps.set.outputs.images }}
     steps:
       - id: set
         run: |
@@ -94,13 +112,22 @@ jobs:
             echo 'variants=["latest","dev"]' >> "$GITHUB_OUTPUT"
           fi
 
+          ISEL="${{ inputs.images }}"
+          if [ "${{ github.event_name }}" = "workflow_run" ] || [ "$ISEL" = "gdal-conda" ]; then
+            echo 'images=["gdal-conda"]' >> "$GITHUB_OUTPUT"
+          elif [ "$ISEL" = "gdal-r-full" ]; then
+            echo 'images=["gdal-r-full"]' >> "$GITHUB_OUTPUT"
+          else
+            echo 'images=["gdal-r-full","gdal-conda"]' >> "$GITHUB_OUTPUT"
+          fi
+
   check:
-    name: ${{ matrix.package }} (${{ matrix.source }}) / gdal-r-full:${{ matrix.gdal-variant }}
+    name: ${{ matrix.package }} (${{ matrix.source }}) / ${{ matrix.image }}:${{ matrix.gdal-variant }}
     needs: setup
     runs-on: ubuntu-latest
     timeout-minutes: 60
     container:
-      image: ghcr.io/hypertidy/gdal-r-full:${{ matrix.gdal-variant }}
+      image: ghcr.io/hypertidy/${{ matrix.image }}:${{ matrix.gdal-variant }}
       options: --user root
     strategy:
       fail-fast: false
@@ -108,11 +135,12 @@ jobs:
         package: ${{ fromJson(needs.setup.outputs.packages) }}
         source:  ${{ fromJson(needs.setup.outputs.sources) }}
         gdal-variant: ${{ fromJson(needs.setup.outputs.variants) }}
+        image: ${{ fromJson(needs.setup.outputs.images) }}
 
     steps:
       - name: Print environment
         run: |
-          echo "=== ${{ matrix.package }} (${{ matrix.source }}) against gdal-r-full:${{ matrix.gdal-variant }} ==="
+          echo "=== ${{ matrix.package }} (${{ matrix.source }}) against ${{ matrix.image }}:${{ matrix.gdal-variant }} ==="
           gdal-config --version
           echo "PROJ: $(pkg-config --modversion proj)"
           echo "GEOS: $(geos-config --version)"
@@ -219,7 +247,7 @@ jobs:
         # plus optionally a one-line reason scraped from check output.
         run: |
           mkdir -p /tmp/canary-status
-          CELL="${{ matrix.package }}__${{ matrix.source }}__${{ matrix.gdal-variant }}"
+          CELL="${{ matrix.package }}__${{ matrix.source }}__${{ matrix.gdal-variant }}__${{ matrix.image }}"
           STATUS="${{ job.status }}"
 
           # Try to extract a one-line summary of why the check failed, if it did.
@@ -248,7 +276,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: status-${{ matrix.package }}-${{ matrix.source }}-${{ matrix.gdal-variant }}
+          name: status-${{ matrix.package }}-${{ matrix.source }}-${{ matrix.gdal-variant }}-${{ matrix.image }}
           path: /tmp/canary-status/
           retention-days: 30
 
@@ -256,7 +284,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.package }}-${{ matrix.source }}-${{ matrix.gdal-variant }}-${{ github.run_id }}
+          name: ${{ matrix.package }}-${{ matrix.source }}-${{ matrix.gdal-variant }}-${{ matrix.image }}-${{ github.run_id }}
           path: pkg/*.Rcheck
           retention-days: 30
 
@@ -264,7 +292,7 @@ jobs:
     name: Summary
     needs: [setup, check]
     runs-on: ubuntu-latest
-    if: always()
+    if: ${{ always() && needs.setup.result == 'success' }}
     steps:
       - name: Download all cell statuses
         uses: actions/download-artifact@v4
@@ -282,10 +310,11 @@ jobs:
           PACKAGES='${{ needs.setup.outputs.packages }}'
           SOURCES='${{ needs.setup.outputs.sources }}'
           VARIANTS='${{ needs.setup.outputs.variants }}'
+          IMAGES='${{ needs.setup.outputs.images }}'
 
           # Header
-          HEADER="| package |"
-          SEP="|---|"
+          HEADER="| package | image |"
+          SEP="|---|---|"
           for src in $(echo "$SOURCES" | jq -r '.[]'); do
             for var in $(echo "$VARIANTS" | jq -r '.[]'); do
               HEADER="$HEADER ${src}/${var} |"
@@ -297,10 +326,11 @@ jobs:
             echo "$HEADER"
             echo "$SEP"
             for pkg in $(echo "$PACKAGES" | jq -r '.[]'); do
-              ROW="| ${pkg} |"
+             for img in $(echo "$IMAGES" | jq -r '.[]'); do
+              ROW="| ${pkg} | ${img} |"
               for src in $(echo "$SOURCES" | jq -r '.[]'); do
                 for var in $(echo "$VARIANTS" | jq -r '.[]'); do
-                  CELL_FILE="status/${pkg}__${src}__${var}.txt"
+                  CELL_FILE="status/${pkg}__${src}__${var}__${img}.txt"
                   if [ -f "$CELL_FILE" ]; then
                     STATUS=$(cut -d'|' -f1 "$CELL_FILE")
                     REASON=$(cut -d'|' -f2- "$CELL_FILE")
@@ -317,6 +347,7 @@ jobs:
                 done
               done
               echo "$ROW"
+             done
             done
           } > summary-table.md
 
@@ -360,6 +391,7 @@ jobs:
                 '- Red on cran only, green on github → CRAN release lags behind a fix already on GitHub.',
                 '- Red on :dev only → upstream GDAL API change. File issue against the package, not us.',
                 '- Red on :latest → released-GDAL regression. Urgent.',
+                '- Red on one image only (gdal-r-full vs gdal-conda) -> packaging difference (GDAL build options, plugin split, toolchain, R version), not the package.',
               ].join('\n'),
               labels: ['canary', 'automated'],
             });

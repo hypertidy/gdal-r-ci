@@ -136,9 +136,22 @@ DU_PATHS = [
 ]
 
 
+def conda_prefix():
+    p = os.environ.get("CONDA_PREFIX")
+    return p if p and os.path.isdir(os.path.join(p, "conda-meta")) else None
+
+
 def du():
     out = {}
-    for p in DU_PATHS:
+    paths = list(DU_PATHS)
+    cp = conda_prefix()
+    if cp:
+        paths += [cp, os.path.join(cp, "lib"), os.path.join(cp, "share", "proj"),
+                  os.path.join(cp, "lib", "R", "library"),
+                  os.path.join(cp, "lib", "python%d.%d" % sys.version_info[:2],
+                               "site-packages"),
+                  os.path.join(cp, "include")]
+    for p in paths:
         if not os.path.exists(p):
             continue
         txt = run(["du", "-sb", p], timeout=900)
@@ -186,15 +199,26 @@ def strip_check():
             os.path.join(libdir, f) for f in sorted(os.listdir(libdir))
             if re.match(r"lib.*\.so", f)
         ])
-    site = "/usr/local/lib/R/site-library"
-    if os.path.isdir(site):
+    def r_libs(site):
         files = []
         for pkg in sorted(os.listdir(site)):
             d = os.path.join(site, pkg, "libs")
             if os.path.isdir(d):
                 files += [os.path.join(d, f) for f in os.listdir(d)
                           if f.endswith(".so")]
-        scan("r_site_library", files)
+        return files
+
+    site = "/usr/local/lib/R/site-library"
+    if os.path.isdir(site):
+        scan("r_site_library", r_libs(site))
+    cp = conda_prefix()
+    if cp:
+        lib = os.path.join(cp, "lib")
+        scan("conda_lib", [os.path.join(lib, f) for f in sorted(os.listdir(lib))
+                           if re.match(r"lib.*\.so", f)])
+        rlib = os.path.join(cp, "lib", "R", "library")
+        if os.path.isdir(rlib):
+            scan("conda_r_library", r_libs(rlib))
     return groups
 
 
@@ -257,6 +281,7 @@ def drivers():
 
 def main():
     report = {
+        "conda_prefix": conda_prefix(),
         "versions": versions(),
         "py_packages": py_packages(),
         "r_packages": r_packages(),

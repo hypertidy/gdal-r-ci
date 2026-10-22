@@ -85,6 +85,48 @@ Commit a `rust-toolchain.toml` pinning `1.85.0` in any project that consumes
 this image. The image pre-caches the toolchain; the toml is the repo-side pin.
 Drift becomes a `git diff`.
 
+## gdal-conda
+
+The conda-forge counterpart to the chain, defined as a pixi workspace in
+[`conda/`](conda/) and published as `ghcr.io/hypertidy/gdal-conda`:
+
+| Tag | Environment | GDAL | R GDAL packages |
+|-----|-------------|------|-----------------|
+| `:latest` | `release` | conda-forge `libgdal` + plugins | conda-forge binaries (`r-sf`, `r-terra`, `r-gdalraster`); vapour from source |
+| `:dev` | `dev` | `gdal-master` channel (GDAL's CI rebuilds the conda-forge recipe from master) | gdalraster, sf, terra, vapour from GitHub source |
+
+Use it without Docker (Linux x86_64 and macOS arm64):
+
+```bash
+cd conda
+pixi install -e release            # exact builds from pixi.lock
+pixi run -e release install-r      # source-built R packages for that env
+pixi run -e release smoke          # versions + one libgdal/libproj/libgeos_c
+pixi shell -e release              # interactive
+```
+
+or the image:
+
+```bash
+docker run --rm -ti ghcr.io/hypertidy/gdal-conda:latest
+```
+
+Notes:
+
+- R is 4.5 in the conda environments: conda-forge has r-base 4.6, but its R
+  4.6 package migration has not run yet. The Docker chain uses R 4.6 from CRAN.
+- The dev environment holds no conda-forge binaries that link GDAL. Those
+  are pinned to the GDAL release they were built against; they load against
+  master today only because master has not bumped the libgdal soname yet.
+- Activation (GDAL_DATA, PROJ_DATA, UDUNITS2_XML_PATH, compiler variables,
+  ...) is baked into the image: sourced via `BASH_ENV` for non-interactive
+  bash such as GitHub Actions container steps, `/etc/bash.bashrc` for
+  interactive shells, and the entrypoint for `docker run`.
+- The canary ([`scheduled-canary.yml`](.github/workflows/scheduled-canary.yml))
+  runs the same package/source/variant cells in both `gdal-r-full` and
+  `gdal-conda`, and the conda cells again after every gdal-conda build. The
+  image report includes both conda tags.
+
 ## Image report
 
 A published report at <https://hypertidy.github.io/gdal-r-ci/> shows, for every

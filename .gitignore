@@ -10,3 +10,4 @@ README.html
 .posit/assistant
 __pycache__/
 *.pyc
+conda/.pixi/

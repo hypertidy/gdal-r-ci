@@ -8,6 +8,7 @@ Also importable for its manifest helpers (used by backfill.py).
 
 import datetime
 import json
+import re
 import os
 import subprocess
 import sys
@@ -73,9 +74,16 @@ def manifest_size(m):
 
 
 def variant_from_history(history_created_by):
-    """dev images carry GDAL_VERSION=master in some RUN line of their history."""
-    return "dev" if any("GDAL_VERSION=master" in (c or "")
-                        for c in history_created_by) else "latest"
+    """Tell :dev from :latest by build args recorded in the image history.
+
+    Docker chain: GDAL_VERSION=master appears in a RUN line of every dev
+    image (inherited from gdal-system). gdal-conda: the ENV=dev build arg.
+    """
+    for c in history_created_by:
+        c = c or ""
+        if "GDAL_VERSION=master" in c or re.search(r"(^|\s)ENV=dev(\s|$)", c):
+            return "dev"
+    return "latest"
 
 
 def main(ref, out_path):
@@ -97,9 +105,11 @@ def main(ref, out_path):
         man = {"kind": None, "compressed": None, "error": str(e)[:300]}
 
     probe = subprocess.run(
+        # The image's own Python on PATH: /opt/gdal-py in the Docker chain,
+        # the environment's python in the conda images.
         ["docker", "run", "--rm", "-v", "%s:/report:ro" % HERE,
-         "--entrypoint", "", ref, "/opt/gdal-py/bin/python",
-         "/report/image-report.py"],
+         "--entrypoint", "", ref, "sh", "-c",
+         'exec "$(command -v python3 || command -v python)" /report/image-report.py'],
         capture_output=True, text=True, timeout=3600)
     try:
         report = json.loads(probe.stdout)

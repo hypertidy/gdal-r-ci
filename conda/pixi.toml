@@ -1,0 +1,121 @@
+# gdal-conda: the conda-forge counterpart to the gdal-r-ci Docker chain.
+#
+#   release  conda-forge as a conda user gets it: libgdal + plugins, the
+#            R GDAL packages as conda-forge binaries (r-sf, r-terra,
+#            r-gdalraster), the Python geo stack as binaries. vapour is
+#            built from source until its conda-forge feedstock exists.
+#   dev      GDAL master from the gdal-master channel (GDAL's own CI rebuilds
+#            the conda-forge recipe from master on every push), with
+#            gdalraster, sf, terra and vapour built from GitHub source
+#            against it. No binary packages that link GDAL: a conda-forge
+#            binary is pinned to the GDAL release it was built against.
+#
+# Usage:
+#   pixi install -e release          # or -e dev
+#   pixi run -e release install-r    # source-built R packages for that env
+#   pixi run -e release smoke        # versions + one-GDAL check, R and Python
+#
+# pixi.lock pins exact builds for both environments. The dev environment is
+# re-solved when its image is built, since gdal-master changes daily.
+
+[workspace]
+name = "gdal-conda"
+channels = ["conda-forge"]
+platforms = ["linux-64", "osx-arm64"]
+
+[dependencies]
+python = "3.14.*"
+# R 4.5: conda-forge has r-base 4.6, but the R 4.6 package migration has
+# not run yet (no r-rcpp, r-sf, ... builds for 4.6 as of Oct 2026). Move
+# to 4.6 once it has; the Docker chain uses R 4.6 from CRAN.
+r-base = "4.5.*"
+# toolchain for R source builds inside the environment
+c-compiler = "*"
+cxx-compiler = "*"
+make = "*"
+pkg-config = "*"
+# Python stack that does not link GDAL
+numpy = "*"
+xarray = "*"
+zarr = "*"
+h5py = "*"
+netcdf4 = "*"
+pyarrow = "*"
+pyproj = "*"
+shapely = "*"
+dask = "*"
+pip = "*"
+# reticulate asks a conda binary for an env's activated PATH whenever the
+# Python lives in a conda-style prefix; micromamba is the small one it tries first
+micromamba = "*"
+# R dependencies of gdalraster, sf, terra, vapour (+ check tooling)
+r-recommended = "*"   # codetools, Matrix, ...: base R in conda ships without them
+r-rcpp = "*"
+r-cpp11 = "*"
+r-cli = "*"
+r-bit64 = "*"
+r-nanoarrow = "*"
+r-wk = "*"
+r-xml2 = "*"
+r-yyjsonr = "*"
+r-rcppint64 = "*"
+r-classint = "*"
+r-dbi = "*"
+r-s2 = "*"
+r-units = "*"
+r-jsonlite = "*"
+r-stringr = "*"
+r-remotes = "*"
+r-rcmdcheck = "*"
+r-testthat = "*"
+r-tinytest = "*"
+r-knitr = "*"
+r-rmarkdown = "*"
+r-reticulate = "*"
+r-sp = "*"
+r-rsqlite = "*"
+r-ncdf4 = "*"
+r-tibble = "*"
+r-vctrs = "*"
+r-glue = "*"
+
+[feature.release.dependencies]
+gdal = "*"
+libgdal = "*"
+libgdal-arrow-parquet = "*"
+rasterio = "*"
+pyogrio = "*"
+fiona = "*"
+geopandas = "*"
+rioxarray = "*"
+r-sf = "*"
+r-terra = "*"
+r-gdalraster = "*"
+
+[feature.release.tasks]
+install-r = "Rscript install-r.R release"
+
+[feature.dev]
+# gdal-master wins for every package it carries (all the gdal/libgdal-*
+# outputs); everything else comes from conda-forge.
+channels = [{ channel = "gdal-master", priority = 1 }]
+
+[feature.dev.dependencies]
+gdal = "*"
+libgdal = "*"
+libgdal-arrow-parquet = "*"
+
+[feature.dev.tasks]
+install-r = "Rscript install-r.R dev"
+
+[activation.env]
+# reticulate otherwise sees CONDA_PREFIX and goes looking for a conda binary
+RETICULATE_PYTHON = "$CONDA_PREFIX/bin/python"
+RETICULATE_USE_MANAGED_VENV = "no"
+
+[tasks]
+smoke = "Rscript smoke.R"
+
+[environments]
+release = { features = ["release"], solve-group = "release" }
+dev = { features = ["dev"], solve-group = "dev" }
