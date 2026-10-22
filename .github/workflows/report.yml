@@ -1,0 +1,163 @@
+# Image report -> GitHub Pages
+#
+# Pulls every published image, measures it from the inside
+# (report/image-report.py), backfills compressed-size history from GHCR
+# package versions, adds the latest canary results, and publishes a static
+# page. History accumulates on the `report-data` branch (history.jsonl and a
+# digest-keyed cache of registry lookups).
+#
+# Runs after the end of each cascade (gdal-r-python for :dev, extras for
+# :latest), weekly, and on demand. Pages must be enabled once with
+# Settings > Pages > Source: GitHub Actions.
+
+name: Image report
+
+on:
+  workflow_run:
+    workflows: ["Build gdal-r-python", "Build gdal-r-python-extras"]
+    types: [completed]
+  schedule:
+    - cron: '23 20 * * 1'   # Mon 20:23 UTC = Tue morning AEDT
+  workflow_dispatch:
+
+concurrency:
+  group: image-report
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  REGISTRY: ghcr.io
+  ORG: hypertidy
+
+jobs:
+  measure:
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      contents: read
+      packages: read
+    strategy:
+      fail-fast: false
+      matrix:
+        ref:
+          - gdal-system:latest
+          - gdal-system:dev
+          - gdal-r:latest
+          - gdal-r:dev
+          - gdal-r-full:latest
+          - gdal-r-full:dev
+          - gdal-r-python:latest
+          - gdal-r-python:dev
+          - gdal-r-python-extras:latest
+          - gdal-r-python-extras-rust:latest
+    steps:
+      - name: Free disk space
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc \
+            /opt/hostedtoolcache/CodeQL /usr/local/share/boost || true
+          docker image prune -af >/dev/null || true
+          df -h /
+
+      - uses: actions/checkout@v4
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Measure ${{ matrix.ref }}
+        run: |
+          mkdir -p out
+          name=$(echo "${{ matrix.ref }}" | tr ':' '-')
+          python3 report/inspect-image.py \
+            "${REGISTRY}/${ORG}/${{ matrix.ref }}" "out/${name}.json"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: measure-${{ strategy.job-index }}
+          path: out/*.json
+          retention-days: 7
+
+  collect:
+    needs: measure
+    if: ${{ !cancelled() && needs.measure.result != 'skipped' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: write   # push to report-data
+      packages: read    # GHCR version history
+      actions: read     # canary results
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: measure-*
+          path: measure
+          merge-multiple: true
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Check out report-data branch (create if missing)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          url="https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          if git ls-remote --exit-code --heads "$url" report-data >/dev/null 2>&1; then
+            git clone --depth 1 --branch report-data "$url" data
+          else
+            mkdir data && cd data && git init -q -b report-data \
+              && git remote add origin "$url"
+          fi
+
+      - name: Backfill size history from GHCR
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: python3 report/backfill.py data/ghcr-cache.json data/ghcr.json || true
+
+      - name: Canary results
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: python3 report/canary.py data/canary.json || true
+
+      - name: Build site
+        run: python3 report/build-site.py measure data site
+
+      - name: Commit report data
+        run: |
+          cd data
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -q -m "report: run ${GITHUB_RUN_ID}" || exit 0
+          git push -q origin report-data
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+  deploy:
+    needs: collect
+    if: ${{ !cancelled() && needs.collect.result == 'success' && github.ref == 'refs/heads/main' }}
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

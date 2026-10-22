@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>gdal-r-ci: image report</title>
+<style>
+.viz-root {
+  color-scheme: light;
+  --surface-0: #f6f6f4;
+  --surface-1: #fcfcfb;
+  --border: #e2e1dc;
+  --grid: #ecebe7;
+  --text-primary: #0b0b0b;
+  --text-secondary: #52514e;
+  --text-muted: #7a7974;
+  --series-1: #2a78d6;
+  --series-2: #eb6834;
+  --good: #1f7a3a;
+  --good-bg: #e5f4e4;
+  --warn: #8a5a00;
+  --warn-bg: #f9eeda;
+  --bad: #a3262a;
+  --bad-bg: #fbebeb;
+  --code-bg: #f0efec;
+}
+@media (prefers-color-scheme: dark) {
+  :root:where(:not([data-theme="light"])) .viz-root {
+    color-scheme: dark;
+    --surface-0: #121211;
+    --surface-1: #1a1a19;
+    --border: #33332f;
+    --grid: #2a2a27;
+    --text-primary: #f0efec;
+    --text-secondary: #c3c2b7;
+    --text-muted: #8f8e86;
+    --series-1: #3987e5;
+    --series-2: #d95926;
+    --good: #7fd18f;
+    --good-bg: #1d3323;
+    --warn: #f0c46a;
+    --warn-bg: #3a2f17;
+    --bad: #f08a8c;
+    --bad-bg: #3d1e1f;
+    --code-bg: #24241f;
+  }
+}
+* { box-sizing: border-box; }
+body { margin: 0; }
+.viz-root {
+  background: var(--surface-0); color: var(--text-primary);
+  font: 14px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  min-height: 100vh; padding: 28px 20px 60px;
+}
+main { max-width: 1180px; margin: 0 auto; }
+h1 { font-size: 22px; margin: 0 0 4px; }
+h2 { font-size: 17px; margin: 34px 0 10px; }
+h3 { font-size: 14px; margin: 18px 0 6px; color: var(--text-secondary); }
+p.lede, .meta { color: var(--text-secondary); margin: 0 0 6px; }
+a { color: var(--series-1); }
+.card { background: var(--surface-1); border: 1px solid var(--border);
+  border-radius: 8px; padding: 14px 16px; }
+table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; }
+th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--grid);
+  vertical-align: top; }
+th { color: var(--text-secondary); font-weight: 600; font-size: 12px; }
+td.num, th.num { text-align: right; white-space: nowrap; }
+.scroll { overflow-x: auto; }
+#summary td:first-child, #summary td:nth-child(3) { white-space: nowrap; }
+code, .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; }
+code { background: var(--code-bg); padding: 1px 4px; border-radius: 4px; }
+.pill { display: inline-block; padding: 1px 8px; border-radius: 10px; font-size: 12px;
+  font-weight: 600; white-space: nowrap; }
+.pill.good { color: var(--good); background: var(--good-bg); }
+.pill.warn { color: var(--warn); background: var(--warn-bg); }
+.pill.bad { color: var(--bad); background: var(--bad-bg); }
+.pill.na { color: var(--text-muted); background: var(--code-bg); }
+.multiples { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 14px; }
+.panel { position: relative; }
+.panel h3 { margin: 0 0 4px; color: var(--text-primary); }
+.legend { display: flex; gap: 18px; color: var(--text-secondary); font-size: 13px;
+  margin: 0 0 10px; }
+.legend span::before { content: ""; display: inline-block; width: 14px; height: 2px;
+  vertical-align: middle; margin-right: 6px; background: var(--c); }
+svg text { fill: var(--text-muted); font-size: 11px; }
+svg .label { fill: var(--text-secondary); font-size: 11px; font-weight: 600; }
+.tip { position: absolute; pointer-events: none; background: var(--surface-1);
+  border: 1px solid var(--border); border-radius: 6px; padding: 6px 8px; font-size: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,.12); display: none; white-space: nowrap; z-index: 2; }
+details { margin: 10px 0; }
+details > summary { cursor: pointer; font-weight: 600; padding: 8px 0; }
+.grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; }
+.drivers { display: flex; flex-wrap: wrap; gap: 6px; }
+.small { font-size: 12px; color: var(--text-muted); }
+.toolbar { display: flex; gap: 8px; align-items: center; margin: 0 0 10px; }
+button.theme { font: inherit; font-size: 12px; background: var(--surface-1);
+  color: var(--text-secondary); border: 1px solid var(--border); border-radius: 6px;
+  padding: 3px 9px; cursor: pointer; }
+</style>
+<style>
+:root[data-theme="dark"] .viz-root {
+  color-scheme: dark;
+  --surface-0: #121211; --surface-1: #1a1a19; --border: #33332f; --grid: #2a2a27;
+  --text-primary: #f0efec; --text-secondary: #c3c2b7; --text-muted: #8f8e86;
+  --series-1: #3987e5; --series-2: #d95926;
+  --good: #7fd18f; --good-bg: #1d3323; --warn: #f0c46a; --warn-bg: #3a2f17;
+  --bad: #f08a8c; --bad-bg: #3d1e1f; --code-bg: #24241f;
+}
+</style>
+</head>
+<body>
+<div class="viz-root">
+<main>
+  <div class="toolbar" style="justify-content: space-between">
+    <div>
+      <h1>gdal-r-ci image report</h1>
+      <p class="lede">What is in each published image, how big it is, and whether
+        the one-library-per-process invariants hold.</p>
+      <p class="meta" id="meta"></p>
+    </div>
+    <button class="theme" id="theme" type="button">Toggle theme</button>
+  </div>
+
+  <h2>Summary</h2>
+  <div class="card scroll"><table id="summary"></table></div>
+  <p class="small">Compressed = registry download size (layers + config, linux/amd64).
+    On disk = uncompressed image size after pull. Census = shared libraries mapped in
+    one process after loading the stack (R packages plus Python via reticulate where R
+    is present); "dup" lists libraries mapped from more than one file.
+    Strip = shared objects in /usr/local/lib and the R site-library that still carry
+    DWARF debug info.</p>
+
+  <h2>Compressed size over time</h2>
+  <div class="legend" id="legend">
+    <span style="--c: var(--series-1)">:latest (release)</span>
+    <span style="--c: var(--series-2)">:dev (GDAL master)</span>
+  </div>
+  <div class="multiples" id="trends"></div>
+  <p class="small" id="trend-note"></p>
+
+  <h2>Per image</h2>
+  <div id="details"></div>
+
+  <h2>Canary R CMD check</h2>
+  <div class="card" id="canary"></div>
+
+  <h2>Method</h2>
+  <div class="card small">
+    <p>Each image is pulled on a GitHub-hosted runner and probed from the inside by
+      <code>report/image-report.py</code> (stdlib only, run with the image's own
+      <code>/opt/gdal-py</code> interpreter). Registry sizes come from the image manifest;
+      the size history is recovered from earlier GHCR package versions by digest, with the
+      variant read from the image history (<code>GDAL_VERSION=master</code> marks
+      <code>:dev</code>). Raw data: <a href="data/latest.json">latest.json</a>,
+      <a href="data/history.jsonl">history.jsonl</a>, <a href="data/ghcr.json">ghcr.json</a>,
+      <a href="data/canary.json">canary.json</a>. Source:
+      <a id="src" href="#">report/</a>.</p>
+  </div>
+</main>
+</div>
+
+<script>
+const D = /*__DATA__*/null;
+
+const $ = (sel) => document.querySelector(sel);
+const NA = "\u2013";
+const esc = (s) => String(s == null ? "" : s).replace(/[&<>"]/g,
+  (c) => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"}[c]));
+function fmtBytes(b) {
+  if (b == null) return NA;
+  const u = ["B", "KB", "MB", "GB", "TB"]; let i = 0; let x = b;
+  while (x >= 1000 && i < u.length - 1) { x /= 1000; i++; }
+  return (i >= 3 ? x.toFixed(2) : x.toFixed(i ? 1 : 0)) + " " + u[i];
+}
+function pill(kind, text, title) {
+  return '<span class="pill ' + kind + '"' + (title ? ' title="' + esc(title) + '"' : "") +
+    ">" + esc(text) + "</span>";
+}
+function dupList(side) {
+  if (!side || !side.families) return null;
+  return Object.keys(side.families).filter((k) => side.families[k].length > 1);
+}
+
+/* theme toggle (wins over OS setting both ways) */
+(function () {
+  const root = document.documentElement;
+  let saved = null;
+  try { saved = localStorage.getItem("gdal-r-ci-theme"); } catch (e) {}
+  if (saved) root.dataset.theme = saved;
+  $("#theme").addEventListener("click", () => {
+    const dark = root.dataset.theme ? root.dataset.theme === "dark"
+      : matchMedia("(prefers-color-scheme: dark)").matches;
+    root.dataset.theme = dark ? "light" : "dark";
+    try { localStorage.setItem("gdal-r-ci-theme", root.dataset.theme); } catch (e) {}
+  });
+})();
+
+const meta = D.meta || {};
+$("#meta").innerHTML = "Generated " + esc(meta.generated || "?") +
+  (meta.run_id ? ' by <a href="' + esc(meta.run_url) + '">run ' + esc(meta.run_id) + "</a>" : "") +
+  ' &middot; <a href="https://github.com/' + esc(meta.repo) + '">' + esc(meta.repo) + "</a>";
+$("#src").href = "https://github.com/" + (meta.repo || "") + "/tree/main/report";
+
+/* ---- summary table ---- */
+(function () {
+  const cols = ["Image", "Tag", "Base", "GDAL", "PROJ", "GEOS", "Arrow", "R", "Python",
+    "Compressed", "On disk", "Layers", "Census", "Strip", "Drivers"];
+  let h = "<thead><tr>" + cols.map((c, i) =>
+    "<th" + (i >= 9 && i <= 11 ? ' class="num"' : "") + ">" + c + "</th>").join("") +
+    "</tr></thead><tbody>";
+  for (const d of D.images) {
+    const r = d.report || {}; const v = r.versions || {};
+    const cen = r.census || {};
+    const side = cen.r && Object.keys(cen.r.families || {}).length ? cen.r : cen.python;
+    const dups = dupList(side);
+    let census;
+    if (dups == null) census = pill("na", "n/a");
+    else if (dups.length === 0) census = pill("good", "ok", "one file per library family");
+    else census = pill("warn", "dup: " + dups.join(", "),
+      dups.map((k) => k + ": " + side.families[k].join(" | ")).join("\n"));
+    const st = r.strip || {};
+    const dbg = Object.values(st).reduce((a, g) => a + (g.with_debug || 0), 0);
+    const tot = Object.values(st).reduce((a, g) => a + (g.files || 0), 0);
+    const strip = r.strip == null ? pill("na", "n/a") : dbg === 0
+      ? pill("good", "ok", tot + " shared objects checked")
+      : pill("warn", dbg + " / " + tot + " with debug", "see per-image details");
+    const drv = r.drivers || null;
+    const missing = drv ? Object.keys(drv.key).filter((k) => !drv.key[k]) : [];
+    const drivers = drv ? esc(drv.count) + (missing.length
+      ? ' <span class="small" title="' + esc("not built: " + missing.join(", ")) + '">(' +
+        missing.length + " key absent)</span>" : "") : NA;
+    h += "<tr><td><a href=\"#img-" + esc(d.image + "-" + d.tag) + "\">" + esc(d.image) +
+      "</a></td><td>" + esc(d.tag) + "</td><td>" + esc((v.os || "").replace(" LTS", "")) +
+      "</td><td>" + esc(v.gdal || NA) + "</td><td>" + esc(v.proj || NA) + "</td><td>" +
+      esc(v.geos || NA) + "</td><td>" + esc(v.arrow || NA) + "</td><td>" +
+      esc(v.r || NA) + "</td><td>" + esc(v.python || NA) + "</td><td class=\"num\">" +
+      fmtBytes(d.compressed_bytes) + "</td><td class=\"num\">" + fmtBytes(d.size_bytes) +
+      "</td><td class=\"num\">" + esc(d.layer_count) + "</td><td>" + census + "</td><td>" +
+      strip + "</td><td>" + drivers + "</td></tr>";
+  }
+  $("#summary").innerHTML = h + "</tbody>";
+})();
+
+/* ---- trend small multiples ---- */
+(function () {
+  const series = {};       // image -> {latest: [[t, bytes, label]], dev: [...]}
+  let source = "ghcr";
+  for (const [img, rows] of Object.entries(D.ghcr || {})) {
+    for (const r of rows) {
+      if (!r.compressed || !r.created || !r.variant) continue;
+      const s = (series[img] = series[img] || {latest: [], dev: []});
+      s[r.variant].push([Date.parse(r.created), r.compressed,
+        (r.tags && r.tags.length ? r.tags.join(",") : r.digest.slice(7, 19))]);
+    }
+  }
+  if (!Object.keys(series).length) {
+    source = "history";
+    for (const r of D.history || []) {
+      if (!r.compressed_bytes) continue;
+      const s = (series[r.image] = series[r.image] || {latest: [], dev: []});
+      (s[r.tag] || (s[r.tag] = [])).push([Date.parse(r.date), r.compressed_bytes,
+        (r.digest || "").split("@")[1] ? r.digest.split("@")[1].slice(7, 19) : ""]);
+    }
+  }
+  const imgs = D.order.filter((i) => series[i]).concat(
+    Object.keys(series).filter((i) => !D.order.includes(i)));
+  if (!imgs.length) { $("#trend-note").textContent = "No size history yet."; return; }
+  let t0 = Infinity, t1 = -Infinity;
+  for (const i of imgs) for (const k of ["latest", "dev"]) for (const p of series[i][k] || []) {
+    t0 = Math.min(t0, p[0]); t1 = Math.max(t1, p[0]);
+  }
+  if (t1 === t0) t1 = t0 + 864e5;
+  const W = 340, H = 170, m = {l: 46, r: 46, t: 10, b: 24};
+  const fmtD = (t) => new Date(t).toISOString().slice(5, 10);
+  const colors = {latest: "var(--series-1)", dev: "var(--series-2)"};
+  const host = $("#trends");
+  for (const img of imgs) {
+    const s = series[img];
+    for (const k of Object.keys(s)) s[k].sort((a, b) => a[0] - b[0]);
+    const all = [].concat(s.latest || [], s.dev || []);
+    const ymax = Math.max.apply(null, all.map((p) => p[1])) * 1.12;
+    const X = (t) => m.l + (t - t0) / (t1 - t0) * (W - m.l - m.r);
+    const Y = (b) => H - m.b - b / ymax * (H - m.t - m.b);
+    let svg = '<svg viewBox="0 0 ' + W + " " + H + '" width="100%" role="img" aria-label="' +
+      esc(img) + ' compressed size over time">';
+    for (let j = 0; j <= 3; j++) {
+      const b = ymax * j / 3, y = Y(b);
+      svg += '<line x1="' + m.l + '" x2="' + (W - m.r) + '" y1="' + y + '" y2="' + y +
+        '" stroke="var(--grid)" stroke-width="1"/>';
+      svg += '<text x="' + (m.l - 6) + '" y="' + (y + 4) + '" text-anchor="end">' +
+        (b / 1e9).toFixed(1) + " GB</text>";
+    }
+    svg += '<text x="' + m.l + '" y="' + (H - 6) + '">' + fmtD(t0) + "</text>";
+    svg += '<text x="' + (W - m.r) + '" y="' + (H - 6) + '" text-anchor="end">' + fmtD(t1) + "</text>";
+    const ends = {};
+    for (const k of ["latest", "dev"]) {
+      const pts = s[k] || []; if (!pts.length) continue;
+      svg += '<polyline fill="none" stroke="' + colors[k] + '" stroke-width="2" ' +
+        'stroke-linejoin="round" points="' + pts.map((p) => X(p[0]) + "," + Y(p[1])).join(" ") + '"/>';
+      const last = pts[pts.length - 1];
+      svg += '<circle cx="' + X(last[0]) + '" cy="' + Y(last[1]) + '" r="4" fill="' + colors[k] +
+        '" stroke="var(--surface-1)" stroke-width="2"/>';
+      ends[k] = {x: X(last[0]) + 7, y: Y(last[1]) + 4};
+    }
+    /* keep the two end labels at least 12px apart vertically */
+    if (ends.latest && ends.dev && Math.abs(ends.latest.y - ends.dev.y) < 12) {
+      const mid = (ends.latest.y + ends.dev.y) / 2;
+      const up = ends.dev.y <= ends.latest.y ? "dev" : "latest";
+      ends[up].y = mid - 6; ends[up === "dev" ? "latest" : "dev"].y = mid + 6;
+    }
+    for (const k of Object.keys(ends)) {
+      svg += '<text class="label" x="' + ends[k].x + '" y="' + ends[k].y + '">' + k + "</text>";
+    }
+    svg += '<line class="xh" y1="' + m.t + '" y2="' + (H - m.b) + '" stroke="var(--text-muted)" ' +
+      'stroke-width="1" stroke-dasharray="3 3" style="display:none"/>';
+    svg += '<rect x="' + m.l + '" y="' + m.t + '" width="' + (W - m.l - m.r) + '" height="' +
+      (H - m.t - m.b) + '" fill="transparent" class="hit"/></svg>';
+    const card = document.createElement("div");
+    card.className = "card panel";
+    card.innerHTML = "<h3>" + esc(img) + "</h3>" + svg + '<div class="tip"></div>';
+    host.appendChild(card);
+    const svgEl = card.querySelector("svg"), tip = card.querySelector(".tip"),
+      xh = card.querySelector(".xh"), hit = card.querySelector(".hit");
+    hit.addEventListener("mousemove", (ev) => {
+      const pt = svgEl.createSVGPoint(); pt.x = ev.clientX; pt.y = ev.clientY;
+      const loc = pt.matrixTransform(svgEl.getScreenCTM().inverse());
+      const t = t0 + (loc.x - m.l) / (W - m.l - m.r) * (t1 - t0);
+      let rows = "", xs = null;
+      for (const k of ["latest", "dev"]) {
+        const pts = s[k] || []; if (!pts.length) continue;
+        let best = pts[0];
+        for (const p of pts) if (Math.abs(p[0] - t) < Math.abs(best[0] - t)) best = p;
+        if (xs == null) xs = best[0];
+        rows += '<div><span style="color:' + colors[k] + '">&#9632;</span> ' + k + ": <b>" +
+          fmtBytes(best[1]) + "</b> " + '<span class="small">' + esc(new Date(best[0])
+          .toISOString().slice(0, 10)) + " " + esc(best[2]) + "</span></div>";
+      }
+      xh.setAttribute("x1", X(xs)); xh.setAttribute("x2", X(xs)); xh.style.display = "";
+      tip.innerHTML = rows; tip.style.display = "block";
+      const r = card.getBoundingClientRect();
+      let left = ev.clientX - r.left + 12;
+      if (left + tip.offsetWidth > r.width) left = ev.clientX - r.left - tip.offsetWidth - 12;
+      left = Math.max(4, left);
+      tip.style.left = left + "px"; tip.style.top = (ev.clientY - r.top + 12) + "px";
+    });
+    hit.addEventListener("mouseleave", () => { tip.style.display = "none"; xh.style.display = "none"; });
+  }
+  $("#trend-note").textContent = source === "ghcr"
+    ? "One point per pushed image (GHCR package versions, de-duplicated by digest). Each panel has its own y-axis starting at zero."
+    : "Built from this report's own history (GHCR version history was unavailable).";
+})();
+
+/* ---- per-image details ---- */
+(function () {
+  const host = $("#details");
+  for (const d of D.images) {
+    const r = d.report || {};
+    const id = "img-" + d.image + "-" + d.tag;
+    let h = '<details class="card" id="' + esc(id) + '"><summary>' + esc(d.image) + ":" +
+      esc(d.tag) + ' <span class="small">' + fmtBytes(d.compressed_bytes) + " compressed, " +
+      fmtBytes(d.size_bytes) + " on disk</span></summary>";
+    h += '<p class="small mono">' + esc(d.digest || "") + " &middot; built " + esc(d.created || "") + "</p>";
+    if (r.error) h += "<p>" + pill("bad", "probe failed") + ' <code>' + esc(r.error) + "</code></p>";
+    h += '<div class="grid2">';
+    /* versions + packages */
+    const v = r.versions || {};
+    h += "<div><h3>Versions</h3><table>" + Object.keys(v).sort().map((k) =>
+      "<tr><td>" + esc(k) + "</td><td>" + esc(v[k] == null ? NA : v[k]) + "</td></tr>").join("") + "</table>";
+    for (const [lab, obj] of [["R packages", r.r_packages], ["Python packages", r.py_packages]]) {
+      if (!obj || !Object.keys(obj).length) continue;
+      h += "<h3>" + lab + "</h3><table>" + Object.keys(obj).sort().map((k) =>
+        "<tr><td>" + esc(k) + "</td><td>" + esc(obj[k]) + "</td></tr>").join("") + "</table>";
+    }
+    h += "</div>";
+    /* du + strip */
+    h += "<div><h3>Where the bytes are</h3><table>";
+    const du = r.du || {};
+    for (const k of Object.keys(du).sort((a, b) => du[b] - du[a])) {
+      h += '<tr><td class="mono">' + esc(k) + '</td><td class="num">' + fmtBytes(du[k]) + "</td></tr>";
+    }
+    h += "</table><h3>Strip check</h3><table>";
+    for (const [g, s] of Object.entries(r.strip || {})) {
+      h += '<tr><td class="mono">' + esc(g) + '</td><td class="num">' + esc(s.files) +
+        ' files</td><td>' + (s.with_debug ? pill("warn", s.with_debug + " with debug (" +
+        fmtBytes(s.with_debug_bytes) + ")", (s.examples || []).join("\n")) : pill("good", "ok")) +
+        "</td></tr>";
+    }
+    h += "</table></div>";
+    /* census */
+    const cen = r.census || {};
+    h += "<div><h3>Shared-library census</h3>";
+    for (const [lab, side] of [["Python process", cen.python], ["R process (+ Python via reticulate)", cen.r]]) {
+      if (!side) continue;
+      const loaded = [].concat(side.loaded || [], side.py_loaded || []);
+      h += '<p class="small">' + esc(lab) + ": loaded " + esc(loaded.join(", ") || "nothing") + "</p><table>";
+      for (const [fam, paths] of Object.entries(side.families || {})) {
+        h += "<tr><td>" + esc(fam) + "</td><td>" + (paths.length > 1 ? pill("warn", paths.length + " files")
+          : pill("good", "1")) + '</td><td class="mono">' + paths.map(esc).join("<br>") + "</td></tr>";
+      }
+      h += "</table>";
+    }
+    h += "</div>";
+    /* drivers */
+    const drv = r.drivers;
+    if (drv) {
+      h += '<div><h3>GDAL drivers (' + esc(drv.count) + ' registered)</h3><div class="drivers">' +
+        Object.keys(drv.key).map((k) => drv.key[k] ? pill("good", k) : pill("na", k + " absent")).join("") +
+        "</div></div>";
+    }
+    h += "</div>";
+    /* layers */
+    const layers = (d.layers || []).filter((l) => l.size > 0).sort((a, b) => b.size - a.size).slice(0, 12);
+    h += '<h3>Largest layers</h3><div class="scroll"><table>' + layers.map((l) =>
+      '<tr><td class="num">' + fmtBytes(l.size) + '</td><td class="mono">' +
+      esc(l.created_by.replace(/^\/bin\/sh -c (#\(nop\) )?/, "").slice(0, 220)) + "</td></tr>").join("") +
+      "</table></div>";
+    h += "</details>";
+    host.insertAdjacentHTML("beforeend", h);
+  }
+})();
+
+/* ---- canary ---- */
+(function () {
+  const c = D.canary || {};
+  if (!c.run) { $("#canary").innerHTML = '<p class="small">No completed canary run found' +
+    (c.error ? " (" + esc(c.error) + ")" : "") + ".</p>"; return; }
+  const k = (x) => x === "success" ? "good" : x === "failure" ? "bad" : "na";
+  let h = "<p>Latest run " + esc(c.run.created) + " (" + esc(c.run.event) + "): " +
+    pill(k(c.run.conclusion), c.run.conclusion) + ' &middot; <a href="' + esc(c.run.url) +
+    '">open run</a></p><table>';
+  for (const cell of c.cells || []) {
+    h += "<tr><td>" + esc(cell.name) + "</td><td>" + pill(k(cell.conclusion), cell.conclusion || "?") +
+      '</td><td><a href="' + esc(cell.url) + '">log</a></td></tr>';
+  }
+  $("#canary").innerHTML = h + "</table>";
+})();
+</script>
+</body>
+</html>

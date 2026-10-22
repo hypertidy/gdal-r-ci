@@ -85,6 +85,17 @@ Commit a `rust-toolchain.toml` pinning `1.85.0` in any project that consumes
 this image. The image pre-caches the toolchain; the toml is the repo-side pin.
 Drift becomes a `git diff`.
 
+## Image report
+
+A published report at <https://hypertidy.github.io/gdal-r-ci/> shows, for every
+image and tag: versions, compressed and on-disk size, where the bytes are, a
+strip check, a shared-library census (one file per library family in a process
+that loads the R and Python stacks together), the GDAL driver set, a
+compressed-size history recovered from GHCR, and the latest canary results.
+It is built by [`.github/workflows/report.yml`](.github/workflows/report.yml)
+from the scripts in [`report/`](report/) after each cascade, weekly, and on
+demand; history accumulates on the `report-data` branch.
+
 ## Quick start
 
 ```bash
