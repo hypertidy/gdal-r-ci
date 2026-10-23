@@ -12,8 +12,8 @@ GDAL, the same PROJ, the same GEOS, and the same numpy ABI.
 
 ## Images
 
-Six images are published to GHCR. The first four publish `:latest` (release)
-and `:dev` (GDAL HEAD) variants; the two leaf images publish `:latest` only.
+Seven images are published to GHCR. The first four publish `:latest` (release)
+and `:dev` (GDAL HEAD) variants; the three leaf images publish `:latest` only.
 
 | Image | Contents | Use for |
 |-------|----------|---------|
@@ -23,10 +23,13 @@ and `:dev` (GDAL HEAD) variants; the two leaf images publish `:latest` only.
 | `ghcr.io/hypertidy/gdal-r-python` | + rasterio, fiona, xarray, zarr, kerchunk, virtualizarr… | R/Python interop |
 | `ghcr.io/hypertidy/gdal-r-python-extras` | + R kitchen sink (hypertidy stack, arrow, targets, dev tooling) | Workbench / interactive |
 | `ghcr.io/hypertidy/gdal-r-python-extras-rust` | + Rust 1.85.0 (clippy, rustfmt, rust-analyzer, lld, cargo-nextest) | Rust + geospatial dev |
+| `ghcr.io/hypertidy/gdal-r-mesh` | gdal-r-full + wk (surface types), wkpool, cdtr, laridae, decido | Meshes and triangulation |
 
 ```
 gdal-system  →  gdal-r  →  gdal-r-full  →  gdal-r-python  →  gdal-r-python-extras  →  gdal-r-python-extras-rust
 ```
+
+`gdal-r-mesh` is a side branch off `gdal-r-full:latest`.
 
 The `:dev` variants track GDAL HEAD + latest released PROJ/GEOS, rebuilt daily —
 these are the canary. The `:latest` variants track the latest releases of all
@@ -84,6 +87,28 @@ PROJ is byte-for-byte the same PROJ that `gdalwarp` uses as an oracle.
 Commit a `rust-toolchain.toml` pinning `1.85.0` in any project that consumes
 this image. The image pre-caches the toolchain; the toml is the repo-side pin.
 Drift becomes a `git diff`.
+
+### gdal-r-mesh
+
+A leaf off `gdal-r-full:latest` for mesh and triangulation work
+([`docker/Dockerfile.gdal-r-mesh`](docker/Dockerfile.gdal-r-mesh)), with
+the packages in [`config/r-packages-mesh.txt`](config/r-packages-mesh.txt):
+
+- `wk` from the `read-surface-types` branch, which reads the simple features
+  TIN, TRIANGLE and POLYHEDRALSURFACE types
+  ([paleolimbot/wk#236](https://github.com/paleolimbot/wk/issues/236))
+- `wkpool` from the `sf-surfaces` branch, with the TIN round-trip article
+- `cdtr` (CDT), `laridae` (CGAL, via RcppCGAL headers) and `decido` (earcut)
+
+Several entries are development branches, so the image tracks work in
+progress; pin a digest when you need it fixed. The build runs
+[`scripts/smoke-mesh.R`](scripts/smoke-mesh.R): a TIN read by wk in sfc,
+WKB and WKT form, merged on a vertex pool, and the three engines on a
+square with a hole.
+
+```bash
+docker run --rm -ti ghcr.io/hypertidy/gdal-r-mesh:latest
+```
 
 ## gdal-conda
 
