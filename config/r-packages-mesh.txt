@@ -1,0 +1,15 @@
+# R packages for gdal-r-mesh, installed in this order on top of gdal-r-full.
+# All required: the build fails if any of them fails to install.
+#
+# GitHub refs (owner/repo or owner/repo@ref) go through remotes; plain names
+# are CRAN source installs.
+#
+# wk with TIN / TRIANGLE / POLYHEDRALSURFACE reading (paleolimbot/wk#236).
+# Replace with paleolimbot/wk once that lands.
+mdsumner/wk@read-surface-types
+# triangulation engines
+decido
+hypertidy/cdtr
+hypertidy/laridae
+# vertex pools, with the TIN round-trip article (branch sf-surfaces)
+hypertidy/wkpool@sf-surfaces
