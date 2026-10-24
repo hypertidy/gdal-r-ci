@@ -102,7 +102,10 @@ the packages in [`config/r-packages-mesh.txt`](config/r-packages-mesh.txt):
   and `RTriangle` (Triangle)
 - the SFCGAL 2.3 C library, built from source into `/usr/local` because
   Ubuntu does not package 2.3, and its R binding
-  [`sfcgal`](https://gitlab.com/dickoa/sfcgal) from GitLab
+  [`sfcgal`](https://gitlab.com/dickoa/sfcgal) from GitLab; it needs
+  sf >= 1.1.4, so this image replaces gdal-r-full's CRAN sf with sf from
+  GitHub (built against the same GDAL, PROJ and GEOS) until 1.1-4 reaches
+  CRAN
 - `rgl`, with `RGL_USE_NULL=TRUE` set since containers have no display;
   save scenes with `htmlwidgets::saveWidget(rgl::rglwidget(), ...)`
 - the mesh models `silicate`, `quadmesh` and `polymer`, and, if they
