@@ -23,7 +23,7 @@ and `:dev` (GDAL HEAD) variants; the three leaf images publish `:latest` only.
 | `ghcr.io/hypertidy/gdal-r-python` | + rasterio, fiona, xarray, zarr, kerchunk, virtualizarr… | R/Python interop |
 | `ghcr.io/hypertidy/gdal-r-python-extras` | + R kitchen sink (hypertidy stack, arrow, targets, dev tooling) | Workbench / interactive |
 | `ghcr.io/hypertidy/gdal-r-python-extras-rust` | + Rust 1.85.0 (clippy, rustfmt, rust-analyzer, lld, cargo-nextest) | Rust + geospatial dev |
-| `ghcr.io/hypertidy/gdal-r-mesh` | gdal-r-full + wk (surface types), wkpool, cdtr, laridae, decido | Meshes and triangulation |
+| `ghcr.io/hypertidy/gdal-r-mesh` | gdal-r-full + wk (surface types), wkpool, cdtr, laridae, decido, RTriangle, SFCGAL + sfcgal, rgl, silicate, quadmesh, polymer | Meshes and triangulation |
 
 ```
 gdal-system  →  gdal-r  →  gdal-r-full  →  gdal-r-python  →  gdal-r-python-extras  →  gdal-r-python-extras-rust
@@ -98,13 +98,26 @@ the packages in [`config/r-packages-mesh.txt`](config/r-packages-mesh.txt):
   TIN, TRIANGLE and POLYHEDRALSURFACE types
   ([paleolimbot/wk#236](https://github.com/paleolimbot/wk/issues/236))
 - `wkpool` from the `sf-surfaces` branch, with the TIN round-trip article
-- `cdtr` (CDT), `laridae` (CGAL, via RcppCGAL headers) and `decido` (earcut)
+- `cdtr` (CDT), `laridae` (CGAL, via RcppCGAL headers), `decido` (earcut)
+  and `RTriangle` (Triangle)
+- the SFCGAL 2.3 C library, built from source into `/usr/local` because
+  Ubuntu does not package 2.3, and its R binding
+  [`sfcgal`](https://gitlab.com/dickoa/sfcgal) from GitLab
+- `rgl`, with `RGL_USE_NULL=TRUE` set since containers have no display;
+  save scenes with `htmlwidgets::saveWidget(rgl::rglwidget(), ...)`
+- the mesh models `silicate`, `quadmesh` and `polymer`, and, if they
+  install, `anglr` and `meshcore` (entries marked `?` in the package list are
+  optional: a failure is logged in the build summary and the build goes on)
+
+The R `geos` package is left out on purpose: it bundles its own GEOS
+(libgeos), which would put a second GEOS beside the one in `/usr/local`.
 
 Several entries are development branches, so the image tracks work in
 progress; pin a digest when you need it fixed. The build runs
 [`scripts/smoke-mesh.R`](scripts/smoke-mesh.R): a TIN read by wk in sfc,
-WKB and WKT form, merged on a vertex pool, and the three engines on a
-square with a hole.
+WKB and WKT form, merged on a vertex pool, the four engines on a square
+with a hole, an SFCGAL tessellation read back through wk into a pool, an
+rgl scene on the null device, and the mesh models loading.
 
 ```bash
 docker run --rm -ti ghcr.io/hypertidy/gdal-r-mesh:latest

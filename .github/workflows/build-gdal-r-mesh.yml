@@ -5,7 +5,8 @@
 # touch its files (build and smoke test, no push).
 #
 # Adds the mesh stack on top of gdal-r-full: wk with simple features
-# surface types, wkpool, cdtr, laridae, decido (config/r-packages-mesh.txt).
+# surface types, wkpool, cdtr, laridae, decido, SFCGAL + sfcgal, rgl and
+# the mesh models (config/r-packages-mesh.txt).
 
 name: Build gdal-r-mesh
 
