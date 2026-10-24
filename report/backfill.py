@@ -27,7 +27,7 @@ ORG = os.environ.get("GHCR_ORG", "hypertidy")
 IMAGES = os.environ.get(
     "REPORT_IMAGES",
     "gdal-system gdal-r gdal-r-full gdal-r-python gdal-r-python-extras "
-    "gdal-r-python-extras-rust gdal-conda").split()
+    "gdal-r-python-extras-rust gdal-r-mesh gdal-conda").split()
 PER_IMAGE = int(os.environ.get("BACKFILL_VERSIONS", "40"))
 
 

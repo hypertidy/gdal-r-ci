@@ -18,7 +18,8 @@ import shutil
 import sys
 
 ORDER = ["gdal-system", "gdal-r", "gdal-r-full", "gdal-r-python",
-         "gdal-r-python-extras", "gdal-r-python-extras-rust", "gdal-conda"]
+         "gdal-r-python-extras", "gdal-r-python-extras-rust", "gdal-r-mesh",
+         "gdal-conda"]
 
 
 def load_json(path, default):
