@@ -1,15 +1,33 @@
 # R packages for gdal-r-mesh, installed in this order on top of gdal-r-full.
-# All required: the build fails if any of them fails to install.
 #
-# GitHub refs (owner/repo or owner/repo@ref) go through remotes; plain names
-# are CRAN source installs.
+# owner/repo or owner/repo@ref   GitHub, via remotes
+# gitlab::owner/repo             GitLab, via remotes
+# name                           CRAN, from source
+#
+# Entries are required (the build fails if one fails) unless prefixed with
+# "?", which marks them optional: failures are logged and the build goes on.
 #
 # wk with TIN / TRIANGLE / POLYHEDRALSURFACE reading (paleolimbot/wk#236).
 # Replace with paleolimbot/wk once that lands.
 mdsumner/wk@read-surface-types
 # triangulation engines
 decido
+RTriangle
 hypertidy/cdtr
 hypertidy/laridae
 # vertex pools, with the TIN round-trip article (branch sf-surfaces)
 hypertidy/wkpool@sf-surfaces
+# SFCGAL binding (needs the SFCGAL C library built in the Dockerfile).
+# sfcgal needs sf >= 1.1.4 (vctrs methods for the surface types,
+# r-spatial/sf#2632), so sf comes from GitHub until 1.1-4 is on CRAN; it
+# builds against the same /usr/local GDAL, PROJ and GEOS.
+r-spatial/sf
+gitlab::dickoa/sfcgal
+# 3D display; the image sets RGL_USE_NULL=TRUE (no display)
+rgl
+# mesh models and overlay
+silicate
+quadmesh
+hypertidy/polymer
+?hypertidy/anglr
+?hypertidy/meshcore

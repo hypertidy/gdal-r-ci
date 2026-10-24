@@ -3,8 +3,10 @@
 #
 # Mesh layer on top of gdal-r-full: wk with simple features surface types
 # (TIN, TRIANGLE, POLYHEDRALSURFACE), wkpool with its TIN round-trip
-# article, and the triangulation engines cdtr (CDT), laridae (CGAL) and
-# decido (earcut). Package list: config/r-packages-mesh.txt.
+# article, the triangulation engines cdtr (CDT), laridae (CGAL), decido
+# (earcut) and RTriangle, the SFCGAL library and its R binding sfcgal, rgl,
+# and the mesh models silicate, quadmesh, polymer, anglr and meshcore.
+# Package list: config/r-packages-mesh.txt.
 #
 # Leaf image: only :latest, no :dev variant. Several entries are
 # development branches, so this image tracks work in progress; pin a digest
@@ -14,8 +16,38 @@ ARG BASE_IMAGE=ghcr.io/hypertidy/gdal-r-full:latest
 FROM ${BASE_IMAGE}
 
 LABEL org.opencontainers.image.source="https://github.com/hypertidy/gdal-r-ci"
-LABEL org.opencontainers.image.description="gdal-r-full + mesh stack: wk (surface types), wkpool, cdtr, laridae, decido"
+LABEL org.opencontainers.image.description="gdal-r-full + mesh stack: wk (surface types), wkpool, cdtr, laridae, decido, SFCGAL + sfcgal, rgl, silicate"
 LABEL org.opencontainers.image.documentation="https://github.com/hypertidy/gdal-r-ci#gdal-r-mesh"
+
+# -- SFCGAL C library ----------------------------------------------------------
+# Ubuntu does not package SFCGAL 2.3, which the sfcgal R package needs, so
+# build the pinned release into /usr/local. It links CGAL, Boost, GMP and
+# MPFR from apt; none of those pull in a second GDAL, PROJ or GEOS. The GL
+# and X headers are for rgl.
+ARG SFCGAL_VERSION=2.3.0
+ARG SFCGAL_SHA256=5f6aa1838e5ae31523ebf410cde0240b7a88d7e062b7ffff945e4fae2aaba0fa
+RUN apt-get update -qq && apt-get install -y --no-install-recommends \
+        libcgal-dev libboost-serialization-dev libboost-thread-dev \
+        libgmp-dev libmpfr-dev nlohmann-json3-dev \
+        libgl1-mesa-dev libglu1-mesa-dev libx11-dev libxt-dev \
+ && rm -rf /var/lib/apt/lists/* \
+ && work=$(mktemp -d) \
+ && curl -fsSL -o "$work/sfcgal.tar.gz" \
+        "https://gitlab.com/sfcgal/SFCGAL/-/archive/v${SFCGAL_VERSION}/SFCGAL-v${SFCGAL_VERSION}.tar.gz" \
+ && echo "${SFCGAL_SHA256}  $work/sfcgal.tar.gz" | sha256sum -c - \
+ && tar -xzf "$work/sfcgal.tar.gz" -C "$work" \
+ && cmake -S "$work/SFCGAL-v${SFCGAL_VERSION}" -B "$work/build" \
+        -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/local \
+        -DCMAKE_INSTALL_LIBDIR=lib -DUSE_CCACHE=OFF \
+ && cmake --build "$work/build" --parallel "$(nproc)" \
+ && cmake --install "$work/build" \
+ && strip --strip-debug /usr/local/lib/libSFCGAL.so* \
+ && ldconfig \
+ && rm -rf "$work" \
+ && pkg-config --modversion sfcgal
+
+# rgl without a display
+ENV RGL_USE_NULL=TRUE
 
 COPY scripts/install-mesh.R      /opt/scripts/install-mesh.R
 COPY scripts/smoke-mesh.R        /opt/scripts/smoke-mesh.R
@@ -34,8 +66,8 @@ RUN Rscript /opt/scripts/smoke-mesh.R
 
 RUN { \
         echo "-- ghcr.io/hypertidy/gdal-r-mesh --" ; \
-        echo "GDAL $(gdal-config --version)   PROJ $(pkg-config --modversion proj)   GEOS $(geos-config --version)" ; \
-        echo "R    $(R --version 2>/dev/null | head -1 | grep -oE '[0-9]+\.[0-9]+\.[0-9]+')   (wk surfaces, wkpool, cdtr, laridae, decido)" ; \
+        echo "GDAL $(gdal-config --version)   PROJ $(pkg-config --modversion proj)   GEOS $(geos-config --version)   SFCGAL $(pkg-config --modversion sfcgal)" ; \
+        echo "R    $(R --version 2>/dev/null | head -1 | grep -oE '[0-9]+\.[0-9]+\.[0-9]+')   (wk surfaces, wkpool, cdtr, laridae, sfcgal, rgl, ...)" ; \
         echo "" ; \
         echo "Docs: https://github.com/hypertidy/gdal-r-ci#gdal-r-mesh" ; \
     } > /etc/gdal-r-ci-motd
