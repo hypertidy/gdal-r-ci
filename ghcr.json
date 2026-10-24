@@ -528,6 +528,24 @@
    "compressed": 4362020771
   }
  ],
+ "gdal-r-mesh": [
+  {
+   "digest": "sha256:5f80c73ca84abfc08971248e253cb763204003b5550ec224a0b3554b481d34a2",
+   "created": "2026-10-24T02:13:47Z",
+   "tags": [
+    "latest"
+   ],
+   "variant": "latest",
+   "compressed": 2103613341
+  },
+  {
+   "digest": "sha256:c509ec34b5cd65fc9cc31dc8d1e6aa55c57c9976f52e01e51f83ad05de5d2901",
+   "created": "2026-10-23T23:39:42Z",
+   "tags": [],
+   "variant": "latest",
+   "compressed": 1979496991
+  }
+ ],
  "gdal-conda": [
   {
    "digest": "sha256:24b28ef841615d3cdf5964851c6aeae1eb122224e10b3a8c8e5a2a5224a1c34f",
