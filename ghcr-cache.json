@@ -387,6 +387,16 @@
   "kind": "image",
   "variant": "dev"
  },
+ "gdal-r-mesh@sha256:05028ccc5e40862e5b5b8703aa8dd2cd170aa3900a2dab7be9c9a12131f89199": {
+  "children": [
+   "sha256:8375986f6aca85c25109ec2bf80bc4e82dcaf21adf64864ecf534805fb95a925",
+   "sha256:f11318ffe104b0a7317e7d0852f78d224a5229038584ddaf1549e969b6be2cc6"
+  ],
+  "compressed": 2105415612,
+  "image_digest": "sha256:8375986f6aca85c25109ec2bf80bc4e82dcaf21adf64864ecf534805fb95a925",
+  "kind": "index",
+  "variant": "latest"
+ },
  "gdal-r-mesh@sha256:3405e88b0a7ffc1d8561f990e3c36d28f6280651d45926f1c536d1699288e7cb": {
   "children": [],
   "compressed": null,
@@ -406,6 +416,12 @@
   "compressed": 2103613341,
   "image_digest": "sha256:3efaa5342aa9b1e8bf0b5df06e62d5a3f2908ccc0fa6736df137f094caa0b540",
   "kind": "index",
+  "variant": "latest"
+ },
+ "gdal-r-mesh@sha256:8375986f6aca85c25109ec2bf80bc4e82dcaf21adf64864ecf534805fb95a925": {
+  "children": [],
+  "compressed": 2105415612,
+  "kind": "image",
   "variant": "latest"
  },
  "gdal-r-mesh@sha256:c509ec34b5cd65fc9cc31dc8d1e6aa55c57c9976f52e01e51f83ad05de5d2901": {
@@ -428,6 +444,11 @@
   "compressed": 1979496991,
   "kind": "image",
   "variant": "latest"
+ },
+ "gdal-r-mesh@sha256:f11318ffe104b0a7317e7d0852f78d224a5229038584ddaf1549e969b6be2cc6": {
+  "children": [],
+  "compressed": null,
+  "kind": "attestation"
  },
  "gdal-r-python-extras-rust@sha256:576960e57b798229a3b311dd514ee9c5f095690f65324fdf442343f4bab3e761": {
   "children": [],
@@ -764,6 +785,12 @@
   "kind": "index",
   "variant": "latest"
  },
+ "gdal-r-python@sha256:153a2ff5797c7787e5ad23c3444805c119f15e5485c4e4d9d3a5ede88af4c9a7": {
+  "children": [],
+  "compressed": 2825810338,
+  "kind": "image",
+  "variant": "latest"
+ },
  "gdal-r-python@sha256:1df8a4a59a33bce2ceef0fcb5a1d059ff339c39488f6b2b07066eb1f205c8ee1": {
   "children": [
    "sha256:c9abf63f17229345f4dae0f99a20c6d184a2ad0e2f149662996f9e10aa6620c3",
@@ -794,6 +821,16 @@
   "children": [],
   "compressed": 3075908839,
   "kind": "image",
+  "variant": "latest"
+ },
+ "gdal-r-python@sha256:42037f1ed949e3248a77b5d506e0568f9a712e456c44662a259c2c54398a9497": {
+  "children": [
+   "sha256:153a2ff5797c7787e5ad23c3444805c119f15e5485c4e4d9d3a5ede88af4c9a7",
+   "sha256:5c03e324cc9c8f977f5533014a9fd7eb8404273d3180399b154598470dab9c77"
+  ],
+  "compressed": 2825810338,
+  "image_digest": "sha256:153a2ff5797c7787e5ad23c3444805c119f15e5485c4e4d9d3a5ede88af4c9a7",
+  "kind": "index",
   "variant": "latest"
  },
  "gdal-r-python@sha256:44b9239ba3026c389088232a3a0d3d844502465aed6929fdaf9e4ed308503151": {
@@ -852,6 +889,11 @@
   "image_digest": "sha256:6c5b8222e339ae502015e32cf6c30f6550314d180f40f3a9e9939ba94d3bb532",
   "kind": "index",
   "variant": "dev"
+ },
+ "gdal-r-python@sha256:5c03e324cc9c8f977f5533014a9fd7eb8404273d3180399b154598470dab9c77": {
+  "children": [],
+  "compressed": null,
+  "kind": "attestation"
  },
  "gdal-r-python@sha256:6ada6adf2ef02d6ba1eb552800fbb77229a7eb7a0ddbc7cd266d034fe92b0b55": {
   "children": [
@@ -1367,6 +1409,11 @@
   "kind": "image",
   "variant": "dev"
  },
+ "gdal-system@sha256:072176cf01425f66359cf764dc13fc0dcfa441b48765f3154d3a495b1b2c6227": {
+  "children": [],
+  "compressed": null,
+  "kind": "attestation"
+ },
  "gdal-system@sha256:0b45754a4a6f7a31fc36b0e7c8b4d0af2fe03d44590edd8ae9118841ef34443c": {
   "children": [],
   "compressed": 1647225912,
@@ -1384,6 +1431,11 @@
   "variant": "latest"
  },
  "gdal-system@sha256:0ff8e808792e1d8657fb848d5f304d9a890d7316fb8ba1a925f90456a84204b9": {
+  "children": [],
+  "compressed": null,
+  "kind": "attestation"
+ },
+ "gdal-system@sha256:1017ae6ce78b97602d5fa903abb077e3002fdeb81d3dbf8bac875f8711f0673a": {
   "children": [],
   "compressed": null,
   "kind": "attestation"
@@ -1425,10 +1477,26 @@
   "kind": "index",
   "variant": "latest"
  },
+ "gdal-system@sha256:42398f3f9bbddb7e01e445be95446eb12b09dfc2cc832a6188ea858e9c8afd90": {
+  "children": [],
+  "compressed": 1584243035,
+  "kind": "image",
+  "variant": "dev"
+ },
  "gdal-system@sha256:4357092b9543fa0836784fc19ddc843445d40f448e3c6324fe1ce5575699ba39": {
   "children": [],
   "compressed": 1635730014,
   "kind": "image",
+  "variant": "latest"
+ },
+ "gdal-system@sha256:44dea57fd417da7c6042690017e803f1c67fe3f4814b648cf7d6b48d0fbc8d93": {
+  "children": [
+   "sha256:f55a4c9c0c2e8a73b80867aa8e06d5078ee5bf9abfc8d54f92d89d20075b89e9",
+   "sha256:1017ae6ce78b97602d5fa903abb077e3002fdeb81d3dbf8bac875f8711f0673a"
+  ],
+  "compressed": 1575187624,
+  "image_digest": "sha256:f55a4c9c0c2e8a73b80867aa8e06d5078ee5bf9abfc8d54f92d89d20075b89e9",
+  "kind": "index",
   "variant": "latest"
  },
  "gdal-system@sha256:46d5b189727ad1af3f135b3e6dbbe58e703a6fffe6a318143f6c85a5af997add": {
@@ -1630,6 +1698,16 @@
   "compressed": null,
   "kind": "attestation"
  },
+ "gdal-system@sha256:e5ff60e77b38fef7bdbdf65715daa1a75e7bc39a4a0a5dc6977e88655075f362": {
+  "children": [
+   "sha256:42398f3f9bbddb7e01e445be95446eb12b09dfc2cc832a6188ea858e9c8afd90",
+   "sha256:072176cf01425f66359cf764dc13fc0dcfa441b48765f3154d3a495b1b2c6227"
+  ],
+  "compressed": 1584243035,
+  "image_digest": "sha256:42398f3f9bbddb7e01e445be95446eb12b09dfc2cc832a6188ea858e9c8afd90",
+  "kind": "index",
+  "variant": "dev"
+ },
  "gdal-system@sha256:ef0b489b09d0bc29e41a95d5d897752a4f478665982bf0c96fe12f2f1d859967": {
   "children": [
    "sha256:4357092b9543fa0836784fc19ddc843445d40f448e3c6324fe1ce5575699ba39",
@@ -1649,6 +1727,12 @@
   "image_digest": "sha256:46d5b189727ad1af3f135b3e6dbbe58e703a6fffe6a318143f6c85a5af997add",
   "kind": "index",
   "variant": "dev"
+ },
+ "gdal-system@sha256:f55a4c9c0c2e8a73b80867aa8e06d5078ee5bf9abfc8d54f92d89d20075b89e9": {
+  "children": [],
+  "compressed": 1575187624,
+  "kind": "image",
+  "variant": "latest"
  },
  "gdal-system@sha256:f5a7c71b887b28b22988b59a210aae61539f03d41d06d6b78b8c164ee8f1eb3c": {
   "children": [
