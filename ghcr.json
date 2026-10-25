@@ -555,11 +555,18 @@
  ],
  "gdal-conda": [
   {
-   "digest": "sha256:24b28ef841615d3cdf5964851c6aeae1eb122224e10b3a8c8e5a2a5224a1c34f",
-   "created": "2026-10-23T22:37:20Z",
+   "digest": "sha256:16f4e8b44b010bc60675306a4a67203e79b205542b9f3119623077203b1f160b",
+   "created": "2026-10-25T22:12:35Z",
    "tags": [
     "dev"
    ],
+   "variant": "dev",
+   "compressed": 884318826
+  },
+  {
+   "digest": "sha256:24b28ef841615d3cdf5964851c6aeae1eb122224e10b3a8c8e5a2a5224a1c34f",
+   "created": "2026-10-23T22:37:20Z",
+   "tags": [],
    "variant": "dev",
    "compressed": 882682040
   },
