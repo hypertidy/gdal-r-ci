@@ -208,6 +208,12 @@
   "kind": "image",
   "variant": "latest"
  },
+ "gdal-r-full@sha256:50589e1eacfcd8d4fc027d054a847c6cd993922aca79b452c2af1d5d1f4a15ee": {
+  "children": [],
+  "compressed": 1979350499,
+  "kind": "image",
+  "variant": "dev"
+ },
  "gdal-r-full@sha256:57b95e8fba62e131cd12942543a3a54f1482cc4dc452546eaae29bc682b52bbd": {
   "children": [],
   "compressed": null,
@@ -232,6 +238,16 @@
   "children": [],
   "compressed": 2165824317,
   "kind": "image",
+  "variant": "latest"
+ },
+ "gdal-r-full@sha256:753726ddb3e9eb037cc22deef44c6eca2643e7219a4fed75f915d5dc09bc0b4c": {
+  "children": [
+   "sha256:b896cd30e39e2ee6e945a23ced143a34ebeed5a4ae54e12ac43af592fa50bbcc",
+   "sha256:b200bc1ecf1dbf60a36c33af9c802e4130614089d3c99b2b715d6b2625fcda08"
+  ],
+  "compressed": 1970275474,
+  "image_digest": "sha256:b896cd30e39e2ee6e945a23ced143a34ebeed5a4ae54e12ac43af592fa50bbcc",
+  "kind": "index",
   "variant": "latest"
  },
  "gdal-r-full@sha256:76a96c8fa561fb46689e45e50f11746532c80ba0ef39a5841b9afdea8adaaf45": {
@@ -267,6 +283,11 @@
   "kind": "image",
   "variant": "latest"
  },
+ "gdal-r-full@sha256:b200bc1ecf1dbf60a36c33af9c802e4130614089d3c99b2b715d6b2625fcda08": {
+  "children": [],
+  "compressed": null,
+  "kind": "attestation"
+ },
  "gdal-r-full@sha256:b41f6daddc3ac1be9ea7bd83167b36779e1a1b6d9255e91a8d8a2298321fc698": {
   "children": [
    "sha256:9ba45649b2d6a7fa5a0f218c81d4fdf86d7bb41a30459db63aa843502dfda55c",
@@ -285,6 +306,12 @@
   "compressed": 1970285090,
   "image_digest": "sha256:cd7639635d502c1a9023cde7428d920a7a400a1570e420e32adb2c79e63faf47",
   "kind": "index",
+  "variant": "latest"
+ },
+ "gdal-r-full@sha256:b896cd30e39e2ee6e945a23ced143a34ebeed5a4ae54e12ac43af592fa50bbcc": {
+  "children": [],
+  "compressed": 1970275474,
+  "kind": "image",
   "variant": "latest"
  },
  "gdal-r-full@sha256:bb25be7d0091fe9c632aa90970ccb2ab7cd330be539389c7d26903337fca34ba": {
@@ -318,6 +345,11 @@
   "variant": "dev"
  },
  "gdal-r-full@sha256:ca0178e4342664064898ca55b2d4fe1d2cae693ee844052763d7c58aff9d0a20": {
+  "children": [],
+  "compressed": null,
+  "kind": "attestation"
+ },
+ "gdal-r-full@sha256:cce5dba4b7302c4d0ded4ebc1e69bee9e7f22afa41188913bef647490e2b7df1": {
   "children": [],
   "compressed": null,
   "kind": "attestation"
@@ -380,6 +412,16 @@
   "compressed": 2170527905,
   "kind": "image",
   "variant": "latest"
+ },
+ "gdal-r-full@sha256:f1c75e70fd958ad75380bc7aa30ec77bfa32e0bc8be9b5c3e30090d429e9c5b9": {
+  "children": [
+   "sha256:50589e1eacfcd8d4fc027d054a847c6cd993922aca79b452c2af1d5d1f4a15ee",
+   "sha256:cce5dba4b7302c4d0ded4ebc1e69bee9e7f22afa41188913bef647490e2b7df1"
+  ],
+  "compressed": 1979350499,
+  "image_digest": "sha256:50589e1eacfcd8d4fc027d054a847c6cd993922aca79b452c2af1d5d1f4a15ee",
+  "kind": "index",
+  "variant": "dev"
  },
  "gdal-r-full@sha256:f9d6b21628d69b4e8c57a6a10e19f50ff51f01567b8155e910edb4c4f39f05ad": {
   "children": [],
@@ -801,6 +843,16 @@
   "kind": "index",
   "variant": "latest"
  },
+ "gdal-r-python@sha256:2d2d5df8a7f5b165307a2c9ac3299c7eedaef4d15bf19af1fb541f563f61df53": {
+  "children": [
+   "sha256:fb11c85710bcc9de06538e3099a67692d5328efad9fbdaf8603ea28d9f517d3b",
+   "sha256:a1103277decad6464b8cc91a08dcc3802c1019102d368c6da4933f9a751e2d3d"
+  ],
+  "compressed": 2834887012,
+  "image_digest": "sha256:fb11c85710bcc9de06538e3099a67692d5328efad9fbdaf8603ea28d9f517d3b",
+  "kind": "index",
+  "variant": "dev"
+ },
  "gdal-r-python@sha256:2f767b404101cf1fbe87a1df6d5771f46ba7e9ebff3140a22ade4e8607d0cdf1": {
   "children": [
    "sha256:9db7eebcca4dd91bdf9d7333603e58921a5c9b53df628d2e7f5fb89a5836729a",
@@ -979,6 +1031,22 @@
   "kind": "image",
   "variant": "dev"
  },
+ "gdal-r-python@sha256:91afe4c38cd4033546b50393ce8ddfd2f98332b437c6111c6d63e2b656c5b16c": {
+  "children": [],
+  "compressed": 2825822680,
+  "kind": "image",
+  "variant": "latest"
+ },
+ "gdal-r-python@sha256:9285b81c3e2420eb0a9ee4ef478323d1c4c51e49f1dcbc767a383c393dee87c9": {
+  "children": [
+   "sha256:91afe4c38cd4033546b50393ce8ddfd2f98332b437c6111c6d63e2b656c5b16c",
+   "sha256:e7fd6f24f6bda41103a664c606d1ce2f71fbab0908d7992f8207cd6329a736fa"
+  ],
+  "compressed": 2825822680,
+  "image_digest": "sha256:91afe4c38cd4033546b50393ce8ddfd2f98332b437c6111c6d63e2b656c5b16c",
+  "kind": "index",
+  "variant": "latest"
+ },
  "gdal-r-python@sha256:960b62bc525882f660c4256cbc279ba2421216f8836a7eda293fcb6436898539": {
   "children": [],
   "compressed": null,
@@ -1004,6 +1072,11 @@
   "compressed": 2834888713,
   "kind": "image",
   "variant": "dev"
+ },
+ "gdal-r-python@sha256:a1103277decad6464b8cc91a08dcc3802c1019102d368c6da4933f9a751e2d3d": {
+  "children": [],
+  "compressed": null,
+  "kind": "attestation"
  },
  "gdal-r-python@sha256:a3e6ed3798288e055597ecf7a182ea7c03c37961bf34373a8d91a2b28fb8276b": {
   "children": [
@@ -1062,6 +1135,11 @@
   "kind": "image",
   "variant": "dev"
  },
+ "gdal-r-python@sha256:e7fd6f24f6bda41103a664c606d1ce2f71fbab0908d7992f8207cd6329a736fa": {
+  "children": [],
+  "compressed": null,
+  "kind": "attestation"
+ },
  "gdal-r-python@sha256:f39d07df8b88d3b2a0a3d882f696bd6c2daafde8d1021d35e794fabc16a70c0f": {
   "children": [],
   "compressed": null,
@@ -1072,6 +1150,12 @@
   "compressed": 2822700885,
   "kind": "image",
   "variant": "latest"
+ },
+ "gdal-r-python@sha256:fb11c85710bcc9de06538e3099a67692d5328efad9fbdaf8603ea28d9f517d3b": {
+  "children": [],
+  "compressed": 2834887012,
+  "kind": "image",
+  "variant": "dev"
  },
  "gdal-r-python@sha256:fc71c3aa3034adea74701ae1fa90cdef28ed333b385ec7bbe79a26c9dec9a789": {
   "children": [],
@@ -1200,6 +1284,16 @@
   "compressed": null,
   "kind": "attestation"
  },
+ "gdal-r@sha256:5a3a6b6db9a413a0347bb1d17f58dba3f84c658c6825640b71a7338cc040c7d5": {
+  "children": [
+   "sha256:e5bd6ab3c55fe4edda79f4ee87bc9ba31c61ce908a5d36438f3cc393a12f1e5c",
+   "sha256:ad3f393ee48149677f434c4df4ad93a8481c99d7e8a4bb8e9dcb54940019d48d"
+  ],
+  "compressed": 1887571725,
+  "image_digest": "sha256:e5bd6ab3c55fe4edda79f4ee87bc9ba31c61ce908a5d36438f3cc393a12f1e5c",
+  "kind": "index",
+  "variant": "dev"
+ },
  "gdal-r@sha256:5e7a62ce270e6fad5d09fc899f26dff58f0fa793d7eee21b6468551515e9966b": {
   "children": [
    "sha256:2d547ab47511ac6e0fdec48e79f0ef37809594f720cb218ea307d2cdc7894826",
@@ -1245,6 +1339,12 @@
  "gdal-r@sha256:6f0632bac34bab2f4bb1542972d5835f60280530f080a9535f2b514471ca7f40": {
   "children": [],
   "compressed": 1962257276,
+  "kind": "image",
+  "variant": "latest"
+ },
+ "gdal-r@sha256:6f5e1e69b4c2942ac453f4d7172c083a5dd48d36c8d13a5b7143a9bd9f927e40": {
+  "children": [],
+  "compressed": 1878503230,
   "kind": "image",
   "variant": "latest"
  },
@@ -1324,10 +1424,25 @@
   "kind": "index",
   "variant": "latest"
  },
+ "gdal-r@sha256:ad3f393ee48149677f434c4df4ad93a8481c99d7e8a4bb8e9dcb54940019d48d": {
+  "children": [],
+  "compressed": null,
+  "kind": "attestation"
+ },
  "gdal-r@sha256:ad409d10d282defa913ba4f1f1b09c61d2e47c6de430241dd407ed7da407a1da": {
   "children": [],
   "compressed": null,
   "kind": "attestation"
+ },
+ "gdal-r@sha256:b174ae12cc28fb39396aa30c53315231104e31858d17691eea29f1cd36264c6b": {
+  "children": [
+   "sha256:6f5e1e69b4c2942ac453f4d7172c083a5dd48d36c8d13a5b7143a9bd9f927e40",
+   "sha256:fa740295638737449f2873a8d30c9215e014e533c01c7af7a48790049e0d399f"
+  ],
+  "compressed": 1878503230,
+  "image_digest": "sha256:6f5e1e69b4c2942ac453f4d7172c083a5dd48d36c8d13a5b7143a9bd9f927e40",
+  "kind": "index",
+  "variant": "latest"
  },
  "gdal-r@sha256:b409491b24f543e13c544fe306fe18a8d5657de85703fbe6fadf09b7fb8e9ab2": {
   "children": [],
@@ -1372,6 +1487,12 @@
   "kind": "image",
   "variant": "latest"
  },
+ "gdal-r@sha256:e5bd6ab3c55fe4edda79f4ee87bc9ba31c61ce908a5d36438f3cc393a12f1e5c": {
+  "children": [],
+  "compressed": 1887571725,
+  "kind": "image",
+  "variant": "dev"
+ },
  "gdal-r@sha256:e884b4de303b79abe96593fd5ca3c6f69154d8664c87d143817b11a4d6845e4a": {
   "children": [],
   "compressed": 1973720712,
@@ -1399,6 +1520,11 @@
   "variant": "dev"
  },
  "gdal-r@sha256:f611a2a5360cb3bf4a7dbc4c91b66128d318f2a7040750ccaccf40ef6dc707fa": {
+  "children": [],
+  "compressed": null,
+  "kind": "attestation"
+ },
+ "gdal-r@sha256:fa740295638737449f2873a8d30c9215e014e533c01c7af7a48790049e0d399f": {
   "children": [],
   "compressed": null,
   "kind": "attestation"
