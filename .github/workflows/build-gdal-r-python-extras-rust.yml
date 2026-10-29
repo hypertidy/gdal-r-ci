@@ -3,7 +3,7 @@
 # Triggered by repository_dispatch from build-gdal-r-python-extras on every
 # successful extras build. Also triggerable manually.
 #
-# Adds a pinned Rust dev toolchain (1.85.0) with clippy, rustfmt,
+# Adds a pinned Rust dev toolchain (1.86.0) with clippy, rustfmt,
 # rust-analyzer, lld, and cargo-nextest on top of gdal-r-python-extras.
 #
 # Leaf image of the chain — only :latest, no :dev variant.
@@ -73,5 +73,5 @@ jobs:
           {
             echo "## gdal-r-python-extras-rust:${{ steps.vars.outputs.tag_suffix }} built"
             echo "Base: gdal-r-python-extras:${{ steps.vars.outputs.tag_suffix }}"
-            echo "Rust: 1.85.0 (clippy, rustfmt, rust-analyzer, lld, cargo-nextest)"
+            echo "Rust: 1.86.0 (clippy, rustfmt, rust-analyzer, lld, cargo-nextest)"
           } >> "$GITHUB_STEP_SUMMARY"
