@@ -313,6 +313,15 @@
  ],
  "gdal-r-python": [
   {
+   "digest": "sha256:6566b401b14ed8316661d0f6306103b7ccf5cac5471aeb1924bc473da45ad599",
+   "created": "2026-10-29T23:28:40Z",
+   "tags": [
+    "latest"
+   ],
+   "variant": "latest",
+   "compressed": 2824728962
+  },
+  {
    "digest": "sha256:95e50f1b0bc38edcc935a7701488546aa738bc32d50fb382fce82c4d74aae20b",
    "created": "2026-10-29T23:18:15Z",
    "tags": [
@@ -331,9 +340,7 @@
   {
    "digest": "sha256:9285b81c3e2420eb0a9ee4ef478323d1c4c51e49f1dcbc767a383c393dee87c9",
    "created": "2026-10-25T21:19:46Z",
-   "tags": [
-    "latest"
-   ],
+   "tags": [],
    "variant": "latest",
    "compressed": 2825822680
   },
@@ -406,13 +413,6 @@
    "tags": [],
    "variant": "dev",
    "compressed": 3087376502
-  },
-  {
-   "digest": "sha256:76441b87da8dd539ad0b9a926183413a25d0b551ba621e669470fc7b389d47e8",
-   "created": "2026-10-17T21:06:07Z",
-   "tags": [],
-   "variant": "dev",
-   "compressed": 3087396481
   }
  ],
  "gdal-r-python-extras": [
@@ -537,11 +537,18 @@
  ],
  "gdal-r-mesh": [
   {
-   "digest": "sha256:05028ccc5e40862e5b5b8703aa8dd2cd170aa3900a2dab7be9c9a12131f89199",
-   "created": "2026-10-25T20:41:28Z",
+   "digest": "sha256:403ddf32a262cc76d3b168b51fabfef53dd656d34b13f9fd4c465c9e1b7d7b63",
+   "created": "2026-10-29T23:31:23Z",
    "tags": [
     "latest"
    ],
+   "variant": "latest",
+   "compressed": 2104793982
+  },
+  {
+   "digest": "sha256:05028ccc5e40862e5b5b8703aa8dd2cd170aa3900a2dab7be9c9a12131f89199",
+   "created": "2026-10-25T20:41:28Z",
+   "tags": [],
    "variant": "latest",
    "compressed": 2105415612
   },
