@@ -1,20 +1,34 @@
 {
  "gdal-system": [
   {
-   "digest": "sha256:44dea57fd417da7c6042690017e803f1c67fe3f4814b648cf7d6b48d0fbc8d93",
-   "created": "2026-10-25T20:39:00Z",
+   "digest": "sha256:1a4ccd16a09425c2850bb99c99bbcc0d98f8444fbda5587502e38946c9e900bc",
+   "created": "2026-10-29T22:41:06Z",
    "tags": [
     "latest"
    ],
+   "variant": "latest",
+   "compressed": 1574539904
+  },
+  {
+   "digest": "sha256:04ecc58e4f076761d69403fdce4bc965ce9eff2d96e10e9dadea71550bb84e3e",
+   "created": "2026-10-29T22:35:56Z",
+   "tags": [
+    "dev"
+   ],
+   "variant": "dev",
+   "compressed": 1583592258
+  },
+  {
+   "digest": "sha256:44dea57fd417da7c6042690017e803f1c67fe3f4814b648cf7d6b48d0fbc8d93",
+   "created": "2026-10-25T20:39:00Z",
+   "tags": [],
    "variant": "latest",
    "compressed": 1575187624
   },
   {
    "digest": "sha256:e5ff60e77b38fef7bdbdf65715daa1a75e7bc39a4a0a5dc6977e88655075f362",
    "created": "2026-10-25T20:36:58Z",
-   "tags": [
-    "dev"
-   ],
+   "tags": [],
    "variant": "dev",
    "compressed": 1584243035
   },
@@ -87,38 +101,38 @@
    "tags": [],
    "variant": "dev",
    "compressed": 1647193801
-  },
-  {
-   "digest": "sha256:6c71d38f3ab293f1486ccc2d5cd9f4c8cb9f8545dacbe7f8336b780c1ac395d3",
-   "created": "2026-10-17T20:18:04Z",
-   "tags": [],
-   "variant": "latest",
-   "compressed": 1635712577
-  },
-  {
-   "digest": "sha256:add310dba87ca2a99b99c1ddd169418e78a3b92d8b96d1c74867d4d9db285227",
-   "created": "2026-10-17T20:16:51Z",
-   "tags": [],
-   "variant": "dev",
-   "compressed": 1647225912
   }
  ],
  "gdal-r": [
   {
-   "digest": "sha256:b174ae12cc28fb39396aa30c53315231104e31858d17691eea29f1cd36264c6b",
-   "created": "2026-10-25T20:49:44Z",
+   "digest": "sha256:4d7d260ddf49c89c20a992156181c6cf308303535afc71c2f8324d702bee9b8f",
+   "created": "2026-10-29T22:52:35Z",
    "tags": [
     "latest"
    ],
+   "variant": "latest",
+   "compressed": 1877879055
+  },
+  {
+   "digest": "sha256:ee86884e845206a5dd1acfda16acbdaad748300769de20415d2f26138918eb65",
+   "created": "2026-10-29T22:44:42Z",
+   "tags": [
+    "dev"
+   ],
+   "variant": "dev",
+   "compressed": 1886926902
+  },
+  {
+   "digest": "sha256:b174ae12cc28fb39396aa30c53315231104e31858d17691eea29f1cd36264c6b",
+   "created": "2026-10-25T20:49:44Z",
+   "tags": [],
    "variant": "latest",
    "compressed": 1878503230
   },
   {
    "digest": "sha256:5a3a6b6db9a413a0347bb1d17f58dba3f84c658c6825640b71a7338cc040c7d5",
    "created": "2026-10-25T20:48:18Z",
-   "tags": [
-    "dev"
-   ],
+   "tags": [],
    "variant": "dev",
    "compressed": 1887571725
   },
@@ -191,38 +205,38 @@
    "tags": [],
    "variant": "dev",
    "compressed": 1973720712
-  },
-  {
-   "digest": "sha256:5e7a62ce270e6fad5d09fc899f26dff58f0fa793d7eee21b6468551515e9966b",
-   "created": "2026-10-17T20:29:05Z",
-   "tags": [],
-   "variant": "latest",
-   "compressed": 1962238912
-  },
-  {
-   "digest": "sha256:9cdf676c07b20f2b8b3578219a3097167dc1d33b77b52da349345de219cde17a",
-   "created": "2026-10-17T20:27:35Z",
-   "tags": [],
-   "variant": "dev",
-   "compressed": 1973748357
   }
  ],
  "gdal-r-full": [
   {
-   "digest": "sha256:f1c75e70fd958ad75380bc7aa30ec77bfa32e0bc8be9b5c3e30090d429e9c5b9",
-   "created": "2026-10-25T21:10:16Z",
+   "digest": "sha256:fc4f7545891bf942350e18891c83db3c40108b47199eb9ca89bd9baeafc53aa9",
+   "created": "2026-10-29T23:12:29Z",
+   "tags": [
+    "latest"
+   ],
+   "variant": "latest",
+   "compressed": 1969672426
+  },
+  {
+   "digest": "sha256:63c16075d47de537c7347b99a7c0e662c789ea6c416824beb9914effb116dbee",
+   "created": "2026-10-29T23:02:05Z",
    "tags": [
     "dev"
    ],
+   "variant": "dev",
+   "compressed": 1978712585
+  },
+  {
+   "digest": "sha256:f1c75e70fd958ad75380bc7aa30ec77bfa32e0bc8be9b5c3e30090d429e9c5b9",
+   "created": "2026-10-25T21:10:16Z",
+   "tags": [],
    "variant": "dev",
    "compressed": 1979350499
   },
   {
    "digest": "sha256:753726ddb3e9eb037cc22deef44c6eca2643e7219a4fed75f915d5dc09bc0b4c",
    "created": "2026-10-25T21:06:03Z",
-   "tags": [
-    "latest"
-   ],
+   "tags": [],
    "variant": "latest",
    "compressed": 1970275474
   },
@@ -295,29 +309,22 @@
    "tags": [],
    "variant": "dev",
    "compressed": 2177288678
-  },
-  {
-   "digest": "sha256:bb25be7d0091fe9c632aa90970ccb2ab7cd330be539389c7d26903337fca34ba",
-   "created": "2026-10-17T20:50:06Z",
-   "tags": [],
-   "variant": "latest",
-   "compressed": 2165804325
-  },
-  {
-   "digest": "sha256:4003a6eec77099429b0c2a01bf10375e5a9742ac35eb4e7cbf593b4925474786",
-   "created": "2026-10-17T20:49:21Z",
-   "tags": [],
-   "variant": "dev",
-   "compressed": 2177316676
   }
  ],
  "gdal-r-python": [
   {
-   "digest": "sha256:2d2d5df8a7f5b165307a2c9ac3299c7eedaef4d15bf19af1fb541f563f61df53",
-   "created": "2026-10-25T21:25:37Z",
+   "digest": "sha256:95e50f1b0bc38edcc935a7701488546aa738bc32d50fb382fce82c4d74aae20b",
+   "created": "2026-10-29T23:18:15Z",
    "tags": [
     "dev"
    ],
+   "variant": "dev",
+   "compressed": 2833768074
+  },
+  {
+   "digest": "sha256:2d2d5df8a7f5b165307a2c9ac3299c7eedaef4d15bf19af1fb541f563f61df53",
+   "created": "2026-10-25T21:25:37Z",
+   "tags": [],
    "variant": "dev",
    "compressed": 2834887012
   },
@@ -406,13 +413,6 @@
    "tags": [],
    "variant": "dev",
    "compressed": 3087396481
-  },
-  {
-   "digest": "sha256:1df8a4a59a33bce2ceef0fcb5a1d059ff339c39488f6b2b07066eb1f205c8ee1",
-   "created": "2026-10-17T21:04:46Z",
-   "tags": [],
-   "variant": "latest",
-   "compressed": 3075882122
   }
  ],
  "gdal-r-python-extras": [
@@ -519,11 +519,18 @@
  ],
  "gdal-r-python-extras-rust": [
   {
-   "digest": "sha256:a3580428d7fe4581a75e65202abc2ac1eb5a4c58b705c6dffbe903a9ada3c461",
-   "created": "2026-07-29T08:46:56Z",
+   "digest": "sha256:34bd45954aa87048306d8a39510b779f4853943044aa09173bf9f2f6576998a0",
+   "created": "2026-10-29T03:16:44Z",
    "tags": [
     "latest"
    ],
+   "variant": "latest",
+   "compressed": 4157828518
+  },
+  {
+   "digest": "sha256:a3580428d7fe4581a75e65202abc2ac1eb5a4c58b705c6dffbe903a9ada3c461",
+   "created": "2026-07-29T08:46:56Z",
+   "tags": [],
    "variant": "latest",
    "compressed": 4362020771
   }
