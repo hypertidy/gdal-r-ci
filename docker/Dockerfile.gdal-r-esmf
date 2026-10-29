@@ -50,7 +50,7 @@ ENV PATH=/opt/esmf/bin:${PATH}
 
 # -- ESMPy and xESMF -----------------------------------------------------------
 # ESMPy is not on PyPI; it is built from the same ESMF tarball (its version
-# comes from the ESMF source, so no git checkout is needed) and finds the
+# is read from ESMC_Macros.h in the ESMF source, so no git checkout is needed) and finds the
 # library through ESMFMKFILE. xESMF is pure Python (numba, sparse, cf-xarray);
 # xarray, shapely and numpy are already in the venv and are kept as they are.
 ARG XESMF_VERSION=0.9.2
@@ -60,6 +60,7 @@ RUN --mount=type=cache,target=/root/.cache/uv,sharing=locked \
         "https://github.com/esmf-org/esmf/archive/refs/tags/v${ESMF_VERSION}.tar.gz" \
  && echo "${ESMF_SHA256}  $work/esmf.tar.gz" | sha256sum -c - \
  && tar -xzf "$work/esmf.tar.gz" -C "$work" "esmf-${ESMF_VERSION}/src/addon/esmpy" \
+        "esmf-${ESMF_VERSION}/src/Infrastructure/Util/include/ESMC_Macros.h" \
  && UV_LINK_MODE=copy uv pip install --python /opt/gdal-py/bin/python \
         "$work/esmf-${ESMF_VERSION}/src/addon/esmpy" \
         "xesmf==${XESMF_VERSION}" \
