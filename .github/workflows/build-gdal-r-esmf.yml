@@ -1,0 +1,83 @@
+# Build and push ghcr.io/hypertidy/gdal-r-esmf
+#
+# Triggered manually, by repository_dispatch (gdal-r-python-extras-rust-updated,
+# for when the extras chain dispatches again), and on pull requests that
+# touch its files (build and smoke test, no push).
+#
+# Adds the regridding oracles on top of gdal-r-python-extras-rust: ESMF
+# (ESMF_RegridWeightGen), ESMPy, xESMF and TempestRemap.
+
+name: Build gdal-r-esmf
+
+on:
+  repository_dispatch:
+    types: [gdal-r-python-extras-rust-updated]
+  workflow_dispatch:
+    inputs:
+      no_cache:
+        description: 'Disable Docker layer cache'
+        required: false
+        default: 'false'
+        type: choice
+        options: ['false', 'true']
+  pull_request:
+    paths:
+      - 'docker/Dockerfile.gdal-r-esmf'
+      - 'scripts/smoke-esmf.py'
+      - '.github/workflows/build-gdal-r-esmf.yml'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  REGISTRY: ghcr.io
+  ORG: hypertidy
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/login-action@v3
+        if: github.event_name != 'pull_request'
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Resolve vars
+        id: vars
+        run: |
+          NO_CACHE="${{ github.event.client_payload.no_cache || inputs.no_cache || 'false' }}"
+          echo "no_cache=${NO_CACHE}" >> "$GITHUB_OUTPUT"
+
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: docker/Dockerfile.gdal-r-esmf
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ env.REGISTRY }}/${{ env.ORG }}/gdal-r-esmf:latest
+          build-args: |
+            BASE_IMAGE=${{ env.REGISTRY }}/${{ env.ORG }}/gdal-r-python-extras-rust:latest
+          no-cache: ${{ steps.vars.outputs.no_cache == 'true' }}
+          cache-from: type=gha,scope=gdal-r-esmf-latest
+          cache-to: type=gha,mode=max,scope=gdal-r-esmf-latest
+
+      - name: Summary
+        run: |
+          {
+            echo "## gdal-r-esmf:latest built"
+            echo "Base: gdal-r-python-extras-rust:latest"
+            echo "Pushed: ${{ github.event_name != 'pull_request' }}"
+            echo ""
+            grep -E '^ARG (ESMF|XESMF|TEMPESTREMAP)_VERSION' docker/Dockerfile.gdal-r-esmf | sed 's/^ARG /- /'
+          } >> "$GITHUB_STEP_SUMMARY"

@@ -22,14 +22,16 @@ and `:dev` (GDAL HEAD) variants; the three leaf images publish `:latest` only.
 | `ghcr.io/hypertidy/gdal-r-full` | + gdalraster, sf, terra, vapour, gdalcubes | Package CI |
 | `ghcr.io/hypertidy/gdal-r-python` | + rasterio, fiona, xarray, zarr, kerchunk, virtualizarr… | R/Python interop |
 | `ghcr.io/hypertidy/gdal-r-python-extras` | + R kitchen sink (hypertidy stack, arrow, targets, dev tooling) | Workbench / interactive |
-| `ghcr.io/hypertidy/gdal-r-python-extras-rust` | + Rust 1.85.0 (clippy, rustfmt, rust-analyzer, lld, cargo-nextest) | Rust + geospatial dev |
+| `ghcr.io/hypertidy/gdal-r-python-extras-rust` | + Rust 1.86.0 (clippy, rustfmt, rust-analyzer, lld, cargo-nextest) | Rust + geospatial dev |
+| `ghcr.io/hypertidy/gdal-r-esmf` | gdal-r-python-extras-rust + ESMF 8.9.1 (ESMF_RegridWeightGen), ESMPy, xESMF, TempestRemap | Regridding oracles |
 | `ghcr.io/hypertidy/gdal-r-mesh` | gdal-r-full + wk (surface types), wkpool, cdtr, laridae, decido, RTriangle, SFCGAL + sfcgal, rgl, silicate, quadmesh, polymer | Meshes and triangulation |
 
 ```
 gdal-system  →  gdal-r  →  gdal-r-full  →  gdal-r-python  →  gdal-r-python-extras  →  gdal-r-python-extras-rust
 ```
 
-`gdal-r-mesh` is a side branch off `gdal-r-full:latest`.
+`gdal-r-mesh` is a side branch off `gdal-r-full:latest`; `gdal-r-esmf` is a
+leaf off `gdal-r-python-extras-rust:latest`.
 
 The `:dev` variants track GDAL HEAD + latest released PROJ/GEOS, rebuilt daily —
 these are the canary. The `:latest` variants track the latest releases of all
@@ -72,7 +74,7 @@ rarely reached for stays out and is installed on demand into a writable overlay.
 Extends `gdal-r-python-extras` with a pinned Rust dev toolchain
 ([`docker/Dockerfile.extras-rust`](docker/Dockerfile.extras-rust)):
 
-- Rust 1.85.0 via rustup, with `clippy`, `rustfmt`, and `rust-analyzer` components
+- Rust 1.86.0 via rustup, with `clippy`, `rustfmt`, and `rust-analyzer` components
 - `lld` as the default linker (wired into `CARGO_HOME/config.toml`) — cuts
   incremental link times noticeably on large crates
 - `cargo-nextest` for a faster, more informative test runner
@@ -84,9 +86,32 @@ Rust crates like `proj-sys` and `gdal-sys` will link against those via
 `cargo build` skips a 10-minute compile step and, more importantly, rwarp's
 PROJ is byte-for-byte the same PROJ that `gdalwarp` uses as an oracle.
 
-Commit a `rust-toolchain.toml` pinning `1.85.0` in any project that consumes
+Commit a `rust-toolchain.toml` pinning `1.86.0` in any project that consumes
 this image. The image pre-caches the toolchain; the toml is the repo-side pin.
 Drift becomes a `git diff`.
+
+### gdal-r-esmf
+
+A leaf off `gdal-r-python-extras-rust:latest` with the reference regridders
+([`docker/Dockerfile.gdal-r-esmf`](docker/Dockerfile.gdal-r-esmf)), so one
+container can build a Rust regridder, run `gdalwarp`, and compute the weights
+both are compared against:
+
+- ESMF 8.9.1, built from the release tarball (serial `mpiuni`, gfortran,
+  NetCDF from apt) into `/opt/esmf`, with `ESMF_RegridWeightGen` and the other
+  ESMF apps on `PATH` and `ESMFMKFILE=/opt/esmf/lib/esmf.mk`
+- ESMPy from the same tarball, and xESMF 0.9.2, in the `/opt/gdal-py` venv
+- TempestRemap 2.2.0 (`GenerateRLLMesh`, `GenerateOverlapMesh`,
+  `GenerateOfflineMap`, ...) in `/usr/local/bin`
+
+Every version is a build arg with a checksum. The build runs
+[`scripts/smoke-esmf.py`](scripts/smoke-esmf.py): a small global
+conservative map from xESMF, `ESMF_RegridWeightGen` and TempestRemap, each
+of which must preserve a constant field.
+
+```bash
+docker run --rm -ti ghcr.io/hypertidy/gdal-r-esmf:latest
+```
 
 ### gdal-r-mesh
 

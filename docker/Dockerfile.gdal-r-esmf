@@ -1,0 +1,107 @@
+# syntax=docker/dockerfile:1.7
+# ghcr.io/hypertidy/gdal-r-esmf:latest
+#
+# Regridding oracle layer on top of gdal-r-python-extras-rust: the ESMF
+# library and its ESMF_RegridWeightGen application, ESMPy and xESMF in the
+# /opt/gdal-py venv, and TempestRemap. With the Rust toolchain and gdalwarp
+# from the parent, one container can build rwarp and compute the reference
+# weights it is tested against (conservative, bilinear, patch, nearest).
+#
+# Leaf image: only :latest, no :dev variant. Every component is pinned to a
+# release and a checksum; bump them together with the oracle fixtures.
+
+ARG BASE_IMAGE=ghcr.io/hypertidy/gdal-r-python-extras-rust:latest
+FROM ${BASE_IMAGE}
+
+LABEL org.opencontainers.image.source="https://github.com/hypertidy/gdal-r-ci"
+LABEL org.opencontainers.image.description="gdal-r-python-extras-rust + ESMF (ESMF_RegridWeightGen), ESMPy, xESMF, TempestRemap"
+LABEL org.opencontainers.image.documentation="https://github.com/hypertidy/gdal-r-ci#gdal-r-esmf"
+
+# -- ESMF ----------------------------------------------------------------------
+# Built from the release tarball: Ubuntu's ESMF is not the version ESMPy
+# needs, and ESMPy must match the library exactly. Serial (mpiuni), gfortran,
+# NetCDF from apt (the same libnetcdf GDAL links). The install is flattened
+# into /opt/esmf/{bin,lib,include,mod} so ESMFMKFILE has a fixed path.
+ARG ESMF_VERSION=8.9.1
+ARG ESMF_SHA256=e3fafd0c057bf1c3b4c41c997b392016d621b1f1a7c601355c325a7f58425d78
+ENV ESMFMKFILE=/opt/esmf/lib/esmf.mk
+RUN apt-get update -qq && apt-get install -y --no-install-recommends \
+        gfortran libnetcdff-dev \
+ && rm -rf /var/lib/apt/lists/* \
+ && work=$(mktemp -d) \
+ && curl -fsSL -o "$work/esmf.tar.gz" \
+        "https://github.com/esmf-org/esmf/archive/refs/tags/v${ESMF_VERSION}.tar.gz" \
+ && echo "${ESMF_SHA256}  $work/esmf.tar.gz" | sha256sum -c - \
+ && tar -xzf "$work/esmf.tar.gz" -C "$work" \
+ && cd "$work/esmf-${ESMF_VERSION}" \
+ && export ESMF_DIR="$PWD" ESMF_OS=Linux ESMF_COMPILER=gfortran \
+        ESMF_COMM=mpiuni ESMF_BOPT=O ESMF_NETCDF=nc-config \
+        ESMF_INSTALL_PREFIX=/opt/esmf \
+        ESMF_INSTALL_BINDIR=bin ESMF_INSTALL_LIBDIR=lib \
+        ESMF_INSTALL_HEADERDIR=include ESMF_INSTALL_MODDIR=mod \
+ && make -j"$(nproc)" lib \
+ && make -j"$(nproc)" build_apps \
+ && make install \
+ && { strip --strip-debug /opt/esmf/lib/*.so* /opt/esmf/bin/* 2>/dev/null || true; } \
+ && cd / && rm -rf "$work" \
+ && echo /opt/esmf/lib > /etc/ld.so.conf.d/esmf.conf && ldconfig \
+ && test -f "$ESMFMKFILE"
+ENV PATH=/opt/esmf/bin:${PATH}
+
+# -- ESMPy and xESMF -----------------------------------------------------------
+# ESMPy is not on PyPI; it is built from the same ESMF tarball (its version
+# comes from the ESMF source, so no git checkout is needed) and finds the
+# library through ESMFMKFILE. xESMF is pure Python (numba, sparse, cf-xarray);
+# xarray, shapely and numpy are already in the venv and are kept as they are.
+ARG XESMF_VERSION=0.9.2
+RUN --mount=type=cache,target=/root/.cache/uv,sharing=locked \
+    work=$(mktemp -d) \
+ && curl -fsSL -o "$work/esmf.tar.gz" \
+        "https://github.com/esmf-org/esmf/archive/refs/tags/v${ESMF_VERSION}.tar.gz" \
+ && echo "${ESMF_SHA256}  $work/esmf.tar.gz" | sha256sum -c - \
+ && tar -xzf "$work/esmf.tar.gz" -C "$work" "esmf-${ESMF_VERSION}/src/addon/esmpy" \
+ && UV_LINK_MODE=copy uv pip install --python /opt/gdal-py/bin/python \
+        "$work/esmf-${ESMF_VERSION}/src/addon/esmpy" \
+        "xesmf==${XESMF_VERSION}" \
+ && rm -rf "$work" \
+ && find /opt/gdal-py -type d -name __pycache__ -exec rm -rf {} +
+
+# -- TempestRemap --------------------------------------------------------------
+# A second, independent conservative remapper (high-order finite volume and
+# spectral element maps), the one ncremap uses. It bundles its own NetCDF C++
+# 4.2 and needs BLAS/LAPACK; binaries go to /usr/local/bin.
+ARG TEMPESTREMAP_VERSION=2.2.0
+ARG TEMPESTREMAP_SHA256=548b902701ec7c3b6970e0c83c6b93bfb7fb38ecc30b6ef89de8182efd948fa3
+RUN apt-get update -qq && apt-get install -y --no-install-recommends \
+        autoconf automake libtool libblas-dev liblapack-dev \
+ && rm -rf /var/lib/apt/lists/* \
+ && work=$(mktemp -d) \
+ && curl -fsSL -o "$work/tr.tar.gz" \
+        "https://github.com/ClimateGlobalChange/tempestremap/archive/refs/tags/v${TEMPESTREMAP_VERSION}.tar.gz" \
+ && echo "${TEMPESTREMAP_SHA256}  $work/tr.tar.gz" | sha256sum -c - \
+ && tar -xzf "$work/tr.tar.gz" -C "$work" \
+ && cd "$work/tempestremap-${TEMPESTREMAP_VERSION}" \
+ && autoreconf -fi \
+ && ./configure --prefix=/usr/local --with-netcdf=/usr \
+ && make -j"$(nproc)" \
+ && make install \
+ && { strip --strip-debug /usr/local/bin/GenerateOfflineMap /usr/local/lib/libTempestRemap* 2>/dev/null || true; } \
+ && cd / && rm -rf "$work" \
+ && ldconfig
+
+# -- Smoke test ----------------------------------------------------------------
+# One small global conservative map from each of the three tools; each must
+# preserve a constant field. Fails the build if any of them is broken.
+COPY scripts/smoke-esmf.py /opt/scripts/smoke-esmf.py
+RUN cd "$(mktemp -d)" && /opt/gdal-py/bin/python /opt/scripts/smoke-esmf.py && cd / && rm -rf /tmp/tmp.*
+
+RUN { \
+        echo "-- ghcr.io/hypertidy/gdal-r-esmf --" ; \
+        echo "GDAL $(gdal-config --version)   PROJ $(pkg-config --modversion proj)   GEOS $(geos-config --version)" ; \
+        echo "Rust $(rustc --version | cut -d' ' -f2)   ESMF $(grep -oE 'ESMF_VERSION_STRING=.*' "$ESMFMKFILE" | cut -d= -f2)   ESMPy $(/opt/gdal-py/bin/python -c 'import esmpy; print(esmpy.__version__)')   xESMF $(/opt/gdal-py/bin/python -c 'import xesmf; print(xesmf.__version__)')   TempestRemap ${TEMPESTREMAP_VERSION}" ; \
+        echo "" ; \
+        echo "Docs: https://github.com/hypertidy/gdal-r-ci#gdal-r-esmf" ; \
+    } > /etc/gdal-r-ci-motd
+
+WORKDIR /workspace
+CMD ["bash"]
