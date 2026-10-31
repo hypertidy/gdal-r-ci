@@ -25,7 +25,17 @@
   "kind": "index",
   "variant": "dev"
  },
+ "gdal-conda@sha256:2544f6e22be2824f0ca3ca4a6251c1e243f236abcbe34e35658af5b07f7b94b8": {
+  "children": [],
+  "compressed": null,
+  "kind": "attestation"
+ },
  "gdal-conda@sha256:25c0c9287b5c0d62ef2541e496b40101d8d9246f8b573429d9cb24a8bbc7f788": {
+  "children": [],
+  "compressed": null,
+  "kind": "attestation"
+ },
+ "gdal-conda@sha256:3739d504c2ff47be22fb99f6e21fc8548778c0108ab66607896ab1793201efcc": {
   "children": [],
   "compressed": null,
   "kind": "attestation"
@@ -36,10 +46,26 @@
   "kind": "image",
   "variant": "dev"
  },
+ "gdal-conda@sha256:618a68f39bf20127a2ae0df55bf6b0ec6bd66120f11db1e6c994f92b78f3327a": {
+  "children": [],
+  "compressed": 885762700,
+  "kind": "image",
+  "variant": "dev"
+ },
  "gdal-conda@sha256:64fb036ad6c0784ea3cdaae02669bc8d13f7a744477add5195001dcf4f38f094": {
   "children": [],
   "compressed": null,
   "kind": "attestation"
+ },
+ "gdal-conda@sha256:7bedf419128e544878c38804292aab9b1f884048b3064dbb04cb033c6956bf5c": {
+  "children": [
+   "sha256:618a68f39bf20127a2ae0df55bf6b0ec6bd66120f11db1e6c994f92b78f3327a",
+   "sha256:2544f6e22be2824f0ca3ca4a6251c1e243f236abcbe34e35658af5b07f7b94b8"
+  ],
+  "compressed": 885762700,
+  "image_digest": "sha256:618a68f39bf20127a2ae0df55bf6b0ec6bd66120f11db1e6c994f92b78f3327a",
+  "kind": "index",
+  "variant": "dev"
  },
  "gdal-conda@sha256:7e68de73b94dc046736275383cf1e56408d067097f5af292c599a32effd66637": {
   "children": [
@@ -113,6 +139,16 @@
   "children": [],
   "compressed": null,
   "kind": "attestation"
+ },
+ "gdal-conda@sha256:defeceacb906a39135e2e71296cfdf15cd227e694e20f2f21a8fcce3563a9091": {
+  "children": [
+   "sha256:618a68f39bf20127a2ae0df55bf6b0ec6bd66120f11db1e6c994f92b78f3327a",
+   "sha256:3739d504c2ff47be22fb99f6e21fc8548778c0108ab66607896ab1793201efcc"
+  ],
+  "compressed": 885762700,
+  "image_digest": "sha256:618a68f39bf20127a2ae0df55bf6b0ec6bd66120f11db1e6c994f92b78f3327a",
+  "kind": "index",
+  "variant": "dev"
  },
  "gdal-conda@sha256:ed616386e2d8b908b375611e9b0bcebbddc265804c35a566bf65b82554229e56": {
   "children": [],
