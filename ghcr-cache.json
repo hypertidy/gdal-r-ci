@@ -78,6 +78,22 @@
   "kind": "index",
   "variant": "dev"
  },
+ "gdal-conda@sha256:76729d0cd2bf1490106f0eb46ed33ec73db0a26b178f2f60c283cebcc41216ac": {
+  "children": [
+   "sha256:7b749c3d0eac033690404627cfef23e32408f9be1e84eb9f9e0ed0c5530e821e",
+   "sha256:c16424484e121d181d21e931f977a6827e0ab3f3e2181112283a9861c77d8f66"
+  ],
+  "compressed": 944172418,
+  "image_digest": "sha256:7b749c3d0eac033690404627cfef23e32408f9be1e84eb9f9e0ed0c5530e821e",
+  "kind": "index",
+  "variant": "latest"
+ },
+ "gdal-conda@sha256:7b749c3d0eac033690404627cfef23e32408f9be1e84eb9f9e0ed0c5530e821e": {
+  "children": [],
+  "compressed": 944172418,
+  "kind": "image",
+  "variant": "latest"
+ },
  "gdal-conda@sha256:7bedf419128e544878c38804292aab9b1f884048b3064dbb04cb033c6956bf5c": {
   "children": [
    "sha256:618a68f39bf20127a2ae0df55bf6b0ec6bd66120f11db1e6c994f92b78f3327a",
@@ -155,6 +171,11 @@
   "compressed": 882682040,
   "kind": "image",
   "variant": "dev"
+ },
+ "gdal-conda@sha256:c16424484e121d181d21e931f977a6827e0ab3f3e2181112283a9861c77d8f66": {
+  "children": [],
+  "compressed": null,
+  "kind": "attestation"
  },
  "gdal-conda@sha256:dad8ef54ca72716602b05a11f8e7cf5ad158299866575920bf5f4b820beabdfb": {
   "children": [],
