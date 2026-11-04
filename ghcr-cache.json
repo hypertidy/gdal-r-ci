@@ -197,6 +197,21 @@
   "compressed": null,
   "kind": "attestation"
  },
+ "gdal-conda@sha256:eee8294411f1390a5bb65d8fe2e94bd9b44ea6987965ff04834229724b4f6154": {
+  "children": [
+   "sha256:2c252b07acd97a1bd95c6a9865ea6c54f53a8b253841659f81dbb35d41668599",
+   "sha256:fdbf0eb045499521beeda411c21ec4f417d6e5ec725826aa3e05f4db8bc63793"
+  ],
+  "compressed": 891696171,
+  "image_digest": "sha256:2c252b07acd97a1bd95c6a9865ea6c54f53a8b253841659f81dbb35d41668599",
+  "kind": "index",
+  "variant": "dev"
+ },
+ "gdal-conda@sha256:fdbf0eb045499521beeda411c21ec4f417d6e5ec725826aa3e05f4db8bc63793": {
+  "children": [],
+  "compressed": null,
+  "kind": "attestation"
+ },
  "gdal-conda@sha256:fdef2c3cf7c9a3ba621e1f4ac44fd519c53910b6130cc5720f8e4939df56bc47": {
   "children": [],
   "compressed": 884318826,
