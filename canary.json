@@ -282,114 +282,16 @@
   }
  ],
  "conda_run": {
-  "id": 41559644216,
-  "created": "2026-11-03T01:25:25Z",
+  "id": 41745060968,
+  "created": "2026-11-04T00:12:22Z",
   "conclusion": "failure",
-  "url": "https://github.com/hypertidy/gdal-r-ci/actions/runs/41559644216",
+  "url": "https://github.com/hypertidy/gdal-r-ci/actions/runs/41745060968",
   "event": "workflow_run",
   "cells": [
    {
-    "name": "gdalraster (cran) / gdal-conda:dev",
-    "conclusion": "success",
-    "url": "https://github.com/hypertidy/gdal-r-ci/actions/runs/41559644216/job/125666923174"
-   },
-   {
-    "name": "sf (cran) / gdal-conda:latest",
-    "conclusion": "failure",
-    "url": "https://github.com/hypertidy/gdal-r-ci/actions/runs/41559644216/job/125666923189",
-    "diagnosis": {
-     "reason": "examples: ERROR",
-     "snippets": {
-      "sf.Rcheck/00check.log": "> Geometry type: POINT\n> Dimension:     XY\n> Bounding box:  xmin: -84.31423 ymin: 33.88525 xmax: -75.45997 ymax: 36.58003\n> Geodetic CRS:  NAD27\n> First 10 features:\n>     AREA PERIMETER CNTY_ CNTY_ID FIPSNO CRESS_ID BIR74 SID74 NWBIR74 BIR79\n> 1  0.114     1.442  1825    1825  37009        5  1091     1      10  1364\n> 2  0.114     1.442  1825    1825  37009        5  1091     1      10  1364\n> 3  0.114     1.442  1825    1825  37009        5  1091     1      10  1364\n> 4  0.114     1.442  1825    1825  37009        5  1091     1      10  1364\n> 5  0.114     1.442  1825    1825  37009        5  1091     1      10  1364\n> 6  0.114     1.442  1825    1825  37009        5  1091     1      10  1364\n> 7  0.114     1.442  1825    1825  37009        5  1091     1      10  1364\n> 8  0.114     1.442  1825    1825  37009        5  1091     1      10  1364\n> 9  0.114     1.442  1825    1825  37009        5  1091     1      10  1364\n> 10 0.114     1.442  1825    1825  37009        5  1091     1      10  1364\n>    SID79 NWBIR79                   geometry\n> 1      0      19 POINT (-81.65795 36.58003)\n> 2      0      19  POINT (-81.6387 36.58003)\n> 3      0      19 POINT (-81.61945 36.58003)\n> 4      0      19  POINT (-81.6002 36.58003)\n> 5      0      19 POINT (-81.58096 36.58003)\n> 6      0      19 POINT (-81.56171 36.58003)\n> 7      0      19 POINT (-81.54246 36.58003)\n> 8      0      19 POINT (-81.52321 36.58003)\n> 9      0      19 POINT (-81.50396 36.58003)\n> 10     0      19 POINT (-81.48471 36.58003)\n> \n> \n> \n> \n  Running \u2018test-by-element.R\u2019\n  Comparing \u2018test-by-element.Rout\u2019 to \u2018test-by-element.Rout.save\u2019 ... OK\n  Running \u2018testthat.R\u2019\n  Running \u2018units.R\u2019\n  Comparing \u2018units.Rout\u2019 to \u2018units.Rout.save\u2019 ... OK\n  Running \u2018wkb.R\u2019\n  Comparing \u2018wkb.Rout\u2019 to \u2018wkb.Rout.save\u2019 ... OK\n* DONE\nStatus: 1 ERROR, 2 NOTEs",
-      "sf.Rcheck/sf-Ex.Rout": "1       1   1   NA POINT (1 1)\n2       2   2 12.5 POINT (2 2)\n3       3   3 14.0 POINT (3 3)\n> if (require(dplyr, quietly = TRUE)) {\n+  st_join(a, b) |> group_by(a.x) |> summarise(mean(a.y))\n+ }\n> # example of largest = TRUE:\n> nc <- st_transform(st_read(system.file(\"shape/nc.shp\", package=\"sf\")), 2264)                \nReading layer `nc' from data source \n  `/__w/gdal-r-ci/gdal-r-ci/pkg/sf.Rcheck/sf/shape/nc.shp' using driver `ESRI Shapefile'\nSimple feature collection with 100 features and 14 fields\nGeometry type: MULTIPOLYGON\nDimension:     XY\nBounding box:  xmin: -84.32385 ymin: 33.88199 xmax: -75.45698 ymax: 36.58965\nGeodetic CRS:  NAD27\n> gr = st_sf(\n+     label = apply(expand.grid(1:10, LETTERS[10:1])[,2:1], 1, paste0, collapse = \" \"),\n+     geom = st_make_grid(st_as_sfc(st_bbox(nc))))\n> gr$col = sf.colors(10, categorical = TRUE, alpha = .3)\n> # cut, to check, NA's work out:\n> gr = gr[-(1:30),]\n> nc_j <- st_join(nc, gr, largest = TRUE)\nWarning: attribute variables are assumed to be spatially constant throughout all geometries\n> # the two datasets:\n> opar = par(mfrow = c(2,1), mar = rep(0,4))\n> plot(st_geometry(nc_j))\n> plot(st_geometry(gr), add = TRUE, col = gr$col)\n> text(st_coordinates(st_centroid(gr)), labels = gr$label)\nWarning: st_centroid assumes attributes are constant over geometries\n> # the joined dataset:\n> plot(st_geometry(nc_j), border = 'black', col = nc_j$col)\n> text(st_coordinates(st_centroid(nc_j)), labels = nc_j$label, cex = .8)\nWarning: st_centroid assumes attributes are constant over geometries\n> plot(st_geometry(gr), border = 'green', add = TRUE)\n> par(opar)\n> # st_filter keeps the geometries in x where .predicate(x,y) returns any match in y for x\n> st_filter(a, b)\nError in st_filter.sf(a, b) : dplyr is not installed: install first?\nCalls: st_filter -> st_filter.sf\nExecution halted"
-     }
-    }
-   },
-   {
-    "name": "sf (github) / gdal-conda:latest",
-    "conclusion": "failure",
-    "url": "https://github.com/hypertidy/gdal-r-ci/actions/runs/41559644216/job/125666923193",
-    "diagnosis": {
-     "reason": "tests: ERROR",
-     "snippets": {
-      "sf.Rcheck/00check.log": "> 8  0.114     1.442  1825    1825  37009        5  1091     1      10  1364\n> 9  0.114     1.442  1825    1825  37009        5  1091     1      10  1364\n> 10 0.114     1.442  1825    1825  37009        5  1091     1      10  1364\n>    SID79 NWBIR79                   geometry\n> 1      0      19 POINT (-81.65795 36.58003)\n> 2      0      19  POINT (-81.6387 36.58003)\n> 3      0      19 POINT (-81.61945 36.58003)\n> 4      0      19  POINT (-81.6002 36.58003)\n> 5      0      19 POINT (-81.58096 36.58003)\n> 6      0      19 POINT (-81.56171 36.58003)\n> 7      0      19 POINT (-81.54246 36.58003)\n> 8      0      19 POINT (-81.52321 36.58003)\n> 9      0      19 POINT (-81.50396 36.58003)\n> 10     0      19 POINT (-81.48471 36.58003)\n> \n> \n> \n> \n  Running \u2018test-by-element.R\u2019\n  Comparing \u2018test-by-element.Rout\u2019 to \u2018test-by-element.Rout.save\u2019 ... OK\n  Running \u2018testthat.R\u2019\nRunning the tests in \u2018tests/testthat.R\u2019 failed.\nLast 13 lines of output:\n    \"6.0.0\" is not TRUE (1): 'test-crs.R:61:3'\n  \u2022 sf_extSoftVersion()[[\"GDAL\"]] >= \"2.5.0\" is TRUE (1): 'test-gdal.R:46:3'\n  \u2022 sf_extSoftVersion()[[\"proj.4\"]] >= \"6.0.0\" is TRUE (3): 'test-crs.R:44:3',\n    'test-crs.R:49:3', 'test-crs.R:55:3'\n  \u2022 Sys.getenv(\"USER\") == \"edzer\" is not TRUE (3): 'test-gdal.R:55:3',\n    'test-write.R:47:3', 'test-write.R:130:3'\n  \n  \u2550\u2550 Failed tests \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\n  \u2500\u2500 Failure ('test-plot.R:35:2'): plot.sf restores the graphics state after a key error \u2500\u2500\n  Expected `plot(nc[\"toy\"], key.pos = 2)` to throw a error.\n  \n  [ FAIL 1 | WARN 4 | SKIP 47 | PASS 767 ]\n  Error:\n  ! Test failures.\n  Execution halted\n* DONE\nStatus: 2 ERRORs, 1 NOTE",
-      "sf.Rcheck/tests/testthat.Rout.fail": "OGR: Unsupported geometry type\nFailed to create feature 1 in x\nFailed to create feature 1 in x\n[ FAIL 1 | WARN 4 | SKIP 47 | PASS 767 ]\n\n\u2550\u2550 Skipped tests (47) \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\n\u2022 {dplyr} is not installed (22): 'test-tidyverse.R:5:3',\n  'test-tidyverse.R:11:3', 'test-tidyverse.R:25:3', 'test-tidyverse.R:33:3',\n  'test-tidyverse.R:55:2', 'test-tidyverse.R:63:3', 'test-tidyverse.R:79:2',\n  'test-tidyverse.R:100:3', 'test-tidyverse.R:114:2', 'test-tidyverse.R:160:2',\n  'test-tidyverse.R:209:5', 'test-tidyverse.R:224:3', 'test-tidyverse.R:249:2',\n  'test-tidyverse.R:260:2', 'test-tidyverse.R:270:2', 'test-tidyverse.R:278:2',\n  'test-tidyverse.R:283:2', 'test-tidyverse.R:288:2', 'test-tidyverse.R:293:2',\n  'test-tidyverse.R:298:2', 'test-tidyverse.R:313:2', 'test-tidyverse.R:343:3'\n\u2022 {lwgeom} is not installed (3): 'test-geos.R:19:5', 'test-geos.R:66:3',\n  'test-sample.R:2:2'\n\u2022 {raster} is not installed (1): 'test-crs.R:107:3'\n\u2022 {RPostgres} is not installed (3): 'test-postgis_ODBC.R:1:1',\n  'test-postgis_RPostgres.R:12:1', 'test-postgis_RPostgreSQL.R:1:1'\n\u2022 {spatstat.geom} is not installed (1): 'test-spatstat.R:2:3'\n\u2022 empty test (8): 'test-crs.R:66:1', 'test-crs.R:99:1',\n  'test-normalize.R:29:1', 'test-proj.R:1:1', 'test-read.R:7:1',\n  'test-s2.R:19:1', 'test-sf.R:52:1', 'test-tidyverse-vctrs.R:347:1'\n\u2022 On CRAN (1): 'test-gdal.R:101:5'\n\u2022 sf_extSoftVersion()[[\"GDAL\"]] < \"2.5.0\" && sf_extSoftVersion()[[\"proj.4\"]] <\n  \"6.0.0\" is not TRUE (1): 'test-crs.R:61:3'\n\u2022 sf_extSoftVersion()[[\"GDAL\"]] >= \"2.5.0\" is TRUE (1): 'test-gdal.R:46:3'\n\u2022 sf_extSoftVersion()[[\"proj.4\"]] >= \"6.0.0\" is TRUE (3): 'test-crs.R:44:3',\n  'test-crs.R:49:3', 'test-crs.R:55:3'\n\u2022 Sys.getenv(\"USER\") == \"edzer\" is not TRUE (3): 'test-gdal.R:55:3',\n  'test-write.R:47:3', 'test-write.R:130:3'\n\n\u2550\u2550 Failed tests \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\n\u2500\u2500 Failure ('test-plot.R:35:2'): plot.sf restores the graphics state after a key error \u2500\u2500\nExpected `plot(nc[\"toy\"], key.pos = 2)` to throw a error.\n\n[ FAIL 1 | WARN 4 | SKIP 47 | PASS 767 ]\nError:\n! Test failures.\nExecution halted",
-      "sf.Rcheck/sf-Ex.Rout": "1       1   1   NA POINT (1 1)\n2       2   2 12.5 POINT (2 2)\n3       3   3 14.0 POINT (3 3)\n> if (require(dplyr, quietly = TRUE)) {\n+  st_join(a, b) |> group_by(a.x) |> summarise(mean(a.y))\n+ }\n> # example of largest = TRUE:\n> nc <- st_transform(st_read(system.file(\"shape/nc.shp\", package=\"sf\")), 2264)                \nReading layer `nc' from data source \n  `/__w/gdal-r-ci/gdal-r-ci/pkg/sf.Rcheck/sf/shape/nc.shp' using driver `ESRI Shapefile'\nSimple feature collection with 100 features and 14 fields\nGeometry type: MULTIPOLYGON\nDimension:     XY\nBounding box:  xmin: -84.32385 ymin: 33.88199 xmax: -75.45698 ymax: 36.58965\nGeodetic CRS:  NAD27\n> gr = st_sf(\n+     label = apply(expand.grid(1:10, LETTERS[10:1])[,2:1], 1, paste0, collapse = \" \"),\n+     geom = st_make_grid(st_as_sfc(st_bbox(nc))))\n> gr$col = sf.colors(10, categorical = TRUE, alpha = .3)\n> # cut, to check, NA's work out:\n> gr = gr[-(1:30),]\n> nc_j <- st_join(nc, gr, largest = TRUE)\nWarning: attribute variables are assumed to be spatially constant throughout all geometries\n> # the two datasets:\n> opar = par(mfrow = c(2,1), mar = rep(0,4))\n> plot(st_geometry(nc_j))\n> plot(st_geometry(gr), add = TRUE, col = gr$col)\n> text(st_coordinates(st_centroid(gr)), labels = gr$label)\nWarning: st_centroid assumes attributes are constant over geometries\n> # the joined dataset:\n> plot(st_geometry(nc_j), border = 'black', col = nc_j$col)\n> text(st_coordinates(st_centroid(nc_j)), labels = nc_j$label, cex = .8)\nWarning: st_centroid assumes attributes are constant over geometries\n> plot(st_geometry(gr), border = 'green', add = TRUE)\n> par(opar)\n> # st_filter keeps the geometries in x where .predicate(x,y) returns any match in y for x\n> st_filter(a, b)\nError in st_filter.sf(a, b) : dplyr is not installed: install first?\nCalls: st_filter -> st_filter.sf\nExecution halted"
-     }
-    }
-   },
-   {
-    "name": "gdalraster (github) / gdal-conda:dev",
-    "conclusion": "success",
-    "url": "https://github.com/hypertidy/gdal-r-ci/actions/runs/41559644216/job/125666923203"
-   },
-   {
-    "name": "terra (cran) / gdal-conda:dev",
-    "conclusion": "success",
-    "url": "https://github.com/hypertidy/gdal-r-ci/actions/runs/41559644216/job/125666923206"
-   },
-   {
-    "name": "terra (github) / gdal-conda:dev",
-    "conclusion": "success",
-    "url": "https://github.com/hypertidy/gdal-r-ci/actions/runs/41559644216/job/125666923212"
-   },
-   {
-    "name": "vapour (cran) / gdal-conda:latest",
-    "conclusion": "success",
-    "url": "https://github.com/hypertidy/gdal-r-ci/actions/runs/41559644216/job/125666923216"
-   },
-   {
-    "name": "vapour (github) / gdal-conda:dev",
-    "conclusion": "success",
-    "url": "https://github.com/hypertidy/gdal-r-ci/actions/runs/41559644216/job/125666923252"
-   },
-   {
-    "name": "terra (github) / gdal-conda:latest",
-    "conclusion": "success",
-    "url": "https://github.com/hypertidy/gdal-r-ci/actions/runs/41559644216/job/125666923254"
-   },
-   {
-    "name": "gdalraster (github) / gdal-conda:latest",
-    "conclusion": "success",
-    "url": "https://github.com/hypertidy/gdal-r-ci/actions/runs/41559644216/job/125666923258"
-   },
-   {
-    "name": "gdalraster (cran) / gdal-conda:latest",
-    "conclusion": "success",
-    "url": "https://github.com/hypertidy/gdal-r-ci/actions/runs/41559644216/job/125666923260"
-   },
-   {
-    "name": "vapour (cran) / gdal-conda:dev",
-    "conclusion": "success",
-    "url": "https://github.com/hypertidy/gdal-r-ci/actions/runs/41559644216/job/125666923264"
-   },
-   {
-    "name": "sf (github) / gdal-conda:dev",
-    "conclusion": "failure",
-    "url": "https://github.com/hypertidy/gdal-r-ci/actions/runs/41559644216/job/125666923342",
-    "diagnosis": {
-     "reason": "tests: ERROR",
-     "snippets": {
-      "sf.Rcheck/00check.log": "> 8  0.114     1.442  1825    1825  37009        5  1091     1      10  1364\n> 9  0.114     1.442  1825    1825  37009        5  1091     1      10  1364\n> 10 0.114     1.442  1825    1825  37009        5  1091     1      10  1364\n>    SID79 NWBIR79                   geometry\n> 1      0      19 POINT (-81.65795 36.58003)\n> 2      0      19  POINT (-81.6387 36.58003)\n> 3      0      19 POINT (-81.61945 36.58003)\n> 4      0      19  POINT (-81.6002 36.58003)\n> 5      0      19 POINT (-81.58096 36.58003)\n> 6      0      19 POINT (-81.56171 36.58003)\n> 7      0      19 POINT (-81.54246 36.58003)\n> 8      0      19 POINT (-81.52321 36.58003)\n> 9      0      19 POINT (-81.50396 36.58003)\n> 10     0      19 POINT (-81.48471 36.58003)\n> \n> \n> \n> \n  Running \u2018test-by-element.R\u2019\n  Comparing \u2018test-by-element.Rout\u2019 to \u2018test-by-element.Rout.save\u2019 ... OK\n  Running \u2018testthat.R\u2019\nRunning the tests in \u2018tests/testthat.R\u2019 failed.\nLast 13 lines of output:\n    'test-crs.R:49:3', 'test-crs.R:55:3'\n  \u2022 Sys.getenv(\"USER\") == \"edzer\" is not TRUE (3): 'test-gdal.R:55:3',\n    'test-write.R:47:3', 'test-write.R:130:3'\n  \n  \u2550\u2550 Failed tests \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\n  \u2500\u2500 Failure ('test-plot.R:35:2'): plot.sf restores the graphics state after a key error \u2500\u2500\n  Expected `plot(nc[\"toy\"], key.pos = 2)` to throw a error.\n  \u2500\u2500 Failure ('test-write.R:20:9'): sf can write to all writable formats \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n  Expected `st_write(meuse, paste0(tf, \".\", ext), quiet = TRUE)` to run silently.\n  Actual noise: warnings.\n  \n  [ FAIL 2 | WARN 4 | SKIP 47 | PASS 766 ]\n  Error:\n  ! Test failures.\n  Execution halted\n* DONE\nStatus: 2 ERRORs, 1 NOTE",
-      "sf.Rcheck/tests/testthat.Rout.fail": "[ FAIL 2 | WARN 4 | SKIP 47 | PASS 766 ]\n\n\u2550\u2550 Skipped tests (47) \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\n\u2022 {dplyr} is not installed (22): 'test-tidyverse.R:5:3',\n  'test-tidyverse.R:11:3', 'test-tidyverse.R:25:3', 'test-tidyverse.R:33:3',\n  'test-tidyverse.R:55:2', 'test-tidyverse.R:63:3', 'test-tidyverse.R:79:2',\n  'test-tidyverse.R:100:3', 'test-tidyverse.R:114:2', 'test-tidyverse.R:160:2',\n  'test-tidyverse.R:209:5', 'test-tidyverse.R:224:3', 'test-tidyverse.R:249:2',\n  'test-tidyverse.R:260:2', 'test-tidyverse.R:270:2', 'test-tidyverse.R:278:2',\n  'test-tidyverse.R:283:2', 'test-tidyverse.R:288:2', 'test-tidyverse.R:293:2',\n  'test-tidyverse.R:298:2', 'test-tidyverse.R:313:2', 'test-tidyverse.R:343:3'\n\u2022 {lwgeom} is not installed (3): 'test-geos.R:19:5', 'test-geos.R:66:3',\n  'test-sample.R:2:2'\n\u2022 {raster} is not installed (1): 'test-crs.R:107:3'\n\u2022 {RPostgres} is not installed (3): 'test-postgis_ODBC.R:1:1',\n  'test-postgis_RPostgres.R:12:1', 'test-postgis_RPostgreSQL.R:1:1'\n\u2022 {spatstat.geom} is not installed (1): 'test-spatstat.R:2:3'\n\u2022 empty test (8): 'test-crs.R:66:1', 'test-crs.R:99:1',\n  'test-normalize.R:29:1', 'test-proj.R:1:1', 'test-read.R:7:1',\n  'test-s2.R:19:1', 'test-sf.R:52:1', 'test-tidyverse-vctrs.R:347:1'\n\u2022 On CRAN (1): 'test-gdal.R:101:5'\n\u2022 sf_extSoftVersion()[[\"GDAL\"]] < \"2.5.0\" && sf_extSoftVersion()[[\"proj.4\"]] <\n  \"6.0.0\" is not TRUE (1): 'test-crs.R:61:3'\n\u2022 sf_extSoftVersion()[[\"GDAL\"]] >= \"2.5.0\" is TRUE (1): 'test-gdal.R:46:3'\n\u2022 sf_extSoftVersion()[[\"proj.4\"]] >= \"6.0.0\" is TRUE (3): 'test-crs.R:44:3',\n  'test-crs.R:49:3', 'test-crs.R:55:3'\n\u2022 Sys.getenv(\"USER\") == \"edzer\" is not TRUE (3): 'test-gdal.R:55:3',\n  'test-write.R:47:3', 'test-write.R:130:3'\n\n\u2550\u2550 Failed tests \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\n\u2500\u2500 Failure ('test-plot.R:35:2'): plot.sf restores the graphics state after a key error \u2500\u2500\nExpected `plot(nc[\"toy\"], key.pos = 2)` to throw a error.\n\u2500\u2500 Failure ('test-write.R:20:9'): sf can write to all writable formats \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nExpected `st_write(meuse, paste0(tf, \".\", ext), quiet = TRUE)` to run silently.\nActual noise: warnings.\n\n[ FAIL 2 | WARN 4 | SKIP 47 | PASS 766 ]\nError:\n! Test failures.\nExecution halted",
-      "sf.Rcheck/sf-Ex.Rout": "1       1   1   NA POINT (1 1)\n2       2   2 12.5 POINT (2 2)\n3       3   3 14.0 POINT (3 3)\n> if (require(dplyr, quietly = TRUE)) {\n+  st_join(a, b) |> group_by(a.x) |> summarise(mean(a.y))\n+ }\n> # example of largest = TRUE:\n> nc <- st_transform(st_read(system.file(\"shape/nc.shp\", package=\"sf\")), 2264)                \nReading layer `nc' from data source \n  `/__w/gdal-r-ci/gdal-r-ci/pkg/sf.Rcheck/sf/shape/nc.shp' using driver `ESRI Shapefile'\nSimple feature collection with 100 features and 14 fields\nGeometry type: MULTIPOLYGON\nDimension:     XY\nBounding box:  xmin: -84.32385 ymin: 33.88199 xmax: -75.45698 ymax: 36.58965\nGeodetic CRS:  NAD27\n> gr = st_sf(\n+     label = apply(expand.grid(1:10, LETTERS[10:1])[,2:1], 1, paste0, collapse = \" \"),\n+     geom = st_make_grid(st_as_sfc(st_bbox(nc))))\n> gr$col = sf.colors(10, categorical = TRUE, alpha = .3)\n> # cut, to check, NA's work out:\n> gr = gr[-(1:30),]\n> nc_j <- st_join(nc, gr, largest = TRUE)\nWarning: attribute variables are assumed to be spatially constant throughout all geometries\n> # the two datasets:\n> opar = par(mfrow = c(2,1), mar = rep(0,4))\n> plot(st_geometry(nc_j))\n> plot(st_geometry(gr), add = TRUE, col = gr$col)\n> text(st_coordinates(st_centroid(gr)), labels = gr$label)\nWarning: st_centroid assumes attributes are constant over geometries\n> # the joined dataset:\n> plot(st_geometry(nc_j), border = 'black', col = nc_j$col)\n> text(st_coordinates(st_centroid(nc_j)), labels = nc_j$label, cex = .8)\nWarning: st_centroid assumes attributes are constant over geometries\n> plot(st_geometry(gr), border = 'green', add = TRUE)\n> par(opar)\n> # st_filter keeps the geometries in x where .predicate(x,y) returns any match in y for x\n> st_filter(a, b)\nError in st_filter.sf(a, b) : dplyr is not installed: install first?\nCalls: st_filter -> st_filter.sf\nExecution halted"
-     }
-    }
-   },
-   {
-    "name": "gdalcubes (cran) / gdal-conda:latest",
-    "conclusion": "success",
-    "url": "https://github.com/hypertidy/gdal-r-ci/actions/runs/41559644216/job/125666923349"
-   },
-   {
-    "name": "gdalcubes (cran) / gdal-conda:dev",
-    "conclusion": "success",
-    "url": "https://github.com/hypertidy/gdal-r-ci/actions/runs/41559644216/job/125666923358"
-   },
-   {
     "name": "sf (cran) / gdal-conda:dev",
     "conclusion": "failure",
-    "url": "https://github.com/hypertidy/gdal-r-ci/actions/runs/41559644216/job/125666923373",
+    "url": "https://github.com/hypertidy/gdal-r-ci/actions/runs/41745060968/job/126295921529",
     "diagnosis": {
      "reason": "tests: ERROR",
      "snippets": {
@@ -400,26 +302,36 @@
     }
    },
    {
-    "name": "vapour (github) / gdal-conda:latest",
+    "name": "gdalraster (github) / gdal-conda:dev",
     "conclusion": "success",
-    "url": "https://github.com/hypertidy/gdal-r-ci/actions/runs/41559644216/job/125666923402"
+    "url": "https://github.com/hypertidy/gdal-r-ci/actions/runs/41745060968/job/126295921543"
    },
    {
-    "name": "gdalcubes (github) / gdal-conda:latest",
+    "name": "terra (github) / gdal-conda:dev",
+    "conclusion": "success",
+    "url": "https://github.com/hypertidy/gdal-r-ci/actions/runs/41745060968/job/126295921592"
+   },
+   {
+    "name": "sf (cran) / gdal-conda:latest",
     "conclusion": "failure",
-    "url": "https://github.com/hypertidy/gdal-r-ci/actions/runs/41559644216/job/125666923405",
+    "url": "https://github.com/hypertidy/gdal-r-ci/actions/runs/41745060968/job/126295921606",
     "diagnosis": {
      "reason": "examples: ERROR",
      "snippets": {
-      "gdalcubes.Rcheck/00check.log": "  this requires 'nm' to be on the PATH\nWarning in read_symbols_from_object_file(so) :\n  this requires 'nm' to be on the PATH\n\n\nSee \u2018Writing portable packages\u2019 in the \u2018Writing R Extensions\u2019 manual.\n* checking files in \u2018vignettes\u2019 ... SKIPPED\n* checking examples ... ERROR\nRunning examples in \u2018gdalcubes-Ex.R\u2019 failed\nThe error most likely occurred in:\n\n> ### Name: write_zarr\n> ### Title: Export a data cube as Zarr dataset\n> ### Aliases: write_zarr\n> \n> ### ** Examples\n> \n> # TODO\n> # create image collection from example Landsat data only \n> # if not already done in other examples\n> if (!file.exists(file.path(tempdir(), \"L8.db\"))) {\n+   L8_files <- list.files(system.file(\"L8NY18\", package = \"gdalcubes\"),\n+                          \".TIF\", recursive = TRUE, full.names = TRUE)\n+   create_image_collection(L8_files, \"L8_L1TP\", file.path(tempdir(), \"L8.db\"), quiet = TRUE) \n+ }\n> \n> L8.col = image_collection(file.path(tempdir(), \"L8.db\"))\n> v = cube_view(extent=list(left=388941.2, right=766552.4, \n+               bottom=4345299, top=4744931, t0=\"2018-04\", t1=\"2018-04\"),\n+               srs=\"EPSG:32618\", nx = 497, ny=526, dt=\"P1M\")\n## Temporal extent of the cube does not align with dt and has been extended to 2018-04-01/2018-04-30\n> write_zarr(select_bands(raster_cube(L8.col, v), c(\"B04\", \"B05\")), fname=tempfile(fileext = \".zarr\"))\nError in write_zarr(select_bands(raster_cube(L8.col, v), c(\"B04\", \"B05\")),  : \n  unused argument (fname = tempfile(fileext = \".zarr\"))\nExecution halted\n* checking for unstated dependencies in \u2018tests\u2019 ... OK\n* checking tests ... OK\n  Running \u2018tinytest.R\u2019\n* DONE\nStatus: 1 ERROR, 1 WARNING, 1 NOTE",
-      "gdalcubes.Rcheck/gdalcubes-Ex.Rout": "> \n> L8.col = image_collection(file.path(tempdir(), \"L8.db\"))\n> v = cube_view(extent=list(left=388941.2, right=766552.4, \n+               bottom=4345299, top=4744931, t0=\"2018-04\", t1=\"2018-04\"),\n+               srs=\"EPSG:32618\", nx = 497, ny=526, dt=\"P1M\")\n## Temporal extent of the cube does not align with dt and has been extended to 2018-04-01/2018-04-30\n> write_tif(select_bands(raster_cube(L8.col, v), c(\"B04\", \"B05\")), dir=tempdir())\n> \n> \n> \n> cleanEx()\n> nameEx(\"write_zarr\")\n> ### * write_zarr\n> \n> flush(stderr()); flush(stdout())\n> \n> ### Name: write_zarr\n> ### Title: Export a data cube as Zarr dataset\n> ### Aliases: write_zarr\n> \n> ### ** Examples\n> \n> # TODO\n> # create image collection from example Landsat data only \n> # if not already done in other examples\n> if (!file.exists(file.path(tempdir(), \"L8.db\"))) {\n+   L8_files <- list.files(system.file(\"L8NY18\", package = \"gdalcubes\"),\n+                          \".TIF\", recursive = TRUE, full.names = TRUE)\n+   create_image_collection(L8_files, \"L8_L1TP\", file.path(tempdir(), \"L8.db\"), quiet = TRUE) \n+ }\n> \n> L8.col = image_collection(file.path(tempdir(), \"L8.db\"))\n> v = cube_view(extent=list(left=388941.2, right=766552.4, \n+               bottom=4345299, top=4744931, t0=\"2018-04\", t1=\"2018-04\"),\n+               srs=\"EPSG:32618\", nx = 497, ny=526, dt=\"P1M\")\n## Temporal extent of the cube does not align with dt and has been extended to 2018-04-01/2018-04-30\n> write_zarr(select_bands(raster_cube(L8.col, v), c(\"B04\", \"B05\")), fname=tempfile(fileext = \".zarr\"))\nError in write_zarr(select_bands(raster_cube(L8.col, v), c(\"B04\", \"B05\")),  : \n  unused argument (fname = tempfile(fileext = \".zarr\"))\nExecution halted"
+      "sf.Rcheck/00check.log": "> Geometry type: POINT\n> Dimension:     XY\n> Bounding box:  xmin: -84.31423 ymin: 33.88525 xmax: -75.45997 ymax: 36.58003\n> Geodetic CRS:  NAD27\n> First 10 features:\n>     AREA PERIMETER CNTY_ CNTY_ID FIPSNO CRESS_ID BIR74 SID74 NWBIR74 BIR79\n> 1  0.114     1.442  1825    1825  37009        5  1091     1      10  1364\n> 2  0.114     1.442  1825    1825  37009        5  1091     1      10  1364\n> 3  0.114     1.442  1825    1825  37009        5  1091     1      10  1364\n> 4  0.114     1.442  1825    1825  37009        5  1091     1      10  1364\n> 5  0.114     1.442  1825    1825  37009        5  1091     1      10  1364\n> 6  0.114     1.442  1825    1825  37009        5  1091     1      10  1364\n> 7  0.114     1.442  1825    1825  37009        5  1091     1      10  1364\n> 8  0.114     1.442  1825    1825  37009        5  1091     1      10  1364\n> 9  0.114     1.442  1825    1825  37009        5  1091     1      10  1364\n> 10 0.114     1.442  1825    1825  37009        5  1091     1      10  1364\n>    SID79 NWBIR79                   geometry\n> 1      0      19 POINT (-81.65795 36.58003)\n> 2      0      19  POINT (-81.6387 36.58003)\n> 3      0      19 POINT (-81.61945 36.58003)\n> 4      0      19  POINT (-81.6002 36.58003)\n> 5      0      19 POINT (-81.58096 36.58003)\n> 6      0      19 POINT (-81.56171 36.58003)\n> 7      0      19 POINT (-81.54246 36.58003)\n> 8      0      19 POINT (-81.52321 36.58003)\n> 9      0      19 POINT (-81.50396 36.58003)\n> 10     0      19 POINT (-81.48471 36.58003)\n> \n> \n> \n> \n  Running \u2018test-by-element.R\u2019\n  Comparing \u2018test-by-element.Rout\u2019 to \u2018test-by-element.Rout.save\u2019 ... OK\n  Running \u2018testthat.R\u2019\n  Running \u2018units.R\u2019\n  Comparing \u2018units.Rout\u2019 to \u2018units.Rout.save\u2019 ... OK\n  Running \u2018wkb.R\u2019\n  Comparing \u2018wkb.Rout\u2019 to \u2018wkb.Rout.save\u2019 ... OK\n* DONE\nStatus: 1 ERROR, 2 NOTEs",
+      "sf.Rcheck/sf-Ex.Rout": "1       1   1   NA POINT (1 1)\n2       2   2 12.5 POINT (2 2)\n3       3   3 14.0 POINT (3 3)\n> if (require(dplyr, quietly = TRUE)) {\n+  st_join(a, b) |> group_by(a.x) |> summarise(mean(a.y))\n+ }\n> # example of largest = TRUE:\n> nc <- st_transform(st_read(system.file(\"shape/nc.shp\", package=\"sf\")), 2264)                \nReading layer `nc' from data source \n  `/__w/gdal-r-ci/gdal-r-ci/pkg/sf.Rcheck/sf/shape/nc.shp' using driver `ESRI Shapefile'\nSimple feature collection with 100 features and 14 fields\nGeometry type: MULTIPOLYGON\nDimension:     XY\nBounding box:  xmin: -84.32385 ymin: 33.88199 xmax: -75.45698 ymax: 36.58965\nGeodetic CRS:  NAD27\n> gr = st_sf(\n+     label = apply(expand.grid(1:10, LETTERS[10:1])[,2:1], 1, paste0, collapse = \" \"),\n+     geom = st_make_grid(st_as_sfc(st_bbox(nc))))\n> gr$col = sf.colors(10, categorical = TRUE, alpha = .3)\n> # cut, to check, NA's work out:\n> gr = gr[-(1:30),]\n> nc_j <- st_join(nc, gr, largest = TRUE)\nWarning: attribute variables are assumed to be spatially constant throughout all geometries\n> # the two datasets:\n> opar = par(mfrow = c(2,1), mar = rep(0,4))\n> plot(st_geometry(nc_j))\n> plot(st_geometry(gr), add = TRUE, col = gr$col)\n> text(st_coordinates(st_centroid(gr)), labels = gr$label)\nWarning: st_centroid assumes attributes are constant over geometries\n> # the joined dataset:\n> plot(st_geometry(nc_j), border = 'black', col = nc_j$col)\n> text(st_coordinates(st_centroid(nc_j)), labels = nc_j$label, cex = .8)\nWarning: st_centroid assumes attributes are constant over geometries\n> plot(st_geometry(gr), border = 'green', add = TRUE)\n> par(opar)\n> # st_filter keeps the geometries in x where .predicate(x,y) returns any match in y for x\n> st_filter(a, b)\nError in st_filter.sf(a, b) : dplyr is not installed: install first?\nCalls: st_filter -> st_filter.sf\nExecution halted"
      }
     }
+   },
+   {
+    "name": "terra (cran) / gdal-conda:dev",
+    "conclusion": "success",
+    "url": "https://github.com/hypertidy/gdal-r-ci/actions/runs/41745060968/job/126295921664"
    },
    {
     "name": "gdalcubes (github) / gdal-conda:dev",
     "conclusion": "failure",
-    "url": "https://github.com/hypertidy/gdal-r-ci/actions/runs/41559644216/job/125666923485",
+    "url": "https://github.com/hypertidy/gdal-r-ci/actions/runs/41745060968/job/126295921670",
     "diagnosis": {
      "reason": "examples: ERROR",
      "snippets": {
@@ -429,9 +341,97 @@
     }
    },
    {
+    "name": "gdalraster (github) / gdal-conda:latest",
+    "conclusion": "success",
+    "url": "https://github.com/hypertidy/gdal-r-ci/actions/runs/41745060968/job/126295921691"
+   },
+   {
+    "name": "gdalcubes (cran) / gdal-conda:latest",
+    "conclusion": "success",
+    "url": "https://github.com/hypertidy/gdal-r-ci/actions/runs/41745060968/job/126295921693"
+   },
+   {
+    "name": "sf (github) / gdal-conda:latest",
+    "conclusion": "failure",
+    "url": "https://github.com/hypertidy/gdal-r-ci/actions/runs/41745060968/job/126295921697",
+    "diagnosis": {
+     "reason": "tests: ERROR",
+     "snippets": {
+      "sf.Rcheck/00check.log": "> 8  0.114     1.442  1825    1825  37009        5  1091     1      10  1364\n> 9  0.114     1.442  1825    1825  37009        5  1091     1      10  1364\n> 10 0.114     1.442  1825    1825  37009        5  1091     1      10  1364\n>    SID79 NWBIR79                   geometry\n> 1      0      19 POINT (-81.65795 36.58003)\n> 2      0      19  POINT (-81.6387 36.58003)\n> 3      0      19 POINT (-81.61945 36.58003)\n> 4      0      19  POINT (-81.6002 36.58003)\n> 5      0      19 POINT (-81.58096 36.58003)\n> 6      0      19 POINT (-81.56171 36.58003)\n> 7      0      19 POINT (-81.54246 36.58003)\n> 8      0      19 POINT (-81.52321 36.58003)\n> 9      0      19 POINT (-81.50396 36.58003)\n> 10     0      19 POINT (-81.48471 36.58003)\n> \n> \n> \n> \n  Running \u2018test-by-element.R\u2019\n  Comparing \u2018test-by-element.Rout\u2019 to \u2018test-by-element.Rout.save\u2019 ... OK\n  Running \u2018testthat.R\u2019\nRunning the tests in \u2018tests/testthat.R\u2019 failed.\nLast 13 lines of output:\n    \"6.0.0\" is not TRUE (1): 'test-crs.R:61:3'\n  \u2022 sf_extSoftVersion()[[\"GDAL\"]] >= \"2.5.0\" is TRUE (1): 'test-gdal.R:46:3'\n  \u2022 sf_extSoftVersion()[[\"proj.4\"]] >= \"6.0.0\" is TRUE (3): 'test-crs.R:44:3',\n    'test-crs.R:49:3', 'test-crs.R:55:3'\n  \u2022 Sys.getenv(\"USER\") == \"edzer\" is not TRUE (3): 'test-gdal.R:55:3',\n    'test-write.R:47:3', 'test-write.R:130:3'\n  \n  \u2550\u2550 Failed tests \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\n  \u2500\u2500 Failure ('test-plot.R:35:2'): plot.sf restores the graphics state after a key error \u2500\u2500\n  Expected `plot(nc[\"toy\"], key.pos = 2)` to throw a error.\n  \n  [ FAIL 1 | WARN 4 | SKIP 47 | PASS 767 ]\n  Error:\n  ! Test failures.\n  Execution halted\n* DONE\nStatus: 2 ERRORs, 1 NOTE",
+      "sf.Rcheck/tests/testthat.Rout.fail": "OGR: Unsupported geometry type\nFailed to create feature 1 in x\nFailed to create feature 1 in x\n[ FAIL 1 | WARN 4 | SKIP 47 | PASS 767 ]\n\n\u2550\u2550 Skipped tests (47) \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\n\u2022 {dplyr} is not installed (22): 'test-tidyverse.R:5:3',\n  'test-tidyverse.R:11:3', 'test-tidyverse.R:25:3', 'test-tidyverse.R:33:3',\n  'test-tidyverse.R:55:2', 'test-tidyverse.R:63:3', 'test-tidyverse.R:79:2',\n  'test-tidyverse.R:100:3', 'test-tidyverse.R:114:2', 'test-tidyverse.R:160:2',\n  'test-tidyverse.R:209:5', 'test-tidyverse.R:224:3', 'test-tidyverse.R:249:2',\n  'test-tidyverse.R:260:2', 'test-tidyverse.R:270:2', 'test-tidyverse.R:278:2',\n  'test-tidyverse.R:283:2', 'test-tidyverse.R:288:2', 'test-tidyverse.R:293:2',\n  'test-tidyverse.R:298:2', 'test-tidyverse.R:313:2', 'test-tidyverse.R:343:3'\n\u2022 {lwgeom} is not installed (3): 'test-geos.R:19:5', 'test-geos.R:66:3',\n  'test-sample.R:2:2'\n\u2022 {raster} is not installed (1): 'test-crs.R:107:3'\n\u2022 {RPostgres} is not installed (3): 'test-postgis_ODBC.R:1:1',\n  'test-postgis_RPostgres.R:12:1', 'test-postgis_RPostgreSQL.R:1:1'\n\u2022 {spatstat.geom} is not installed (1): 'test-spatstat.R:2:3'\n\u2022 empty test (8): 'test-crs.R:66:1', 'test-crs.R:99:1',\n  'test-normalize.R:29:1', 'test-proj.R:1:1', 'test-read.R:7:1',\n  'test-s2.R:19:1', 'test-sf.R:52:1', 'test-tidyverse-vctrs.R:347:1'\n\u2022 On CRAN (1): 'test-gdal.R:101:5'\n\u2022 sf_extSoftVersion()[[\"GDAL\"]] < \"2.5.0\" && sf_extSoftVersion()[[\"proj.4\"]] <\n  \"6.0.0\" is not TRUE (1): 'test-crs.R:61:3'\n\u2022 sf_extSoftVersion()[[\"GDAL\"]] >= \"2.5.0\" is TRUE (1): 'test-gdal.R:46:3'\n\u2022 sf_extSoftVersion()[[\"proj.4\"]] >= \"6.0.0\" is TRUE (3): 'test-crs.R:44:3',\n  'test-crs.R:49:3', 'test-crs.R:55:3'\n\u2022 Sys.getenv(\"USER\") == \"edzer\" is not TRUE (3): 'test-gdal.R:55:3',\n  'test-write.R:47:3', 'test-write.R:130:3'\n\n\u2550\u2550 Failed tests \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\n\u2500\u2500 Failure ('test-plot.R:35:2'): plot.sf restores the graphics state after a key error \u2500\u2500\nExpected `plot(nc[\"toy\"], key.pos = 2)` to throw a error.\n\n[ FAIL 1 | WARN 4 | SKIP 47 | PASS 767 ]\nError:\n! Test failures.\nExecution halted",
+      "sf.Rcheck/sf-Ex.Rout": "1       1   1   NA POINT (1 1)\n2       2   2 12.5 POINT (2 2)\n3       3   3 14.0 POINT (3 3)\n> if (require(dplyr, quietly = TRUE)) {\n+  st_join(a, b) |> group_by(a.x) |> summarise(mean(a.y))\n+ }\n> # example of largest = TRUE:\n> nc <- st_transform(st_read(system.file(\"shape/nc.shp\", package=\"sf\")), 2264)                \nReading layer `nc' from data source \n  `/__w/gdal-r-ci/gdal-r-ci/pkg/sf.Rcheck/sf/shape/nc.shp' using driver `ESRI Shapefile'\nSimple feature collection with 100 features and 14 fields\nGeometry type: MULTIPOLYGON\nDimension:     XY\nBounding box:  xmin: -84.32385 ymin: 33.88199 xmax: -75.45698 ymax: 36.58965\nGeodetic CRS:  NAD27\n> gr = st_sf(\n+     label = apply(expand.grid(1:10, LETTERS[10:1])[,2:1], 1, paste0, collapse = \" \"),\n+     geom = st_make_grid(st_as_sfc(st_bbox(nc))))\n> gr$col = sf.colors(10, categorical = TRUE, alpha = .3)\n> # cut, to check, NA's work out:\n> gr = gr[-(1:30),]\n> nc_j <- st_join(nc, gr, largest = TRUE)\nWarning: attribute variables are assumed to be spatially constant throughout all geometries\n> # the two datasets:\n> opar = par(mfrow = c(2,1), mar = rep(0,4))\n> plot(st_geometry(nc_j))\n> plot(st_geometry(gr), add = TRUE, col = gr$col)\n> text(st_coordinates(st_centroid(gr)), labels = gr$label)\nWarning: st_centroid assumes attributes are constant over geometries\n> # the joined dataset:\n> plot(st_geometry(nc_j), border = 'black', col = nc_j$col)\n> text(st_coordinates(st_centroid(nc_j)), labels = nc_j$label, cex = .8)\nWarning: st_centroid assumes attributes are constant over geometries\n> plot(st_geometry(gr), border = 'green', add = TRUE)\n> par(opar)\n> # st_filter keeps the geometries in x where .predicate(x,y) returns any match in y for x\n> st_filter(a, b)\nError in st_filter.sf(a, b) : dplyr is not installed: install first?\nCalls: st_filter -> st_filter.sf\nExecution halted"
+     }
+    }
+   },
+   {
+    "name": "gdalraster (cran) / gdal-conda:latest",
+    "conclusion": "success",
+    "url": "https://github.com/hypertidy/gdal-r-ci/actions/runs/41745060968/job/126295921698"
+   },
+   {
+    "name": "gdalraster (cran) / gdal-conda:dev",
+    "conclusion": "success",
+    "url": "https://github.com/hypertidy/gdal-r-ci/actions/runs/41745060968/job/126295921707"
+   },
+   {
+    "name": "sf (github) / gdal-conda:dev",
+    "conclusion": "failure",
+    "url": "https://github.com/hypertidy/gdal-r-ci/actions/runs/41745060968/job/126295921711",
+    "diagnosis": {
+     "reason": "tests: ERROR",
+     "snippets": {
+      "sf.Rcheck/00check.log": "> 8  0.114     1.442  1825    1825  37009        5  1091     1      10  1364\n> 9  0.114     1.442  1825    1825  37009        5  1091     1      10  1364\n> 10 0.114     1.442  1825    1825  37009        5  1091     1      10  1364\n>    SID79 NWBIR79                   geometry\n> 1      0      19 POINT (-81.65795 36.58003)\n> 2      0      19  POINT (-81.6387 36.58003)\n> 3      0      19 POINT (-81.61945 36.58003)\n> 4      0      19  POINT (-81.6002 36.58003)\n> 5      0      19 POINT (-81.58096 36.58003)\n> 6      0      19 POINT (-81.56171 36.58003)\n> 7      0      19 POINT (-81.54246 36.58003)\n> 8      0      19 POINT (-81.52321 36.58003)\n> 9      0      19 POINT (-81.50396 36.58003)\n> 10     0      19 POINT (-81.48471 36.58003)\n> \n> \n> \n> \n  Running \u2018test-by-element.R\u2019\n  Comparing \u2018test-by-element.Rout\u2019 to \u2018test-by-element.Rout.save\u2019 ... OK\n  Running \u2018testthat.R\u2019\nRunning the tests in \u2018tests/testthat.R\u2019 failed.\nLast 13 lines of output:\n    'test-crs.R:49:3', 'test-crs.R:55:3'\n  \u2022 Sys.getenv(\"USER\") == \"edzer\" is not TRUE (3): 'test-gdal.R:55:3',\n    'test-write.R:47:3', 'test-write.R:130:3'\n  \n  \u2550\u2550 Failed tests \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\n  \u2500\u2500 Failure ('test-plot.R:35:2'): plot.sf restores the graphics state after a key error \u2500\u2500\n  Expected `plot(nc[\"toy\"], key.pos = 2)` to throw a error.\n  \u2500\u2500 Failure ('test-write.R:20:9'): sf can write to all writable formats \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n  Expected `st_write(meuse, paste0(tf, \".\", ext), quiet = TRUE)` to run silently.\n  Actual noise: warnings.\n  \n  [ FAIL 2 | WARN 4 | SKIP 47 | PASS 766 ]\n  Error:\n  ! Test failures.\n  Execution halted\n* DONE\nStatus: 2 ERRORs, 1 NOTE",
+      "sf.Rcheck/tests/testthat.Rout.fail": "[ FAIL 2 | WARN 4 | SKIP 47 | PASS 766 ]\n\n\u2550\u2550 Skipped tests (47) \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\n\u2022 {dplyr} is not installed (22): 'test-tidyverse.R:5:3',\n  'test-tidyverse.R:11:3', 'test-tidyverse.R:25:3', 'test-tidyverse.R:33:3',\n  'test-tidyverse.R:55:2', 'test-tidyverse.R:63:3', 'test-tidyverse.R:79:2',\n  'test-tidyverse.R:100:3', 'test-tidyverse.R:114:2', 'test-tidyverse.R:160:2',\n  'test-tidyverse.R:209:5', 'test-tidyverse.R:224:3', 'test-tidyverse.R:249:2',\n  'test-tidyverse.R:260:2', 'test-tidyverse.R:270:2', 'test-tidyverse.R:278:2',\n  'test-tidyverse.R:283:2', 'test-tidyverse.R:288:2', 'test-tidyverse.R:293:2',\n  'test-tidyverse.R:298:2', 'test-tidyverse.R:313:2', 'test-tidyverse.R:343:3'\n\u2022 {lwgeom} is not installed (3): 'test-geos.R:19:5', 'test-geos.R:66:3',\n  'test-sample.R:2:2'\n\u2022 {raster} is not installed (1): 'test-crs.R:107:3'\n\u2022 {RPostgres} is not installed (3): 'test-postgis_ODBC.R:1:1',\n  'test-postgis_RPostgres.R:12:1', 'test-postgis_RPostgreSQL.R:1:1'\n\u2022 {spatstat.geom} is not installed (1): 'test-spatstat.R:2:3'\n\u2022 empty test (8): 'test-crs.R:66:1', 'test-crs.R:99:1',\n  'test-normalize.R:29:1', 'test-proj.R:1:1', 'test-read.R:7:1',\n  'test-s2.R:19:1', 'test-sf.R:52:1', 'test-tidyverse-vctrs.R:347:1'\n\u2022 On CRAN (1): 'test-gdal.R:101:5'\n\u2022 sf_extSoftVersion()[[\"GDAL\"]] < \"2.5.0\" && sf_extSoftVersion()[[\"proj.4\"]] <\n  \"6.0.0\" is not TRUE (1): 'test-crs.R:61:3'\n\u2022 sf_extSoftVersion()[[\"GDAL\"]] >= \"2.5.0\" is TRUE (1): 'test-gdal.R:46:3'\n\u2022 sf_extSoftVersion()[[\"proj.4\"]] >= \"6.0.0\" is TRUE (3): 'test-crs.R:44:3',\n  'test-crs.R:49:3', 'test-crs.R:55:3'\n\u2022 Sys.getenv(\"USER\") == \"edzer\" is not TRUE (3): 'test-gdal.R:55:3',\n  'test-write.R:47:3', 'test-write.R:130:3'\n\n\u2550\u2550 Failed tests \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\n\u2500\u2500 Failure ('test-plot.R:35:2'): plot.sf restores the graphics state after a key error \u2500\u2500\nExpected `plot(nc[\"toy\"], key.pos = 2)` to throw a error.\n\u2500\u2500 Failure ('test-write.R:20:9'): sf can write to all writable formats \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nExpected `st_write(meuse, paste0(tf, \".\", ext), quiet = TRUE)` to run silently.\nActual noise: warnings.\n\n[ FAIL 2 | WARN 4 | SKIP 47 | PASS 766 ]\nError:\n! Test failures.\nExecution halted",
+      "sf.Rcheck/sf-Ex.Rout": "1       1   1   NA POINT (1 1)\n2       2   2 12.5 POINT (2 2)\n3       3   3 14.0 POINT (3 3)\n> if (require(dplyr, quietly = TRUE)) {\n+  st_join(a, b) |> group_by(a.x) |> summarise(mean(a.y))\n+ }\n> # example of largest = TRUE:\n> nc <- st_transform(st_read(system.file(\"shape/nc.shp\", package=\"sf\")), 2264)                \nReading layer `nc' from data source \n  `/__w/gdal-r-ci/gdal-r-ci/pkg/sf.Rcheck/sf/shape/nc.shp' using driver `ESRI Shapefile'\nSimple feature collection with 100 features and 14 fields\nGeometry type: MULTIPOLYGON\nDimension:     XY\nBounding box:  xmin: -84.32385 ymin: 33.88199 xmax: -75.45698 ymax: 36.58965\nGeodetic CRS:  NAD27\n> gr = st_sf(\n+     label = apply(expand.grid(1:10, LETTERS[10:1])[,2:1], 1, paste0, collapse = \" \"),\n+     geom = st_make_grid(st_as_sfc(st_bbox(nc))))\n> gr$col = sf.colors(10, categorical = TRUE, alpha = .3)\n> # cut, to check, NA's work out:\n> gr = gr[-(1:30),]\n> nc_j <- st_join(nc, gr, largest = TRUE)\nWarning: attribute variables are assumed to be spatially constant throughout all geometries\n> # the two datasets:\n> opar = par(mfrow = c(2,1), mar = rep(0,4))\n> plot(st_geometry(nc_j))\n> plot(st_geometry(gr), add = TRUE, col = gr$col)\n> text(st_coordinates(st_centroid(gr)), labels = gr$label)\nWarning: st_centroid assumes attributes are constant over geometries\n> # the joined dataset:\n> plot(st_geometry(nc_j), border = 'black', col = nc_j$col)\n> text(st_coordinates(st_centroid(nc_j)), labels = nc_j$label, cex = .8)\nWarning: st_centroid assumes attributes are constant over geometries\n> plot(st_geometry(gr), border = 'green', add = TRUE)\n> par(opar)\n> # st_filter keeps the geometries in x where .predicate(x,y) returns any match in y for x\n> st_filter(a, b)\nError in st_filter.sf(a, b) : dplyr is not installed: install first?\nCalls: st_filter -> st_filter.sf\nExecution halted"
+     }
+    }
+   },
+   {
+    "name": "terra (github) / gdal-conda:latest",
+    "conclusion": "success",
+    "url": "https://github.com/hypertidy/gdal-r-ci/actions/runs/41745060968/job/126295921728"
+   },
+   {
     "name": "terra (cran) / gdal-conda:latest",
     "conclusion": "success",
-    "url": "https://github.com/hypertidy/gdal-r-ci/actions/runs/41559644216/job/125666923554"
+    "url": "https://github.com/hypertidy/gdal-r-ci/actions/runs/41745060968/job/126295921732"
+   },
+   {
+    "name": "gdalcubes (cran) / gdal-conda:dev",
+    "conclusion": "success",
+    "url": "https://github.com/hypertidy/gdal-r-ci/actions/runs/41745060968/job/126295921739"
+   },
+   {
+    "name": "vapour (github) / gdal-conda:latest",
+    "conclusion": "success",
+    "url": "https://github.com/hypertidy/gdal-r-ci/actions/runs/41745060968/job/126295921741"
+   },
+   {
+    "name": "vapour (cran) / gdal-conda:dev",
+    "conclusion": "success",
+    "url": "https://github.com/hypertidy/gdal-r-ci/actions/runs/41745060968/job/126295921799"
+   },
+   {
+    "name": "gdalcubes (github) / gdal-conda:latest",
+    "conclusion": "failure",
+    "url": "https://github.com/hypertidy/gdal-r-ci/actions/runs/41745060968/job/126295921809",
+    "diagnosis": {
+     "reason": "examples: ERROR",
+     "snippets": {
+      "gdalcubes.Rcheck/00check.log": "  this requires 'nm' to be on the PATH\nWarning in read_symbols_from_object_file(so) :\n  this requires 'nm' to be on the PATH\n\n\nSee \u2018Writing portable packages\u2019 in the \u2018Writing R Extensions\u2019 manual.\n* checking files in \u2018vignettes\u2019 ... SKIPPED\n* checking examples ... ERROR\nRunning examples in \u2018gdalcubes-Ex.R\u2019 failed\nThe error most likely occurred in:\n\n> ### Name: write_zarr\n> ### Title: Export a data cube as Zarr dataset\n> ### Aliases: write_zarr\n> \n> ### ** Examples\n> \n> # TODO\n> # create image collection from example Landsat data only \n> # if not already done in other examples\n> if (!file.exists(file.path(tempdir(), \"L8.db\"))) {\n+   L8_files <- list.files(system.file(\"L8NY18\", package = \"gdalcubes\"),\n+                          \".TIF\", recursive = TRUE, full.names = TRUE)\n+   create_image_collection(L8_files, \"L8_L1TP\", file.path(tempdir(), \"L8.db\"), quiet = TRUE) \n+ }\n> \n> L8.col = image_collection(file.path(tempdir(), \"L8.db\"))\n> v = cube_view(extent=list(left=388941.2, right=766552.4, \n+               bottom=4345299, top=4744931, t0=\"2018-04\", t1=\"2018-04\"),\n+               srs=\"EPSG:32618\", nx = 497, ny=526, dt=\"P1M\")\n## Temporal extent of the cube does not align with dt and has been extended to 2018-04-01/2018-04-30\n> write_zarr(select_bands(raster_cube(L8.col, v), c(\"B04\", \"B05\")), fname=tempfile(fileext = \".zarr\"))\nError in write_zarr(select_bands(raster_cube(L8.col, v), c(\"B04\", \"B05\")),  : \n  unused argument (fname = tempfile(fileext = \".zarr\"))\nExecution halted\n* checking for unstated dependencies in \u2018tests\u2019 ... OK\n* checking tests ... OK\n  Running \u2018tinytest.R\u2019\n* DONE\nStatus: 1 ERROR, 1 WARNING, 1 NOTE",
+      "gdalcubes.Rcheck/gdalcubes-Ex.Rout": "> \n> L8.col = image_collection(file.path(tempdir(), \"L8.db\"))\n> v = cube_view(extent=list(left=388941.2, right=766552.4, \n+               bottom=4345299, top=4744931, t0=\"2018-04\", t1=\"2018-04\"),\n+               srs=\"EPSG:32618\", nx = 497, ny=526, dt=\"P1M\")\n## Temporal extent of the cube does not align with dt and has been extended to 2018-04-01/2018-04-30\n> write_tif(select_bands(raster_cube(L8.col, v), c(\"B04\", \"B05\")), dir=tempdir())\n> \n> \n> \n> cleanEx()\n> nameEx(\"write_zarr\")\n> ### * write_zarr\n> \n> flush(stderr()); flush(stdout())\n> \n> ### Name: write_zarr\n> ### Title: Export a data cube as Zarr dataset\n> ### Aliases: write_zarr\n> \n> ### ** Examples\n> \n> # TODO\n> # create image collection from example Landsat data only \n> # if not already done in other examples\n> if (!file.exists(file.path(tempdir(), \"L8.db\"))) {\n+   L8_files <- list.files(system.file(\"L8NY18\", package = \"gdalcubes\"),\n+                          \".TIF\", recursive = TRUE, full.names = TRUE)\n+   create_image_collection(L8_files, \"L8_L1TP\", file.path(tempdir(), \"L8.db\"), quiet = TRUE) \n+ }\n> \n> L8.col = image_collection(file.path(tempdir(), \"L8.db\"))\n> v = cube_view(extent=list(left=388941.2, right=766552.4, \n+               bottom=4345299, top=4744931, t0=\"2018-04\", t1=\"2018-04\"),\n+               srs=\"EPSG:32618\", nx = 497, ny=526, dt=\"P1M\")\n## Temporal extent of the cube does not align with dt and has been extended to 2018-04-01/2018-04-30\n> write_zarr(select_bands(raster_cube(L8.col, v), c(\"B04\", \"B05\")), fname=tempfile(fileext = \".zarr\"))\nError in write_zarr(select_bands(raster_cube(L8.col, v), c(\"B04\", \"B05\")),  : \n  unused argument (fname = tempfile(fileext = \".zarr\"))\nExecution halted"
+     }
+    }
+   },
+   {
+    "name": "vapour (cran) / gdal-conda:latest",
+    "conclusion": "success",
+    "url": "https://github.com/hypertidy/gdal-r-ci/actions/runs/41745060968/job/126295921840"
+   },
+   {
+    "name": "vapour (github) / gdal-conda:dev",
+    "conclusion": "success",
+    "url": "https://github.com/hypertidy/gdal-r-ci/actions/runs/41745060968/job/126295921842"
    }
   ]
  }

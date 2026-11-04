@@ -518,6 +518,16 @@
   "kind": "image",
   "variant": "latest"
  },
+ "gdal-r-full@sha256:a6a32511aad05d8ff0155468c284ce805baffc94d656212ea7e40b2950cdc90d": {
+  "children": [
+   "sha256:ef17a17e16822765127dc8a9eb6f4b90a7fcd2877e6ed65de7e3b92c8c95bb69",
+   "sha256:ec41eaf2e291ca59122822ae36ccd996fcfc70a6aa66d12891f68ee54ebf869d"
+  ],
+  "compressed": 2232257232,
+  "image_digest": "sha256:ef17a17e16822765127dc8a9eb6f4b90a7fcd2877e6ed65de7e3b92c8c95bb69",
+  "kind": "index",
+  "variant": "latest"
+ },
  "gdal-r-full@sha256:aaf64ff79fcac62d61d8ddd76357ee91cf475b42dba02942b5072d94f72057a6": {
   "children": [],
   "compressed": null,
@@ -685,6 +695,17 @@
   "kind": "image",
   "variant": "latest"
  },
+ "gdal-r-full@sha256:ec41eaf2e291ca59122822ae36ccd996fcfc70a6aa66d12891f68ee54ebf869d": {
+  "children": [],
+  "compressed": null,
+  "kind": "attestation"
+ },
+ "gdal-r-full@sha256:ef17a17e16822765127dc8a9eb6f4b90a7fcd2877e6ed65de7e3b92c8c95bb69": {
+  "children": [],
+  "compressed": 2232257232,
+  "kind": "image",
+  "variant": "latest"
+ },
  "gdal-r-full@sha256:f1c75e70fd958ad75380bc7aa30ec77bfa32e0bc8be9b5c3e30090d429e9c5b9": {
   "children": [
    "sha256:50589e1eacfcd8d4fc027d054a847c6cd993922aca79b452c2af1d5d1f4a15ee",
@@ -742,6 +763,12 @@
   "kind": "index",
   "variant": "latest"
  },
+ "gdal-r-mesh@sha256:5daf3155f0ad54a1f8b69d6b4f5e3af08f98efcc7b14e91ccc4fce28a2e91401": {
+  "children": [],
+  "compressed": 2366829329,
+  "kind": "image",
+  "variant": "latest"
+ },
  "gdal-r-mesh@sha256:5f80c73ca84abfc08971248e253cb763204003b5550ec224a0b3554b481d34a2": {
   "children": [
    "sha256:3efaa5342aa9b1e8bf0b5df06e62d5a3f2908ccc0fa6736df137f094caa0b540",
@@ -751,6 +778,11 @@
   "image_digest": "sha256:3efaa5342aa9b1e8bf0b5df06e62d5a3f2908ccc0fa6736df137f094caa0b540",
   "kind": "index",
   "variant": "latest"
+ },
+ "gdal-r-mesh@sha256:60806f01f01949bf90325966bb7b4de50b0273b9791c867d1f01f836fc6f2222": {
+  "children": [],
+  "compressed": null,
+  "kind": "attestation"
  },
  "gdal-r-mesh@sha256:61e77f703802b96f81e58c271d21935ef7b2730a8cf9a9965492b3e320977377": {
   "children": [],
@@ -776,6 +808,16 @@
   ],
   "compressed": 1979496991,
   "image_digest": "sha256:e5466c2b27d385fb351ccaa4786b718ef05993800452e87c1a7d0e2ad4806369",
+  "kind": "index",
+  "variant": "latest"
+ },
+ "gdal-r-mesh@sha256:c5798333438df638cc871fa9336c8bb84e4f83017059d69e24b1c9d4e3ac0a11": {
+  "children": [
+   "sha256:5daf3155f0ad54a1f8b69d6b4f5e3af08f98efcc7b14e91ccc4fce28a2e91401",
+   "sha256:60806f01f01949bf90325966bb7b4de50b0273b9791c867d1f01f836fc6f2222"
+  ],
+  "compressed": 2366829329,
+  "image_digest": "sha256:5daf3155f0ad54a1f8b69d6b4f5e3af08f98efcc7b14e91ccc4fce28a2e91401",
   "kind": "index",
   "variant": "latest"
  },
@@ -1140,6 +1182,12 @@
   "children": [],
   "compressed": null,
   "kind": "attestation"
+ },
+ "gdal-r-python@sha256:0b0345d5898cfb9a6acb74a8a13992ea62de865d83fe9cb07c1b3b1461457f37": {
+  "children": [],
+  "compressed": 3087137965,
+  "kind": "image",
+  "variant": "latest"
  },
  "gdal-r-python@sha256:1096def38f676dc96dc79eb075a966bb008856a07f047b2cb6ded81a9a34b5a2": {
   "children": [
@@ -1569,6 +1617,16 @@
   "kind": "image",
   "variant": "latest"
  },
+ "gdal-r-python@sha256:e36442ecbf8137bfe1c36f7fbb5ef526f6560648966755912ef2dd4abd4e1c0c": {
+  "children": [
+   "sha256:0b0345d5898cfb9a6acb74a8a13992ea62de865d83fe9cb07c1b3b1461457f37",
+   "sha256:ef48befcfb3b7b5b8214b57c5b03eaa858eb4abc0a7886567b572f01121f1150"
+  ],
+  "compressed": 3087137965,
+  "image_digest": "sha256:0b0345d5898cfb9a6acb74a8a13992ea62de865d83fe9cb07c1b3b1461457f37",
+  "kind": "index",
+  "variant": "latest"
+ },
  "gdal-r-python@sha256:e6c69222500c2794181783df2476b7abd0976992b8cc92e86675579c97fab3b1": {
   "children": [],
   "compressed": 3091885760,
@@ -1576,6 +1634,11 @@
   "variant": "dev"
  },
  "gdal-r-python@sha256:e7fd6f24f6bda41103a664c606d1ce2f71fbab0908d7992f8207cd6329a736fa": {
+  "children": [],
+  "compressed": null,
+  "kind": "attestation"
+ },
+ "gdal-r-python@sha256:ef48befcfb3b7b5b8214b57c5b03eaa858eb4abc0a7886567b572f01121f1150": {
   "children": [],
   "compressed": null,
   "kind": "attestation"
