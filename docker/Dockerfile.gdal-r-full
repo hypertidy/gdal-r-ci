@@ -52,11 +52,38 @@ RUN if [ "${IMAGE_VARIANT}" = "release" ]; then \
             || echo "WARNING: version misalignment on dev variant — check logs"; \
     fi
 
+# ── Quarto CLI ───────────────────────────────────────────────────────────────
+# Needed by pkgdown (Quarto-format vignettes) and by the R quarto package at
+# runtime. We install the CLI here rather than in gdal-r-python-extras so
+# that gdal-r-full can serve as a pkgdown/docs build base without Python.
+# Version pinned — bump deliberately; check https://github.com/quarto-dev/quarto-cli/releases
+ARG QUARTO_VERSION=1.6.42
+RUN ARCH=$(dpkg --print-architecture) \
+ && case "$ARCH" in \
+      amd64) QUARTO_ARCH="linux-amd64" ;; \
+      arm64) QUARTO_ARCH="linux-arm64" ;; \
+      *) echo "Unsupported arch: $ARCH" && exit 1 ;; \
+    esac \
+ && curl -fsSL "https://github.com/quarto-dev/quarto-cli/releases/download/v${QUARTO_VERSION}/quarto-${QUARTO_VERSION}-${QUARTO_ARCH}.tar.gz" \
+      | tar xz -C /usr/local --strip-components=1 \
+ && quarto --version
+
+# ── pak + pkgdown ────────────────────────────────────────────────────────────
+# pak is the install driver used downstream; pkgdown is baked here so the
+# image can build R package documentation sites without the extras layer.
+RUN Rscript -e " \
+  install.packages('pak', \
+    repos = sprintf('https://r-lib.github.io/p/pak/stable/%s/%s/%s', \
+      .Platform\$pkgType, R.Version()\$os, R.Version()\$arch)); \
+  pak::pkg_install(c('pkgdown', 'quarto'), ask = FALSE) \
+"
+
 # ── MOTD: refreshed for this image (no Python yet — added in gdal-r-python)
 RUN { \
         echo "── ghcr.io/hypertidy/gdal-r-full ──" ; \
         echo "GDAL $(gdal-config --version)   PROJ $(pkg-config --modversion proj)   GEOS $(geos-config --version)" ; \
         echo "R    $(R --version 2>/dev/null | head -1 | grep -oE '[0-9]+\.[0-9]+\.[0-9]+')   (sf, terra, gdalraster, vapour, gdalcubes)" ; \
+        echo "Quarto $(quarto --version)   pak + pkgdown" ; \
         echo "" ; \
         echo "Docs: https://github.com/hypertidy/gdal-r-ci#gdal-r-full" ; \
     } > /etc/gdal-r-ci-motd
