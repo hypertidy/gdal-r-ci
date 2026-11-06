@@ -313,6 +313,15 @@
  ],
  "gdal-r-python": [
   {
+   "digest": "sha256:dee4053241f85c5600a1ecfaa09fb3787e8a6d1dfaf3be2daa6b6b227578eb62",
+   "created": "2026-11-06T00:26:01Z",
+   "tags": [
+    "dev"
+   ],
+   "variant": "dev",
+   "compressed": 3097065749
+  },
+  {
    "digest": "sha256:5cbf7eb944e936e1562f78ee4a6e82664d9308e1dc866cc9ea63a20eae1fa922",
    "created": "2026-11-06T00:17:05Z",
    "tags": [
@@ -331,9 +340,7 @@
   {
    "digest": "sha256:5d59bfe466b88dafdc96f6fb4ddff28b8a5d81112c9ada4567bd730e397a868a",
    "created": "2026-11-01T22:46:07Z",
-   "tags": [
-    "dev"
-   ],
+   "tags": [],
    "variant": "dev",
    "compressed": 2835088014
   },
@@ -406,13 +413,6 @@
    "tags": [],
    "variant": "dev",
    "compressed": 2831761704
-  },
-  {
-   "digest": "sha256:dfa43b6721f80a96cb5a02294b63aafae943910f1c48d2f30a91821c1c29f9af",
-   "created": "2026-10-21T23:08:16Z",
-   "tags": [],
-   "variant": "latest",
-   "compressed": 2822700885
   }
  ],
  "gdal-r-python-extras": [
