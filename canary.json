@@ -282,16 +282,16 @@
   }
  ],
  "conda_run": {
-  "id": 41745060968,
-  "created": "2026-11-04T00:12:22Z",
+  "id": 42137753330,
+  "created": "2026-11-06T00:34:01Z",
   "conclusion": "failure",
-  "url": "https://github.com/hypertidy/gdal-r-ci/actions/runs/41745060968",
+  "url": "https://github.com/hypertidy/gdal-r-ci/actions/runs/42137753330",
   "event": "workflow_run",
   "cells": [
    {
     "name": "sf (cran) / gdal-conda:dev",
     "conclusion": "failure",
-    "url": "https://github.com/hypertidy/gdal-r-ci/actions/runs/41745060968/job/126295921529",
+    "url": "https://github.com/hypertidy/gdal-r-ci/actions/runs/42137753330/job/127630146349",
     "diagnosis": {
      "reason": "tests: ERROR",
      "snippets": {
@@ -302,19 +302,9 @@
     }
    },
    {
-    "name": "gdalraster (github) / gdal-conda:dev",
-    "conclusion": "success",
-    "url": "https://github.com/hypertidy/gdal-r-ci/actions/runs/41745060968/job/126295921543"
-   },
-   {
-    "name": "terra (github) / gdal-conda:dev",
-    "conclusion": "success",
-    "url": "https://github.com/hypertidy/gdal-r-ci/actions/runs/41745060968/job/126295921592"
-   },
-   {
     "name": "sf (cran) / gdal-conda:latest",
     "conclusion": "failure",
-    "url": "https://github.com/hypertidy/gdal-r-ci/actions/runs/41745060968/job/126295921606",
+    "url": "https://github.com/hypertidy/gdal-r-ci/actions/runs/42137753330/job/127630146357",
     "diagnosis": {
      "reason": "examples: ERROR",
      "snippets": {
@@ -324,36 +314,34 @@
     }
    },
    {
+    "name": "gdalraster (cran) / gdal-conda:latest",
+    "conclusion": "success",
+    "url": "https://github.com/hypertidy/gdal-r-ci/actions/runs/42137753330/job/127630146377"
+   },
+   {
+    "name": "terra (github) / gdal-conda:dev",
+    "conclusion": "success",
+    "url": "https://github.com/hypertidy/gdal-r-ci/actions/runs/42137753330/job/127630146404"
+   },
+   {
     "name": "terra (cran) / gdal-conda:dev",
     "conclusion": "success",
-    "url": "https://github.com/hypertidy/gdal-r-ci/actions/runs/41745060968/job/126295921664"
+    "url": "https://github.com/hypertidy/gdal-r-ci/actions/runs/42137753330/job/127630146417"
    },
    {
-    "name": "gdalcubes (github) / gdal-conda:dev",
-    "conclusion": "failure",
-    "url": "https://github.com/hypertidy/gdal-r-ci/actions/runs/41745060968/job/126295921670",
-    "diagnosis": {
-     "reason": "examples: ERROR",
-     "snippets": {
-      "gdalcubes.Rcheck/00check.log": "  this requires 'nm' to be on the PATH\nWarning in read_symbols_from_object_file(so) :\n  this requires 'nm' to be on the PATH\n\n\nSee \u2018Writing portable packages\u2019 in the \u2018Writing R Extensions\u2019 manual.\n* checking files in \u2018vignettes\u2019 ... SKIPPED\n* checking examples ... ERROR\nRunning examples in \u2018gdalcubes-Ex.R\u2019 failed\nThe error most likely occurred in:\n\n> ### Name: write_zarr\n> ### Title: Export a data cube as Zarr dataset\n> ### Aliases: write_zarr\n> \n> ### ** Examples\n> \n> # TODO\n> # create image collection from example Landsat data only \n> # if not already done in other examples\n> if (!file.exists(file.path(tempdir(), \"L8.db\"))) {\n+   L8_files <- list.files(system.file(\"L8NY18\", package = \"gdalcubes\"),\n+                          \".TIF\", recursive = TRUE, full.names = TRUE)\n+   create_image_collection(L8_files, \"L8_L1TP\", file.path(tempdir(), \"L8.db\"), quiet = TRUE) \n+ }\n> \n> L8.col = image_collection(file.path(tempdir(), \"L8.db\"))\n> v = cube_view(extent=list(left=388941.2, right=766552.4, \n+               bottom=4345299, top=4744931, t0=\"2018-04\", t1=\"2018-04\"),\n+               srs=\"EPSG:32618\", nx = 497, ny=526, dt=\"P1M\")\n## Temporal extent of the cube does not align with dt and has been extended to 2018-04-01/2018-04-30\n> write_zarr(select_bands(raster_cube(L8.col, v), c(\"B04\", \"B05\")), fname=tempfile(fileext = \".zarr\"))\nError in write_zarr(select_bands(raster_cube(L8.col, v), c(\"B04\", \"B05\")),  : \n  unused argument (fname = tempfile(fileext = \".zarr\"))\nExecution halted\n* checking for unstated dependencies in \u2018tests\u2019 ... OK\n* checking tests ... OK\n  Running \u2018tinytest.R\u2019\n* DONE\nStatus: 1 ERROR, 1 WARNING, 1 NOTE",
-      "gdalcubes.Rcheck/gdalcubes-Ex.Rout": "> \n> L8.col = image_collection(file.path(tempdir(), \"L8.db\"))\n> v = cube_view(extent=list(left=388941.2, right=766552.4, \n+               bottom=4345299, top=4744931, t0=\"2018-04\", t1=\"2018-04\"),\n+               srs=\"EPSG:32618\", nx = 497, ny=526, dt=\"P1M\")\n## Temporal extent of the cube does not align with dt and has been extended to 2018-04-01/2018-04-30\n> write_tif(select_bands(raster_cube(L8.col, v), c(\"B04\", \"B05\")), dir=tempdir())\n> \n> \n> \n> cleanEx()\n> nameEx(\"write_zarr\")\n> ### * write_zarr\n> \n> flush(stderr()); flush(stdout())\n> \n> ### Name: write_zarr\n> ### Title: Export a data cube as Zarr dataset\n> ### Aliases: write_zarr\n> \n> ### ** Examples\n> \n> # TODO\n> # create image collection from example Landsat data only \n> # if not already done in other examples\n> if (!file.exists(file.path(tempdir(), \"L8.db\"))) {\n+   L8_files <- list.files(system.file(\"L8NY18\", package = \"gdalcubes\"),\n+                          \".TIF\", recursive = TRUE, full.names = TRUE)\n+   create_image_collection(L8_files, \"L8_L1TP\", file.path(tempdir(), \"L8.db\"), quiet = TRUE) \n+ }\n> \n> L8.col = image_collection(file.path(tempdir(), \"L8.db\"))\n> v = cube_view(extent=list(left=388941.2, right=766552.4, \n+               bottom=4345299, top=4744931, t0=\"2018-04\", t1=\"2018-04\"),\n+               srs=\"EPSG:32618\", nx = 497, ny=526, dt=\"P1M\")\n## Temporal extent of the cube does not align with dt and has been extended to 2018-04-01/2018-04-30\n> write_zarr(select_bands(raster_cube(L8.col, v), c(\"B04\", \"B05\")), fname=tempfile(fileext = \".zarr\"))\nError in write_zarr(select_bands(raster_cube(L8.col, v), c(\"B04\", \"B05\")),  : \n  unused argument (fname = tempfile(fileext = \".zarr\"))\nExecution halted"
-     }
-    }
-   },
-   {
-    "name": "gdalraster (github) / gdal-conda:latest",
+    "name": "vapour (github) / gdal-conda:dev",
     "conclusion": "success",
-    "url": "https://github.com/hypertidy/gdal-r-ci/actions/runs/41745060968/job/126295921691"
+    "url": "https://github.com/hypertidy/gdal-r-ci/actions/runs/42137753330/job/127630146419"
    },
    {
     "name": "gdalcubes (cran) / gdal-conda:latest",
     "conclusion": "success",
-    "url": "https://github.com/hypertidy/gdal-r-ci/actions/runs/41745060968/job/126295921693"
+    "url": "https://github.com/hypertidy/gdal-r-ci/actions/runs/42137753330/job/127630146446"
    },
    {
     "name": "sf (github) / gdal-conda:latest",
     "conclusion": "failure",
-    "url": "https://github.com/hypertidy/gdal-r-ci/actions/runs/41745060968/job/126295921697",
+    "url": "https://github.com/hypertidy/gdal-r-ci/actions/runs/42137753330/job/127630146456",
     "diagnosis": {
      "reason": "tests: ERROR",
      "snippets": {
@@ -364,19 +352,34 @@
     }
    },
    {
-    "name": "gdalraster (cran) / gdal-conda:latest",
+    "name": "gdalraster (github) / gdal-conda:dev",
     "conclusion": "success",
-    "url": "https://github.com/hypertidy/gdal-r-ci/actions/runs/41745060968/job/126295921698"
+    "url": "https://github.com/hypertidy/gdal-r-ci/actions/runs/42137753330/job/127630146464"
    },
    {
-    "name": "gdalraster (cran) / gdal-conda:dev",
+    "name": "vapour (github) / gdal-conda:latest",
     "conclusion": "success",
-    "url": "https://github.com/hypertidy/gdal-r-ci/actions/runs/41745060968/job/126295921707"
+    "url": "https://github.com/hypertidy/gdal-r-ci/actions/runs/42137753330/job/127630146481"
+   },
+   {
+    "name": "terra (cran) / gdal-conda:latest",
+    "conclusion": "success",
+    "url": "https://github.com/hypertidy/gdal-r-ci/actions/runs/42137753330/job/127630146485"
+   },
+   {
+    "name": "vapour (cran) / gdal-conda:dev",
+    "conclusion": "success",
+    "url": "https://github.com/hypertidy/gdal-r-ci/actions/runs/42137753330/job/127630146488"
+   },
+   {
+    "name": "vapour (cran) / gdal-conda:latest",
+    "conclusion": "success",
+    "url": "https://github.com/hypertidy/gdal-r-ci/actions/runs/42137753330/job/127630146497"
    },
    {
     "name": "sf (github) / gdal-conda:dev",
     "conclusion": "failure",
-    "url": "https://github.com/hypertidy/gdal-r-ci/actions/runs/41745060968/job/126295921711",
+    "url": "https://github.com/hypertidy/gdal-r-ci/actions/runs/42137753330/job/127630146498",
     "diagnosis": {
      "reason": "tests: ERROR",
      "snippets": {
@@ -389,49 +392,32 @@
    {
     "name": "terra (github) / gdal-conda:latest",
     "conclusion": "success",
-    "url": "https://github.com/hypertidy/gdal-r-ci/actions/runs/41745060968/job/126295921728"
+    "url": "https://github.com/hypertidy/gdal-r-ci/actions/runs/42137753330/job/127630146523"
    },
    {
-    "name": "terra (cran) / gdal-conda:latest",
+    "name": "gdalraster (github) / gdal-conda:latest",
     "conclusion": "success",
-    "url": "https://github.com/hypertidy/gdal-r-ci/actions/runs/41745060968/job/126295921732"
+    "url": "https://github.com/hypertidy/gdal-r-ci/actions/runs/42137753330/job/127630146526"
    },
    {
     "name": "gdalcubes (cran) / gdal-conda:dev",
     "conclusion": "success",
-    "url": "https://github.com/hypertidy/gdal-r-ci/actions/runs/41745060968/job/126295921739"
+    "url": "https://github.com/hypertidy/gdal-r-ci/actions/runs/42137753330/job/127630146528"
    },
    {
-    "name": "vapour (github) / gdal-conda:latest",
+    "name": "gdalcubes (github) / gdal-conda:dev",
     "conclusion": "success",
-    "url": "https://github.com/hypertidy/gdal-r-ci/actions/runs/41745060968/job/126295921741"
+    "url": "https://github.com/hypertidy/gdal-r-ci/actions/runs/42137753330/job/127630146567"
    },
    {
-    "name": "vapour (cran) / gdal-conda:dev",
+    "name": "gdalraster (cran) / gdal-conda:dev",
     "conclusion": "success",
-    "url": "https://github.com/hypertidy/gdal-r-ci/actions/runs/41745060968/job/126295921799"
+    "url": "https://github.com/hypertidy/gdal-r-ci/actions/runs/42137753330/job/127630146573"
    },
    {
     "name": "gdalcubes (github) / gdal-conda:latest",
-    "conclusion": "failure",
-    "url": "https://github.com/hypertidy/gdal-r-ci/actions/runs/41745060968/job/126295921809",
-    "diagnosis": {
-     "reason": "examples: ERROR",
-     "snippets": {
-      "gdalcubes.Rcheck/00check.log": "  this requires 'nm' to be on the PATH\nWarning in read_symbols_from_object_file(so) :\n  this requires 'nm' to be on the PATH\n\n\nSee \u2018Writing portable packages\u2019 in the \u2018Writing R Extensions\u2019 manual.\n* checking files in \u2018vignettes\u2019 ... SKIPPED\n* checking examples ... ERROR\nRunning examples in \u2018gdalcubes-Ex.R\u2019 failed\nThe error most likely occurred in:\n\n> ### Name: write_zarr\n> ### Title: Export a data cube as Zarr dataset\n> ### Aliases: write_zarr\n> \n> ### ** Examples\n> \n> # TODO\n> # create image collection from example Landsat data only \n> # if not already done in other examples\n> if (!file.exists(file.path(tempdir(), \"L8.db\"))) {\n+   L8_files <- list.files(system.file(\"L8NY18\", package = \"gdalcubes\"),\n+                          \".TIF\", recursive = TRUE, full.names = TRUE)\n+   create_image_collection(L8_files, \"L8_L1TP\", file.path(tempdir(), \"L8.db\"), quiet = TRUE) \n+ }\n> \n> L8.col = image_collection(file.path(tempdir(), \"L8.db\"))\n> v = cube_view(extent=list(left=388941.2, right=766552.4, \n+               bottom=4345299, top=4744931, t0=\"2018-04\", t1=\"2018-04\"),\n+               srs=\"EPSG:32618\", nx = 497, ny=526, dt=\"P1M\")\n## Temporal extent of the cube does not align with dt and has been extended to 2018-04-01/2018-04-30\n> write_zarr(select_bands(raster_cube(L8.col, v), c(\"B04\", \"B05\")), fname=tempfile(fileext = \".zarr\"))\nError in write_zarr(select_bands(raster_cube(L8.col, v), c(\"B04\", \"B05\")),  : \n  unused argument (fname = tempfile(fileext = \".zarr\"))\nExecution halted\n* checking for unstated dependencies in \u2018tests\u2019 ... OK\n* checking tests ... OK\n  Running \u2018tinytest.R\u2019\n* DONE\nStatus: 1 ERROR, 1 WARNING, 1 NOTE",
-      "gdalcubes.Rcheck/gdalcubes-Ex.Rout": "> \n> L8.col = image_collection(file.path(tempdir(), \"L8.db\"))\n> v = cube_view(extent=list(left=388941.2, right=766552.4, \n+               bottom=4345299, top=4744931, t0=\"2018-04\", t1=\"2018-04\"),\n+               srs=\"EPSG:32618\", nx = 497, ny=526, dt=\"P1M\")\n## Temporal extent of the cube does not align with dt and has been extended to 2018-04-01/2018-04-30\n> write_tif(select_bands(raster_cube(L8.col, v), c(\"B04\", \"B05\")), dir=tempdir())\n> \n> \n> \n> cleanEx()\n> nameEx(\"write_zarr\")\n> ### * write_zarr\n> \n> flush(stderr()); flush(stdout())\n> \n> ### Name: write_zarr\n> ### Title: Export a data cube as Zarr dataset\n> ### Aliases: write_zarr\n> \n> ### ** Examples\n> \n> # TODO\n> # create image collection from example Landsat data only \n> # if not already done in other examples\n> if (!file.exists(file.path(tempdir(), \"L8.db\"))) {\n+   L8_files <- list.files(system.file(\"L8NY18\", package = \"gdalcubes\"),\n+                          \".TIF\", recursive = TRUE, full.names = TRUE)\n+   create_image_collection(L8_files, \"L8_L1TP\", file.path(tempdir(), \"L8.db\"), quiet = TRUE) \n+ }\n> \n> L8.col = image_collection(file.path(tempdir(), \"L8.db\"))\n> v = cube_view(extent=list(left=388941.2, right=766552.4, \n+               bottom=4345299, top=4744931, t0=\"2018-04\", t1=\"2018-04\"),\n+               srs=\"EPSG:32618\", nx = 497, ny=526, dt=\"P1M\")\n## Temporal extent of the cube does not align with dt and has been extended to 2018-04-01/2018-04-30\n> write_zarr(select_bands(raster_cube(L8.col, v), c(\"B04\", \"B05\")), fname=tempfile(fileext = \".zarr\"))\nError in write_zarr(select_bands(raster_cube(L8.col, v), c(\"B04\", \"B05\")),  : \n  unused argument (fname = tempfile(fileext = \".zarr\"))\nExecution halted"
-     }
-    }
-   },
-   {
-    "name": "vapour (cran) / gdal-conda:latest",
     "conclusion": "success",
-    "url": "https://github.com/hypertidy/gdal-r-ci/actions/runs/41745060968/job/126295921840"
-   },
-   {
-    "name": "vapour (github) / gdal-conda:dev",
-    "conclusion": "success",
-    "url": "https://github.com/hypertidy/gdal-r-ci/actions/runs/41745060968/job/126295921842"
+    "url": "https://github.com/hypertidy/gdal-r-ci/actions/runs/42137753330/job/127630146799"
    }
   ]
  }

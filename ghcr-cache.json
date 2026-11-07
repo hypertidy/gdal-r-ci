@@ -1,4 +1,14 @@
 {
+ "gdal-conda@sha256:0414077760c4b4345c755f1bb188180a2196f89f48bba2c2efd179b85b06d48f": {
+  "children": [],
+  "compressed": null,
+  "kind": "attestation"
+ },
+ "gdal-conda@sha256:05b401039cb4ea3ad2f340b5036c52ca282deeabe8dd2dea428a00a1d753632a": {
+  "children": [],
+  "compressed": null,
+  "kind": "attestation"
+ },
  "gdal-conda@sha256:16f4e8b44b010bc60675306a4a67203e79b205542b9f3119623077203b1f160b": {
   "children": [
    "sha256:fdef2c3cf7c9a3ba621e1f4ac44fd519c53910b6130cc5720f8e4939df56bc47",
@@ -55,6 +65,16 @@
   "children": [],
   "compressed": 884309574,
   "kind": "image",
+  "variant": "dev"
+ },
+ "gdal-conda@sha256:5deb71adce4dc5fb312f60d19dbc66a4d0b1121f75c91cc76d8c43fbeba76251": {
+  "children": [
+   "sha256:d4209612fa3263a218de9ec954f068637e4a1b1a62b58ff449e7c8353f8b0034",
+   "sha256:0414077760c4b4345c755f1bb188180a2196f89f48bba2c2efd179b85b06d48f"
+  ],
+  "compressed": 891696314,
+  "image_digest": "sha256:d4209612fa3263a218de9ec954f068637e4a1b1a62b58ff449e7c8353f8b0034",
+  "kind": "index",
   "variant": "dev"
  },
  "gdal-conda@sha256:618a68f39bf20127a2ae0df55bf6b0ec6bd66120f11db1e6c994f92b78f3327a": {
@@ -166,6 +186,16 @@
   "compressed": null,
   "kind": "attestation"
  },
+ "gdal-conda@sha256:b39f3681899cab0985ae6f87390e3ec30d5ccb134b36f6840017e1f81333e77f": {
+  "children": [
+   "sha256:d4209612fa3263a218de9ec954f068637e4a1b1a62b58ff449e7c8353f8b0034",
+   "sha256:05b401039cb4ea3ad2f340b5036c52ca282deeabe8dd2dea428a00a1d753632a"
+  ],
+  "compressed": 891696314,
+  "image_digest": "sha256:d4209612fa3263a218de9ec954f068637e4a1b1a62b58ff449e7c8353f8b0034",
+  "kind": "index",
+  "variant": "dev"
+ },
  "gdal-conda@sha256:bb0483ccb65f06e5ae1dcf4b3a6d54d8596508dbd9759f00d22760150a4ac92d": {
   "children": [],
   "compressed": 882682040,
@@ -176,6 +206,12 @@
   "children": [],
   "compressed": null,
   "kind": "attestation"
+ },
+ "gdal-conda@sha256:d4209612fa3263a218de9ec954f068637e4a1b1a62b58ff449e7c8353f8b0034": {
+  "children": [],
+  "compressed": 891696314,
+  "kind": "image",
+  "variant": "dev"
  },
  "gdal-conda@sha256:dad8ef54ca72716602b05a11f8e7cf5ad158299866575920bf5f4b820beabdfb": {
   "children": [],
