@@ -192,10 +192,14 @@ pak::pkg_install(
 message("\n== Phase B: cloud / http / pipeline / tidy / dev (binary) ==")
 options(repos = c(PPM = PPM, CRAN = CRAN))
 
-Sys.setenv(LIBARROW_BINARY = "false",
-           ARROW_USE_PKG_CONFIG = "true",
-           ARROW_R_DEV = "false")
-install.packages("arrow", type = "source")
+# R arrow comes from gdal-r-full (scripts/install-arrow.R), built on the
+# system Arrow C++. Only build it here if a base image lacks it.
+if (!requireNamespace("arrow", quietly = TRUE)) {
+  Sys.setenv(LIBARROW_BINARY = "false",
+             ARROW_USE_PKG_CONFIG = "true",
+             ARROW_R_DEV = "false")
+  install.packages("arrow", type = "source")
+}
 
 pak::pkg_install(
   c(cloud, http, pipeline, tidy, dev),

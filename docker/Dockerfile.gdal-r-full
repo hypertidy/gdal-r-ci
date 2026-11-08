@@ -15,18 +15,26 @@ FROM ${BASE_IMAGE}
 ARG IMAGE_VARIANT=release
 
 LABEL org.opencontainers.image.source="https://github.com/hypertidy/gdal-r-ci"
-LABEL org.opencontainers.image.description="Core GDAL R packages: gdalraster, sf, terra, vapour, gdalcubes"
+LABEL org.opencontainers.image.description="Core GDAL R packages: gdalraster, sf, terra, vapour, gdalcubes; R arrow on the system Arrow C++"
 LABEL org.opencontainers.image.documentation="https://github.com/hypertidy/gdal-r-ci#gdal-r-full"
 
 COPY scripts/check-r-versions.R    /opt/scripts/check-r-versions.R
 COPY scripts/install-required.R    /opt/scripts/install-required.R
 COPY scripts/install-optional.R    /opt/scripts/install-optional.R
+COPY scripts/install-arrow.R       /opt/scripts/install-arrow.R
 COPY scripts/strip-r-libs.sh      /opt/scripts/strip-r-libs.sh
 COPY config/r-packages-required.txt /tmp/r-packages-required.txt
 COPY config/r-packages-optional.txt  /tmp/r-packages-optional.txt
 
 # Record which variant this image is
 RUN echo "${IMAGE_VARIANT}" > /opt/image_variant.txt
+
+# -- R arrow, on the system Arrow C++ ------------------------------------------
+# Before SET A/B on purpose: arrow doesn't link GDAL, so GitHub-HEAD churn in
+# gdalraster, sf and terra below doesn't invalidate this (slow) layer.
+# Same Arrow major as gdal-system's apt libarrow; one libarrow per process.
+# Downstream CI should use this build (no NOT_CRAN / LIBARROW_BINARY).
+RUN touch /tmp/r-stamp && Rscript /opt/scripts/install-arrow.R && bash /opt/scripts/strip-r-libs.sh /tmp/r-stamp
 
 # ── SET A: Required packages ──────────────────────────────────────────────────
 # For release: failure is fatal (something is genuinely broken)
@@ -83,6 +91,7 @@ RUN { \
         echo "── ghcr.io/hypertidy/gdal-r-full ──" ; \
         echo "GDAL $(gdal-config --version)   PROJ $(pkg-config --modversion proj)   GEOS $(geos-config --version)" ; \
         echo "R    $(R --version 2>/dev/null | head -1 | grep -oE '[0-9]+\.[0-9]+\.[0-9]+')   (sf, terra, gdalraster, vapour, gdalcubes)" ; \
+        echo "Arrow $(pkg-config --modversion arrow)   (R arrow on the system libarrow)" ; \
         echo "Quarto $(quarto --version)   pak + pkgdown" ; \
         echo "" ; \
         echo "Docs: https://github.com/hypertidy/gdal-r-ci#gdal-r-full" ; \
