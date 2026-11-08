@@ -21,11 +21,43 @@ Sys.setenv(
   NOT_CRAN             = "false"
 )
 
+# Pre-flight: R arrow's configure takes its compile and link flags from one
+# pkg-config query over every module the C++ build has. If any one .pc file
+# is missing (Arrow 26: "arrow-s3" when libarrow-s3-dev isn't installed),
+# the whole query fails, arrow.so links without -larrow, and the install
+# dies later with an "undefined symbol" load error. Check up front.
+pc_exists <- function(m) {
+  system2("pkg-config", c("--exists", m)) == 0L
+}
+config_h <- "/usr/include/arrow/util/config.h"
+has_flag <- function(flag) {
+  file.exists(config_h) &&
+    any(grepl(paste0("^#define ", flag, "\\b"), readLines(config_h)))
+}
+needed <- c("arrow", "parquet", "arrow-dataset", "arrow-acero")
+if (has_flag("ARROW_S3") && major >= 26L) needed <- c(needed, "arrow-s3")
+absent <- needed[!vapply(needed, pc_exists, logical(1))]
+message("pkg-config modules needed: ", paste(needed, collapse = " "))
+if (length(absent) > 0L) {
+  stop("pkg-config can't find: ", paste(absent, collapse = ", "),
+       "\nInstall the matching apt dev package(s) in gdal-system, e.g. ",
+       paste0("lib", absent, "-dev", collapse = " "), ".")
+}
+
 repos <- c(CRAN = Sys.getenv("CRAN_URL", "https://cloud.r-project.org"))
 spec <- sprintf(">= %d.0.0, < %d.0.0", major, major + 1L)
 message("Installing R arrow ", spec, " from source")
-remotes::install_version("arrow", version = spec, repos = repos,
-                         type = "source", upgrade = "never")
+# install_version() only warns when the package fails to install; make that
+# fatal so the error shown is the install failure, not a later library().
+withCallingHandlers(
+  remotes::install_version("arrow", version = spec, repos = repos,
+                           type = "source", upgrade = "never"),
+  warning = function(w) {
+    if (grepl("non-zero exit status", conditionMessage(w))) {
+      stop("R arrow failed to install: ", conditionMessage(w), call. = FALSE)
+    }
+  }
+)
 
 # Verify: loads, same major, and links the shared system libarrow.
 library(arrow)
