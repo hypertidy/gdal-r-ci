@@ -537,11 +537,18 @@
  ],
  "gdal-r-mesh": [
   {
-   "digest": "sha256:c5798333438df638cc871fa9336c8bb84e4f83017059d69e24b1c9d4e3ac0a11",
-   "created": "2026-11-04T22:55:37Z",
+   "digest": "sha256:351fdfaa0c0b7e992bbec92556f0e93c0fb334f5dd60d42db229505af9112781",
+   "created": "2026-11-08T22:29:20Z",
    "tags": [
     "latest"
    ],
+   "variant": "latest",
+   "compressed": 2403331430
+  },
+  {
+   "digest": "sha256:c5798333438df638cc871fa9336c8bb84e4f83017059d69e24b1c9d4e3ac0a11",
+   "created": "2026-11-04T22:55:37Z",
+   "tags": [],
    "variant": "latest",
    "compressed": 2366829329
   },

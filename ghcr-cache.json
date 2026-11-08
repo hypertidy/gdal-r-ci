@@ -909,6 +909,16 @@
   "compressed": null,
   "kind": "attestation"
  },
+ "gdal-r-mesh@sha256:351fdfaa0c0b7e992bbec92556f0e93c0fb334f5dd60d42db229505af9112781": {
+  "children": [
+   "sha256:ba55dd2265d0d4fd5f5f6c7427b2670786def7ccef498545f9f3ab16f8cb353f",
+   "sha256:8583214b9aeb3cd21b55c7776cbc9a48a660fc104d25de292f7fd0856433db81"
+  ],
+  "compressed": 2403331430,
+  "image_digest": "sha256:ba55dd2265d0d4fd5f5f6c7427b2670786def7ccef498545f9f3ab16f8cb353f",
+  "kind": "index",
+  "variant": "latest"
+ },
  "gdal-r-mesh@sha256:3efaa5342aa9b1e8bf0b5df06e62d5a3f2908ccc0fa6736df137f094caa0b540": {
   "children": [],
   "compressed": 2103613341,
@@ -955,6 +965,17 @@
  "gdal-r-mesh@sha256:8375986f6aca85c25109ec2bf80bc4e82dcaf21adf64864ecf534805fb95a925": {
   "children": [],
   "compressed": 2105415612,
+  "kind": "image",
+  "variant": "latest"
+ },
+ "gdal-r-mesh@sha256:8583214b9aeb3cd21b55c7776cbc9a48a660fc104d25de292f7fd0856433db81": {
+  "children": [],
+  "compressed": null,
+  "kind": "attestation"
+ },
+ "gdal-r-mesh@sha256:ba55dd2265d0d4fd5f5f6c7427b2670786def7ccef498545f9f3ab16f8cb353f": {
+  "children": [],
+  "compressed": 2403331430,
   "kind": "image",
   "variant": "latest"
  },
