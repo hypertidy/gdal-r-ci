@@ -91,6 +91,10 @@ RUN curl -fsSL https://raw.githubusercontent.com/ArashPartow/exprtk/master/exprt
 #   fallback. pyarrow's version pin in gdal-r-python follows pkg-config, so
 #   either source keeps one libarrow per process.
 ARG ARROW_SOURCE=apache
+# libarrow-s3-dev: Arrow 26 split the S3 filesystem into its own library
+#   (libarrow_s3, pkg-config "arrow-s3"). R arrow's configure asks pkg-config
+#   for it and, if the .pc is missing, gets no -larrow at all. Installed when
+#   the repo has it (older Arrow, or Ubuntu's own packages, don't).
 RUN apt-get update -qq \
     && apt-get install -y --no-install-recommends gpg \
     && if [ "${ARROW_SOURCE}" = "apache" ]; then \
@@ -103,8 +107,11 @@ RUN apt-get update -qq \
              > /etc/apt/sources.list.d/apache-arrow.list ; \
        fi \
     && apt-get update -qq \
-    && apt-get install -y --no-install-recommends \
-        libarrow-dev libparquet-dev libarrow-dataset-dev libarrow-acero-dev \
+    && arrow_pkgs="libarrow-dev libparquet-dev libarrow-dataset-dev libarrow-acero-dev" \
+    && if apt-cache show libarrow-s3-dev >/dev/null 2>&1; then \
+         arrow_pkgs="${arrow_pkgs} libarrow-s3-dev"; \
+       fi \
+    && apt-get install -y --no-install-recommends ${arrow_pkgs} \
     && rm -rf /var/lib/apt/lists/*
 
 # ── 3. Python venv with numpy 2.x — established BEFORE GDAL builds ──────────
@@ -176,6 +183,7 @@ RUN echo "=== Library versions ===" \
     && echo "PROJ: $(pkg-config --modversion proj)" \
     && echo "GEOS: $(geos-config --version)" \
     && echo "Arrow: $(pkg-config --modversion arrow)" \
+    && echo "Arrow pkg-config modules: $(pkg-config --list-all | grep -oE '^(arrow|parquet)[^ ]*' | sort | tr '\n' ' ')" \
     && echo "Base: $(. /etc/os-release; echo $PRETTY_NAME)" \
     && echo "" \
     && echo "=== numpy + osgeo (one ABI through both) ===" \
