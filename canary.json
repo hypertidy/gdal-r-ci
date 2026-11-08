@@ -282,16 +282,36 @@
   }
  ],
  "conda_run": {
-  "id": 42137753330,
-  "created": "2026-11-06T00:34:01Z",
+  "id": 42423086017,
+  "created": "2026-11-07T22:58:42Z",
   "conclusion": "failure",
-  "url": "https://github.com/hypertidy/gdal-r-ci/actions/runs/42137753330",
+  "url": "https://github.com/hypertidy/gdal-r-ci/actions/runs/42423086017",
   "event": "workflow_run",
   "cells": [
    {
+    "name": "gdalcubes (cran) / gdal-conda:latest",
+    "conclusion": "success",
+    "url": "https://github.com/hypertidy/gdal-r-ci/actions/runs/42423086017/job/128555545311"
+   },
+   {
+    "name": "gdalraster (github) / gdal-conda:latest",
+    "conclusion": "success",
+    "url": "https://github.com/hypertidy/gdal-r-ci/actions/runs/42423086017/job/128555545312"
+   },
+   {
+    "name": "terra (github) / gdal-conda:latest",
+    "conclusion": "success",
+    "url": "https://github.com/hypertidy/gdal-r-ci/actions/runs/42423086017/job/128555545323"
+   },
+   {
+    "name": "gdalcubes (github) / gdal-conda:dev",
+    "conclusion": "success",
+    "url": "https://github.com/hypertidy/gdal-r-ci/actions/runs/42423086017/job/128555545330"
+   },
+   {
     "name": "sf (cran) / gdal-conda:dev",
     "conclusion": "failure",
-    "url": "https://github.com/hypertidy/gdal-r-ci/actions/runs/42137753330/job/127630146349",
+    "url": "https://github.com/hypertidy/gdal-r-ci/actions/runs/42423086017/job/128555545331",
     "diagnosis": {
      "reason": "tests: ERROR",
      "snippets": {
@@ -302,46 +322,14 @@
     }
    },
    {
-    "name": "sf (cran) / gdal-conda:latest",
-    "conclusion": "failure",
-    "url": "https://github.com/hypertidy/gdal-r-ci/actions/runs/42137753330/job/127630146357",
-    "diagnosis": {
-     "reason": "examples: ERROR",
-     "snippets": {
-      "sf.Rcheck/00check.log": "> Geometry type: POINT\n> Dimension:     XY\n> Bounding box:  xmin: -84.31423 ymin: 33.88525 xmax: -75.45997 ymax: 36.58003\n> Geodetic CRS:  NAD27\n> First 10 features:\n>     AREA PERIMETER CNTY_ CNTY_ID FIPSNO CRESS_ID BIR74 SID74 NWBIR74 BIR79\n> 1  0.114     1.442  1825    1825  37009        5  1091     1      10  1364\n> 2  0.114     1.442  1825    1825  37009        5  1091     1      10  1364\n> 3  0.114     1.442  1825    1825  37009        5  1091     1      10  1364\n> 4  0.114     1.442  1825    1825  37009        5  1091     1      10  1364\n> 5  0.114     1.442  1825    1825  37009        5  1091     1      10  1364\n> 6  0.114     1.442  1825    1825  37009        5  1091     1      10  1364\n> 7  0.114     1.442  1825    1825  37009        5  1091     1      10  1364\n> 8  0.114     1.442  1825    1825  37009        5  1091     1      10  1364\n> 9  0.114     1.442  1825    1825  37009        5  1091     1      10  1364\n> 10 0.114     1.442  1825    1825  37009        5  1091     1      10  1364\n>    SID79 NWBIR79                   geometry\n> 1      0      19 POINT (-81.65795 36.58003)\n> 2      0      19  POINT (-81.6387 36.58003)\n> 3      0      19 POINT (-81.61945 36.58003)\n> 4      0      19  POINT (-81.6002 36.58003)\n> 5      0      19 POINT (-81.58096 36.58003)\n> 6      0      19 POINT (-81.56171 36.58003)\n> 7      0      19 POINT (-81.54246 36.58003)\n> 8      0      19 POINT (-81.52321 36.58003)\n> 9      0      19 POINT (-81.50396 36.58003)\n> 10     0      19 POINT (-81.48471 36.58003)\n> \n> \n> \n> \n  Running \u2018test-by-element.R\u2019\n  Comparing \u2018test-by-element.Rout\u2019 to \u2018test-by-element.Rout.save\u2019 ... OK\n  Running \u2018testthat.R\u2019\n  Running \u2018units.R\u2019\n  Comparing \u2018units.Rout\u2019 to \u2018units.Rout.save\u2019 ... OK\n  Running \u2018wkb.R\u2019\n  Comparing \u2018wkb.Rout\u2019 to \u2018wkb.Rout.save\u2019 ... OK\n* DONE\nStatus: 1 ERROR, 2 NOTEs",
-      "sf.Rcheck/sf-Ex.Rout": "1       1   1   NA POINT (1 1)\n2       2   2 12.5 POINT (2 2)\n3       3   3 14.0 POINT (3 3)\n> if (require(dplyr, quietly = TRUE)) {\n+  st_join(a, b) |> group_by(a.x) |> summarise(mean(a.y))\n+ }\n> # example of largest = TRUE:\n> nc <- st_transform(st_read(system.file(\"shape/nc.shp\", package=\"sf\")), 2264)                \nReading layer `nc' from data source \n  `/__w/gdal-r-ci/gdal-r-ci/pkg/sf.Rcheck/sf/shape/nc.shp' using driver `ESRI Shapefile'\nSimple feature collection with 100 features and 14 fields\nGeometry type: MULTIPOLYGON\nDimension:     XY\nBounding box:  xmin: -84.32385 ymin: 33.88199 xmax: -75.45698 ymax: 36.58965\nGeodetic CRS:  NAD27\n> gr = st_sf(\n+     label = apply(expand.grid(1:10, LETTERS[10:1])[,2:1], 1, paste0, collapse = \" \"),\n+     geom = st_make_grid(st_as_sfc(st_bbox(nc))))\n> gr$col = sf.colors(10, categorical = TRUE, alpha = .3)\n> # cut, to check, NA's work out:\n> gr = gr[-(1:30),]\n> nc_j <- st_join(nc, gr, largest = TRUE)\nWarning: attribute variables are assumed to be spatially constant throughout all geometries\n> # the two datasets:\n> opar = par(mfrow = c(2,1), mar = rep(0,4))\n> plot(st_geometry(nc_j))\n> plot(st_geometry(gr), add = TRUE, col = gr$col)\n> text(st_coordinates(st_centroid(gr)), labels = gr$label)\nWarning: st_centroid assumes attributes are constant over geometries\n> # the joined dataset:\n> plot(st_geometry(nc_j), border = 'black', col = nc_j$col)\n> text(st_coordinates(st_centroid(nc_j)), labels = nc_j$label, cex = .8)\nWarning: st_centroid assumes attributes are constant over geometries\n> plot(st_geometry(gr), border = 'green', add = TRUE)\n> par(opar)\n> # st_filter keeps the geometries in x where .predicate(x,y) returns any match in y for x\n> st_filter(a, b)\nError in st_filter.sf(a, b) : dplyr is not installed: install first?\nCalls: st_filter -> st_filter.sf\nExecution halted"
-     }
-    }
-   },
-   {
-    "name": "gdalraster (cran) / gdal-conda:latest",
+    "name": "vapour (cran) / gdal-conda:dev",
     "conclusion": "success",
-    "url": "https://github.com/hypertidy/gdal-r-ci/actions/runs/42137753330/job/127630146377"
-   },
-   {
-    "name": "terra (github) / gdal-conda:dev",
-    "conclusion": "success",
-    "url": "https://github.com/hypertidy/gdal-r-ci/actions/runs/42137753330/job/127630146404"
-   },
-   {
-    "name": "terra (cran) / gdal-conda:dev",
-    "conclusion": "success",
-    "url": "https://github.com/hypertidy/gdal-r-ci/actions/runs/42137753330/job/127630146417"
-   },
-   {
-    "name": "vapour (github) / gdal-conda:dev",
-    "conclusion": "success",
-    "url": "https://github.com/hypertidy/gdal-r-ci/actions/runs/42137753330/job/127630146419"
-   },
-   {
-    "name": "gdalcubes (cran) / gdal-conda:latest",
-    "conclusion": "success",
-    "url": "https://github.com/hypertidy/gdal-r-ci/actions/runs/42137753330/job/127630146446"
+    "url": "https://github.com/hypertidy/gdal-r-ci/actions/runs/42423086017/job/128555545335"
    },
    {
     "name": "sf (github) / gdal-conda:latest",
     "conclusion": "failure",
-    "url": "https://github.com/hypertidy/gdal-r-ci/actions/runs/42137753330/job/127630146456",
+    "url": "https://github.com/hypertidy/gdal-r-ci/actions/runs/42423086017/job/128555545347",
     "diagnosis": {
      "reason": "tests: ERROR",
      "snippets": {
@@ -352,34 +340,14 @@
     }
    },
    {
-    "name": "gdalraster (github) / gdal-conda:dev",
+    "name": "terra (cran) / gdal-conda:dev",
     "conclusion": "success",
-    "url": "https://github.com/hypertidy/gdal-r-ci/actions/runs/42137753330/job/127630146464"
-   },
-   {
-    "name": "vapour (github) / gdal-conda:latest",
-    "conclusion": "success",
-    "url": "https://github.com/hypertidy/gdal-r-ci/actions/runs/42137753330/job/127630146481"
-   },
-   {
-    "name": "terra (cran) / gdal-conda:latest",
-    "conclusion": "success",
-    "url": "https://github.com/hypertidy/gdal-r-ci/actions/runs/42137753330/job/127630146485"
-   },
-   {
-    "name": "vapour (cran) / gdal-conda:dev",
-    "conclusion": "success",
-    "url": "https://github.com/hypertidy/gdal-r-ci/actions/runs/42137753330/job/127630146488"
-   },
-   {
-    "name": "vapour (cran) / gdal-conda:latest",
-    "conclusion": "success",
-    "url": "https://github.com/hypertidy/gdal-r-ci/actions/runs/42137753330/job/127630146497"
+    "url": "https://github.com/hypertidy/gdal-r-ci/actions/runs/42423086017/job/128555545356"
    },
    {
     "name": "sf (github) / gdal-conda:dev",
     "conclusion": "failure",
-    "url": "https://github.com/hypertidy/gdal-r-ci/actions/runs/42137753330/job/127630146498",
+    "url": "https://github.com/hypertidy/gdal-r-ci/actions/runs/42423086017/job/128555545364",
     "diagnosis": {
      "reason": "tests: ERROR",
      "snippets": {
@@ -390,34 +358,66 @@
     }
    },
    {
-    "name": "terra (github) / gdal-conda:latest",
+    "name": "vapour (cran) / gdal-conda:latest",
     "conclusion": "success",
-    "url": "https://github.com/hypertidy/gdal-r-ci/actions/runs/42137753330/job/127630146523"
+    "url": "https://github.com/hypertidy/gdal-r-ci/actions/runs/42423086017/job/128555545369"
    },
    {
-    "name": "gdalraster (github) / gdal-conda:latest",
+    "name": "terra (cran) / gdal-conda:latest",
     "conclusion": "success",
-    "url": "https://github.com/hypertidy/gdal-r-ci/actions/runs/42137753330/job/127630146526"
+    "url": "https://github.com/hypertidy/gdal-r-ci/actions/runs/42423086017/job/128555545376"
+   },
+   {
+    "name": "gdalraster (cran) / gdal-conda:latest",
+    "conclusion": "success",
+    "url": "https://github.com/hypertidy/gdal-r-ci/actions/runs/42423086017/job/128555545379"
+   },
+   {
+    "name": "vapour (github) / gdal-conda:latest",
+    "conclusion": "success",
+    "url": "https://github.com/hypertidy/gdal-r-ci/actions/runs/42423086017/job/128555545389"
+   },
+   {
+    "name": "vapour (github) / gdal-conda:dev",
+    "conclusion": "success",
+    "url": "https://github.com/hypertidy/gdal-r-ci/actions/runs/42423086017/job/128555545391"
+   },
+   {
+    "name": "terra (github) / gdal-conda:dev",
+    "conclusion": "success",
+    "url": "https://github.com/hypertidy/gdal-r-ci/actions/runs/42423086017/job/128555545394"
    },
    {
     "name": "gdalcubes (cran) / gdal-conda:dev",
     "conclusion": "success",
-    "url": "https://github.com/hypertidy/gdal-r-ci/actions/runs/42137753330/job/127630146528"
-   },
-   {
-    "name": "gdalcubes (github) / gdal-conda:dev",
-    "conclusion": "success",
-    "url": "https://github.com/hypertidy/gdal-r-ci/actions/runs/42137753330/job/127630146567"
+    "url": "https://github.com/hypertidy/gdal-r-ci/actions/runs/42423086017/job/128555545396"
    },
    {
     "name": "gdalraster (cran) / gdal-conda:dev",
     "conclusion": "success",
-    "url": "https://github.com/hypertidy/gdal-r-ci/actions/runs/42137753330/job/127630146573"
+    "url": "https://github.com/hypertidy/gdal-r-ci/actions/runs/42423086017/job/128555545421"
+   },
+   {
+    "name": "sf (cran) / gdal-conda:latest",
+    "conclusion": "failure",
+    "url": "https://github.com/hypertidy/gdal-r-ci/actions/runs/42423086017/job/128555545468",
+    "diagnosis": {
+     "reason": "examples: ERROR",
+     "snippets": {
+      "sf.Rcheck/00check.log": "> Geometry type: POINT\n> Dimension:     XY\n> Bounding box:  xmin: -84.31423 ymin: 33.88525 xmax: -75.45997 ymax: 36.58003\n> Geodetic CRS:  NAD27\n> First 10 features:\n>     AREA PERIMETER CNTY_ CNTY_ID FIPSNO CRESS_ID BIR74 SID74 NWBIR74 BIR79\n> 1  0.114     1.442  1825    1825  37009        5  1091     1      10  1364\n> 2  0.114     1.442  1825    1825  37009        5  1091     1      10  1364\n> 3  0.114     1.442  1825    1825  37009        5  1091     1      10  1364\n> 4  0.114     1.442  1825    1825  37009        5  1091     1      10  1364\n> 5  0.114     1.442  1825    1825  37009        5  1091     1      10  1364\n> 6  0.114     1.442  1825    1825  37009        5  1091     1      10  1364\n> 7  0.114     1.442  1825    1825  37009        5  1091     1      10  1364\n> 8  0.114     1.442  1825    1825  37009        5  1091     1      10  1364\n> 9  0.114     1.442  1825    1825  37009        5  1091     1      10  1364\n> 10 0.114     1.442  1825    1825  37009        5  1091     1      10  1364\n>    SID79 NWBIR79                   geometry\n> 1      0      19 POINT (-81.65795 36.58003)\n> 2      0      19  POINT (-81.6387 36.58003)\n> 3      0      19 POINT (-81.61945 36.58003)\n> 4      0      19  POINT (-81.6002 36.58003)\n> 5      0      19 POINT (-81.58096 36.58003)\n> 6      0      19 POINT (-81.56171 36.58003)\n> 7      0      19 POINT (-81.54246 36.58003)\n> 8      0      19 POINT (-81.52321 36.58003)\n> 9      0      19 POINT (-81.50396 36.58003)\n> 10     0      19 POINT (-81.48471 36.58003)\n> \n> \n> \n> \n  Running \u2018test-by-element.R\u2019\n  Comparing \u2018test-by-element.Rout\u2019 to \u2018test-by-element.Rout.save\u2019 ... OK\n  Running \u2018testthat.R\u2019\n  Running \u2018units.R\u2019\n  Comparing \u2018units.Rout\u2019 to \u2018units.Rout.save\u2019 ... OK\n  Running \u2018wkb.R\u2019\n  Comparing \u2018wkb.Rout\u2019 to \u2018wkb.Rout.save\u2019 ... OK\n* DONE\nStatus: 1 ERROR, 2 NOTEs",
+      "sf.Rcheck/sf-Ex.Rout": "1       1   1   NA POINT (1 1)\n2       2   2 12.5 POINT (2 2)\n3       3   3 14.0 POINT (3 3)\n> if (require(dplyr, quietly = TRUE)) {\n+  st_join(a, b) |> group_by(a.x) |> summarise(mean(a.y))\n+ }\n> # example of largest = TRUE:\n> nc <- st_transform(st_read(system.file(\"shape/nc.shp\", package=\"sf\")), 2264)                \nReading layer `nc' from data source \n  `/__w/gdal-r-ci/gdal-r-ci/pkg/sf.Rcheck/sf/shape/nc.shp' using driver `ESRI Shapefile'\nSimple feature collection with 100 features and 14 fields\nGeometry type: MULTIPOLYGON\nDimension:     XY\nBounding box:  xmin: -84.32385 ymin: 33.88199 xmax: -75.45698 ymax: 36.58965\nGeodetic CRS:  NAD27\n> gr = st_sf(\n+     label = apply(expand.grid(1:10, LETTERS[10:1])[,2:1], 1, paste0, collapse = \" \"),\n+     geom = st_make_grid(st_as_sfc(st_bbox(nc))))\n> gr$col = sf.colors(10, categorical = TRUE, alpha = .3)\n> # cut, to check, NA's work out:\n> gr = gr[-(1:30),]\n> nc_j <- st_join(nc, gr, largest = TRUE)\nWarning: attribute variables are assumed to be spatially constant throughout all geometries\n> # the two datasets:\n> opar = par(mfrow = c(2,1), mar = rep(0,4))\n> plot(st_geometry(nc_j))\n> plot(st_geometry(gr), add = TRUE, col = gr$col)\n> text(st_coordinates(st_centroid(gr)), labels = gr$label)\nWarning: st_centroid assumes attributes are constant over geometries\n> # the joined dataset:\n> plot(st_geometry(nc_j), border = 'black', col = nc_j$col)\n> text(st_coordinates(st_centroid(nc_j)), labels = nc_j$label, cex = .8)\nWarning: st_centroid assumes attributes are constant over geometries\n> plot(st_geometry(gr), border = 'green', add = TRUE)\n> par(opar)\n> # st_filter keeps the geometries in x where .predicate(x,y) returns any match in y for x\n> st_filter(a, b)\nError in st_filter.sf(a, b) : dplyr is not installed: install first?\nCalls: st_filter -> st_filter.sf\nExecution halted"
+     }
+    }
+   },
+   {
+    "name": "gdalraster (github) / gdal-conda:dev",
+    "conclusion": "success",
+    "url": "https://github.com/hypertidy/gdal-r-ci/actions/runs/42423086017/job/128555545483"
    },
    {
     "name": "gdalcubes (github) / gdal-conda:latest",
     "conclusion": "success",
-    "url": "https://github.com/hypertidy/gdal-r-ci/actions/runs/42137753330/job/127630146799"
+    "url": "https://github.com/hypertidy/gdal-r-ci/actions/runs/42423086017/job/128555545512"
    }
   ]
  }
