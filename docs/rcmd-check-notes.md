@@ -39,8 +39,14 @@ rcmdcheck::rcmdcheck(path = "/pkg", args = "--as-cran")
   other env vars that suppress some `--as-cran` checks. For canary CI you want
   the unfiltered signal.
 - `checkbashisms` warning is covered by the `devscripts` apt package (installed).
-- `-mno-omit-leaf-frame-pointer` NOTE is R's own compiler flag, not the
-  package — ignore it.
+- HTML manual validation uses HTML Tidy (`tidy`, installed). Ghostscript
+  (for `R CMD build --compact-vignettes`) and `aspell` + `aspell-en` are
+  installed too.
+- The `-mno-omit-leaf-frame-pointer` "non-portable flag" NOTE is gone: the
+  image removes that flag (added by Debian/Ubuntu's r-base) from
+  `/etc/R/Makeconf`, so a package with compiled code can reach
+  `Status: OK`. If you profile compiled code with `perf` and want complete
+  stack traces, add the flag back in your own `~/.R/Makevars`.
 
 ## Per-package notes
 

@@ -28,8 +28,10 @@ RUN apt-get update -qq && apt-get install -y --no-install-recommends \
     libabsl-dev \
     # for fs package
     libuv1-dev \
-    # Docs/check tools
-    pandoc qpdf \
+    # Docs/check tools: tidy validates the HTML manual (--as-cran NOTE
+    # without it), ghostscript lets R CMD build --compact-vignettes shrink
+    # PDF vignettes, aspell + a dictionary for CRAN's spelling checks
+    pandoc qpdf tidy ghostscript aspell aspell-en \
     # provides checkbashisms
     devscripts \
     # for --as-cran PDF manual check
@@ -49,6 +51,24 @@ $(lsb_release -cs)-cran40/" > /etc/apt/sources.list.d/cran.list \
     && apt-get update -qq \
     && apt-get install -y --no-install-recommends r-base r-base-dev \
     && rm -rf /var/lib/apt/lists/*
+
+# Debian/Ubuntu's r-base puts -mno-omit-leaf-frame-pointer in R's
+# CFLAGS/CXXFLAGS/FFLAGS, and --as-cran reports it as a non-portable flag for
+# any package with compiled code. _R_CHECK_COMPILATION_FLAGS_KNOWN_ only
+# exempts -W flags, so drop it from R's own Makeconf. That applies to every
+# user and every HOME: a ~/.R/Makevars under /root would be missed by GitHub
+# Actions container jobs, which set HOME=/github/home. The other hardening
+# flags stay. Fail the build if the flag is still there (the r-base string
+# changed).
+#
+# (/usr/lib/R/etc/Makeconf is a symlink to /etc/R/Makeconf; edit the target so
+# sed -i doesn't replace the link with a copy.)
+RUN sed -i 's/ -mno-omit-leaf-frame-pointer//g' /etc/R/Makeconf \
+    && for v in CFLAGS CXXFLAGS CXX17FLAGS FFLAGS FCFLAGS; do \
+         if R CMD config "$v" | grep -q -- -mno-omit-leaf-frame-pointer; then \
+           echo "-mno-omit-leaf-frame-pointer still in $v" >&2; exit 1; \
+         fi; \
+       done
 
 # Source packages only: R packages must compile against our GDAL/PROJ/GEOS.
 # Never let install.packages pull a CRAN binary built against Ubuntu's GDAL.
