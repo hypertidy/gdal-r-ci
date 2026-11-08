@@ -41,3 +41,20 @@ if (!any(grepl("libarrow\\.so", ldd))) {
        paste(ldd, collapse = "\n"))
 }
 message(paste(grep("libarrow|libparquet", ldd, value = TRUE), collapse = "\n"))
+
+# Cloud filesystems: downstream packages need these (zaro: S3 for AODN,
+# GCS for CMIP6 on Pangeo). R arrow inherits them from the system Arrow
+# C++ build, so a missing one means the apt libarrow lacks it (e.g. with
+# ARROW_SOURCE=ubuntu in gdal-system). Override with ARROW_REQUIRE_CAPS,
+# a comma-separated list ("" to require nothing).
+caps <- arrow::arrow_info()$capabilities
+message("R arrow capabilities:\n",
+        paste(sprintf("  %-10s %s", names(caps), caps), collapse = "\n"))
+required <- strsplit(Sys.getenv("ARROW_REQUIRE_CAPS", "s3,gcs"), ",")[[1]]
+required <- trimws(required[nzchar(trimws(required))])
+missing <- required[!(required %in% names(caps)) | !caps[required]]
+if (length(missing) > 0L) {
+  stop("R arrow is missing required capabilities: ",
+       paste(missing, collapse = ", "),
+       "\nThe system Arrow C++ (", cpp_version, ") was built without them.")
+}
