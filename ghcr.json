@@ -417,11 +417,18 @@
  ],
  "gdal-r-python-extras": [
   {
-   "digest": "sha256:b073c3fcdd29cdadd72af3e1c997769cf6f3186fc30c121040c97490f6bef7eb",
-   "created": "2026-11-08T22:45:55Z",
+   "digest": "sha256:4643e34718675aea5b785da1d3317241f4f6e85cf267cef754e62fa7090504a3",
+   "created": "2026-11-10T03:12:21Z",
    "tags": [
     "latest"
    ],
+   "variant": "latest",
+   "compressed": 4053896823
+  },
+  {
+   "digest": "sha256:b073c3fcdd29cdadd72af3e1c997769cf6f3186fc30c121040c97490f6bef7eb",
+   "created": "2026-11-08T22:45:55Z",
+   "tags": [],
    "variant": "latest",
    "compressed": 4055725067
   },
@@ -505,13 +512,6 @@
   {
    "digest": "sha256:46c3b009971268920bb3887f54a6180a9bf7964bb70061bfa662256c6ed196d7",
    "created": "2026-10-02T03:19:52Z",
-   "tags": [],
-   "variant": "latest",
-   "compressed": 4186948472
-  },
-  {
-   "digest": "sha256:01c5a856d919328cc1570734cb862c38cae78c4b5e6bf2880f8f46e0972b9e13",
-   "created": "2026-10-02T02:50:31Z",
    "tags": [],
    "variant": "latest",
    "compressed": 4186948472
