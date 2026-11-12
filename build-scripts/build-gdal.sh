@@ -55,6 +55,7 @@ cmake -S src -B build \
     -DGDAL_USE_PNG=ON \
     -DGDAL_USE_JPEG=ON \
     -DGDAL_USE_WEBP=ON \
+    -DGDAL_USE_JXL=ON \
     -DGDAL_USE_OPENJPEG=ON \
     -DGDAL_USE_KEA=ON \
     -DKEA_INCLUDE_DIR=/usr/local/include \
@@ -68,6 +69,7 @@ cmake -S src -B build \
     -DGDAL_USE_CFITSIO=ON \
     -DGDAL_USE_POPPLER=ON \
     -DGDAL_USE_FREEXL=ON \
+    -DGDAL_USE_ARCHIVE=ON \
     \
     -DBUILD_PYTHON_BINDINGS=ON \
     -DPython_EXECUTABLE=/opt/gdal-py/bin/python \

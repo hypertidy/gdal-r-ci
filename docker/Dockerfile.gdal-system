@@ -54,6 +54,9 @@ RUN apt-get update -qq && apt-get install -y --no-install-recommends \
     libpng-dev libjpeg-turbo8-dev libgif-dev libwebp-dev \
     libopenjp2-7-dev libdeflate-dev liblzma-dev \
     libblosc-dev libzstd-dev liblz4-dev liblerc-dev \
+    # JPEG-XL: standalone JPEGXL driver, and JXL as a GTiff codec (needs the
+    # internal libtiff, which build-gdal.sh already selects)
+    libjxl-dev \
     libxml2-dev libexpat1-dev \
     # spatialite build deps but no librttopo because that installs geos
     libminizip-dev \
@@ -68,6 +71,8 @@ RUN apt-get update -qq && apt-get install -y --no-install-recommends \
     # GDAL — misc drivers
     libkml-dev libxerces-c-dev libpoppler-dev libpoppler-private-dev \
     libcfitsio-dev libfreexl-dev \
+    # /vsi7z/ and /vsirar/ (libarchive); must be present before GDAL builds
+    libarchive-dev \
     libspdlog-dev \
     # Runtime
     libsqlite3-0 \
