@@ -1,0 +1,76 @@
+# Watch OSGeo/gdal master CI and keep one issue per failure signature here.
+#
+# Read-only on OSGeo/gdal: API reads and a sparse clone of its CI files.
+# Issues are opened, updated and closed in this repository only, with every
+# GDAL reference in a code span so nothing links back or mentions anyone.
+# See docs/gdal-ci-watch.md.
+#
+# Pushes and PRs touching the watcher run the tests and a dry run.
+
+name: GDAL CI watch
+
+on:
+  schedule:
+    - cron: '41 */3 * * *'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Report only, write no issues'
+        type: boolean
+        default: false
+  push:
+    branches: [main]
+    paths:
+      - 'watch/**'
+      - '.github/workflows/gdal-ci-watch.yml'
+  pull_request:
+    paths:
+      - 'watch/**'
+      - '.github/workflows/gdal-ci-watch.yml'
+
+concurrency:
+  group: gdal-ci-watch-${{ github.event_name }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: read   # without it, PRs are left out of GDAL issue listings
+
+jobs:
+  watch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Unit tests
+        run: python3 -m unittest discover -s watch -p 'test_*.py' -v
+
+      - name: GDAL CI files (sparse checkout of master)
+        run: |
+          git clone -q --depth 1 --filter=blob:none --no-checkout \
+            https://github.com/OSGeo/gdal gdal-ci
+          git -C gdal-ci sparse-checkout set --no-cone \
+            '/.github/' '/ci/' '/autotest/requirements.txt' '/doc/requirements.txt'
+          git -C gdal-ci checkout -q
+          git -C gdal-ci log -1 --format='GDAL master %h %cd' --date=iso
+
+      - name: Watch
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GDAL_READ_TOKEN: ${{ secrets.GDAL_READ_TOKEN || secrets.GITHUB_TOKEN }}
+          DRY_RUN: ${{ github.event_name == 'push' || github.event_name == 'pull_request' || (github.event_name == 'workflow_dispatch' && inputs.dry_run) }}
+        run: |
+          args="--gdal-ci-dir gdal-ci --out watch-out"
+          if [ "$DRY_RUN" = "true" ]; then args="$args --dry-run"; fi
+          python3 watch/gdal_ci_watch.py $args
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: gdal-ci-watch-${{ github.run_id }}
+          path: watch-out/
+          retention-days: 14
