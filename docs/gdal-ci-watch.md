@@ -65,9 +65,13 @@ All of it is produced by the script; no LLM is involved.
   line come first, with links to those lines and whether they are pinned.
 - **Commits between:** compare link, whether any CI/build files changed, and
   the commit subjects.
-- **Open on GDAL:** open PRs and issues found by package and version, by
-  distinctive tokens from the error, and by CI PRs opened since the job went
-  red. If the fix is already in progress, this is where it shows up.
+- **Open on GDAL:** open PRs and issues updated in the two weeks before the
+  job went red or since, matched on package and version, on distinctive
+  tokens from the error, and on CI/CMake/build PRs opened since the job went
+  red. If the fix is already in progress, this is where it shows up. (They
+  are listed through the REST API and matched by the script: under a
+  workflow's `GITHUB_TOKEN`, GitHub's issue search returned nothing for
+  OSGeo/gdal.)
 - **Precedent:** recent `CI:` commits on the same files, and commits that
   mention the package. These show the usual shape of the fix and the commit
   message style.

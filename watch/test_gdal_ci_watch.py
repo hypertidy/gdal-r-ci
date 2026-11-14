@@ -223,6 +223,36 @@ class Render(unittest.TestCase):
         self.assertEqual(meta["fp"], "f" * 12)
 
 
+class OpenOnGdal(unittest.TestCase):
+    pr = {"number": 15528, "title": "CMake: update to work with CMake 4.5", "body": None,
+          "pull_request": {"url": "x"}, "created_at": "2026-11-13T20:00:00Z",
+          "html_url": "https://github.com/OSGeo/gdal/pull/15528", "user": {"login": "u"}}
+    issue = {"number": 1, "title": "CI broken", "body": "cmake 4.5.0 says non-target-directive",
+             "created_at": "2026-11-14T00:00:00Z",
+             "html_url": "https://github.com/OSGeo/gdal/issues/1", "user": {"login": "v"}}
+
+    def test_words(self):
+        self.assertTrue(w.term_matches(("words", ("cmake", "4.5")), self.pr))
+        self.assertTrue(w.term_matches(("words", ("cmake", "4.5")), self.issue))  # 4.5.0
+        self.assertFalse(w.term_matches(("words", ("cmake", "4.6")), self.pr))
+
+    def test_phrase(self):
+        self.assertTrue(w.term_matches(("phrase", "non-target-directive"), self.issue))
+        self.assertFalse(w.term_matches(("phrase", "non-target-directive"), self.pr))
+
+    def test_ci_pr_since(self):
+        self.assertTrue(w.term_matches(("ci-pr-since", "2026-11-13"), self.pr))
+        self.assertFalse(w.term_matches(("ci-pr-since", "2026-11-14"), self.pr))
+        self.assertFalse(w.term_matches(("ci-pr-since", "2026-11-01"), self.issue))  # not a PR
+
+    def test_listing(self):
+        gh = w.GH(None, None, dry_run=True)
+        gh.get = lambda endpoint, token=None, **kw: [self.pr, self.issue]
+        found, notes, n = w.open_on_gdal(gh, [("words", ("cmake", "4.5"))], "2026-10-30")
+        self.assertEqual(([f["number"] for f in found], notes, n), ([15528, 1], [], 2))
+        self.assertEqual(found[0]["kind"], "PR")
+
+
 class LogFetch(unittest.TestCase):
     def test_retries_with_escape_flag(self):
         gh = w.GH(None, None, dry_run=True)

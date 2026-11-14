@@ -624,23 +624,64 @@ def group(gh, red, max_logs):
 
 # ------------------------------------------------------------------- context
 
-def search_gdal(gh, queries):
-    found, notes = {}, []
-    for q in queries:
+WORD_RE = re.compile(r"[a-z0-9][a-z0-9.+_-]*")
+
+
+def words(text):
+    return {t.rstrip(".-_") for t in WORD_RE.findall(text.lower())}
+
+
+def term_label(term):
+    kind, val = term
+    if kind == "words":
+        return " ".join(val)
+    if kind == "phrase":
+        return '"%s"' % val
+    return "CI/CMake/build PR opened since %s" % val
+
+
+def term_matches(term, item):
+    kind, val = term
+    title = item.get("title") or ""
+    text = "%s\n%s" % (title, item.get("body") or "")
+    if kind == "words":
+        ws = words(text)
+        return all(any(t == w or t.startswith(w + ".") for t in ws) for w in val)
+    if kind == "phrase":
+        return val.lower() in text.lower()
+    if kind == "ci-pr-since":
+        return ("pull_request" in item and item["created_at"][:10] >= val
+                and bool(re.match(r"(?i)(?:ci|cmake|build)\b", title)))
+    return False
+
+
+def open_on_gdal(gh, terms, since, pages=3):
+    """Open GDAL issues and PRs updated since `since` that match any term.
+
+    Listed through the REST issues endpoint and matched here, because
+    search/issues returned nothing for OSGeo/gdal under a workflow's
+    GITHUB_TOKEN while finding the same PR with a user token."""
+    items, notes = [], []
+    for page in range(1, pages + 1):
         try:
-            d = gh.get("search/issues", q="repo:%s is:open %s" % (GDAL, q),
-                       per_page=10)
+            d = gh.get("repos/%s/issues" % GDAL, state="open", sort="updated",
+                       direction="desc", since=since, per_page=100, page=page)
         except RuntimeError as e:
-            notes.append("search failed for %s: %s" % (q, str(e)[:120]))
-            continue
-        for it in d.get("items", []):
-            found.setdefault(it["number"], {
-                "number": it["number"], "title": it["title"],
-                "user": (it.get("user") or {}).get("login", "?"),
-                "created": it["created_at"][:10],
-                "kind": "PR" if it.get("pull_request") else "issue",
-                "url": it["html_url"], "query": q})
-    return sorted(found.values(), key=lambda x: -x["number"]), notes
+            notes.append("listing open GDAL issues failed: %s" % str(e)[:120])
+            break
+        items += d
+        if len(d) < 100:
+            break
+    found = []
+    for it in items:
+        hit = [term_label(t) for t in terms if term_matches(t, it)]
+        if hit:
+            found.append({"number": it["number"], "title": it["title"],
+                          "user": (it.get("user") or {}).get("login", "?"),
+                          "created": it["created_at"][:10],
+                          "kind": "PR" if "pull_request" in it else "issue",
+                          "url": it["html_url"], "query": ", ".join(hit)})
+    return sorted(found, key=lambda x: -x["number"]), notes, len(items)
 
 
 def precedent(gh, files, packages):
@@ -730,14 +771,17 @@ def build_context(gh, g, ci):
                 ctx["notes"].append("compare failed: %s" % str(e)[:120])
 
     direct = [r for r in ctx["env"] if r["hits"]]
-    queries = ["%s %s" % (r["name"], mm(r["red"])) for r in direct[:2]]
-    queries += ['"%s"' % t for t in distinctive_tokens(g["signature"])]
-    if fr:
-        queries.append("is:pr in:title CI created:>=%s" % fr["created"][:10])
-    queries = list(dict.fromkeys(queries))
-    ctx["gdal_open"], notes = search_gdal(gh, queries)
+    terms = [("words", (r["name"], mm(r["red"]))) for r in direct[:2] if mm(r["red"])]
+    terms += [("phrase", t) for t in distinctive_tokens(g["signature"])]
+    red_since = (fr or primary["latest"])["created"]
+    terms.append(("ci-pr-since", red_since[:10]))
+    terms = list(dict.fromkeys(terms))
+    since = (dt.datetime.strptime(red_since[:10], "%Y-%m-%d")
+             - dt.timedelta(days=14)).strftime("%Y-%m-%dT00:00:00Z")
+    ctx["gdal_open"], notes, ctx["gdal_checked"] = open_on_gdal(gh, terms, since)
     ctx["notes"] += notes
-    ctx["queries"] = queries
+    ctx["queries"] = [term_label(t) for t in terms]
+    ctx["gdal_since"] = since[:10]
 
     files = [primary["workflow_file"]]
     for r in direct[:3]:
@@ -884,13 +928,15 @@ def render(g, ctx, run_url, now):
     out.append("")
     if ctx["gdal_open"]:
         for it in ctx["gdal_open"][:8]:
-            out.append("- %s %s %s by %s, opened %s: %s" % (
+            out.append("- %s %s %s by %s, opened %s, matched %s: %s" % (
                 it["kind"], code(it["number"]), code(it["title"]), code(it["user"]),
-                it["created"], code(it["url"])))
+                it["created"], code(it["query"]), code(it["url"])))
     else:
         out.append("Nothing open matched.")
     out.append("")
-    out.append("Searched: " + ", ".join(code(q) for q in ctx.get("queries", [])))
+    out.append("Checked %s open GDAL issues/PRs updated since %s for: %s" % (
+        ctx.get("gdal_checked", "?"), ctx.get("gdal_since", "?"),
+        ", ".join(code(q) for q in ctx.get("queries", []))))
     out.append("")
 
     if ctx["precedent"]:
