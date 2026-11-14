@@ -658,9 +658,9 @@ def term_matches(term, item):
 def open_on_gdal(gh, terms, since, pages=3):
     """Open GDAL issues and PRs updated since `since` that match any term.
 
-    Listed through the REST issues endpoint and matched here, because
-    search/issues returned nothing for OSGeo/gdal under a workflow's
-    GITHUB_TOKEN while finding the same PR with a user token."""
+    Listed through the REST issues endpoint and matched here, which avoids
+    the search API's rate limit. A workflow token needs `pull-requests: read`
+    or PRs are left out of the listing."""
     items, notes = [], []
     for page in range(1, pages + 1):
         try:

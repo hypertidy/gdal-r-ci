@@ -68,10 +68,7 @@ All of it is produced by the script; no LLM is involved.
 - **Open on GDAL:** open PRs and issues updated in the two weeks before the
   job went red or since, matched on package and version, on distinctive
   tokens from the error, and on CI/CMake/build PRs opened since the job went
-  red. If the fix is already in progress, this is where it shows up. (They
-  are listed through the REST API and matched by the script: under a
-  workflow's `GITHUB_TOKEN`, GitHub's issue search returned nothing for
-  OSGeo/gdal.)
+  red. If the fix is already in progress, this is where it shows up.
 - **Precedent:** recent `CI:` commits on the same files, and commits that
   mention the package. These show the usual shape of the fix and the commit
   message style.
@@ -87,10 +84,11 @@ as an artifact; the step summary shows every red job, alerted or not.
 
 ## Tokens
 
-`GITHUB_TOKEN` handles issues here. Reading OSGeo/gdal uses
-`GDAL_READ_TOKEN` if that secret exists, otherwise `GITHUB_TOKEN`. If the
-step summary says job logs could not be read, create a fine-grained token
-with public-repository read access only and save it as `GDAL_READ_TOKEN`.
+`GITHUB_TOKEN` handles issues here and is enough for reading OSGeo/gdal,
+job logs included. The workflow grants it `pull-requests: read`: without
+that, GDAL's PRs are left out of the open issue listing (and out of issue
+search), so an open fix PR would be missed. `GDAL_READ_TOKEN`, if set as a
+secret, is used for GDAL reads instead.
 
 ## Running locally
 
