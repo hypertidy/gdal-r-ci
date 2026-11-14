@@ -223,6 +223,36 @@ class Render(unittest.TestCase):
         self.assertEqual(meta["fp"], "f" * 12)
 
 
+class LogFetch(unittest.TestCase):
+    def test_retries_with_escape_flag(self):
+        gh = w.GH(None, None, dry_run=True)
+        seen = []
+
+        def fake_run(args, token, stdin=None):
+            seen.append(list(args))
+            if "--allow-escape-sequences" not in args:
+                raise RuntimeError("gh api ...: the response contains terminal escape "
+                                   "sequences; pass --allow-escape-sequences to output it anyway")
+            return "log text"
+
+        gh._run = fake_run
+        self.assertEqual(gh.log(1), "log text")
+        self.assertEqual(gh.log(2), "log text")
+        self.assertEqual(len(seen), 3)  # second log goes straight to the flag
+        self.assertEqual(gh.log_failures, 0)
+
+    def test_other_errors_count_as_failures(self):
+        gh = w.GH(None, None, dry_run=True)
+
+        def fake_run(args, token, stdin=None):
+            raise RuntimeError("HTTP 403")
+
+        gh._run = fake_run
+        self.assertIsNone(gh.log(1))
+        self.assertEqual(gh.log_failures, 1)
+        self.assertFalse(gh.escape_flag)
+
+
 class Guards(unittest.TestCase):
     def test_refuses_to_write_to_gdal(self):
         gh = w.GH(None, None, dry_run=True)

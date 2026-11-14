@@ -133,6 +133,7 @@ class GH:
         self.cache_dir = cache_dir
         self.calls = 0
         self.log_failures = 0
+        self.escape_flag = False  # newer gh refuses raw logs without it
         self._jobs = {}
         if cache_dir:
             os.makedirs(cache_dir, exist_ok=True)
@@ -197,10 +198,15 @@ class GH:
         cached = self._cache("log-%d.txt" % job_id)
         if cached is not None:
             return cached
+        args = ["api", "repos/%s/actions/jobs/%d/logs" % (GDAL, job_id)]
+        if self.escape_flag:
+            args.append("--allow-escape-sequences")
         try:
-            text = self._run(["api", "repos/%s/actions/jobs/%d/logs"
-                              % (GDAL, job_id)], self.read_token)
+            text = self._run(args, self.read_token)
         except RuntimeError as e:
+            if not self.escape_flag and "--allow-escape-sequences" in str(e):
+                self.escape_flag = True
+                return self.log(job_id)
             log("log %d unavailable: %s" % (job_id, e))
             self.log_failures += 1
             return None
@@ -1059,9 +1065,9 @@ def summary_md(red, groups, alerted, actions, gh):
     out.append("%d GitHub API calls." % gh.calls)
     if gh.log_failures:
         out.append("")
-        out.append("**%d job log(s) could not be read.** If this persists, add a "
-                   "`GDAL_READ_TOKEN` secret (fine-grained, public repositories, "
-                   "read-only); see docs/gdal-ci-watch.md." % gh.log_failures)
+        out.append("**%d job log(s) could not be read**; the reason is in the run log. "
+                   "If it is a permissions error, add a `GDAL_READ_TOKEN` secret "
+                   "(see docs/gdal-ci-watch.md)." % gh.log_failures)
     return "\n".join(out)
 
 
