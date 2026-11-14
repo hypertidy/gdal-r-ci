@@ -35,6 +35,7 @@ concurrency:
 permissions:
   contents: read
   issues: write
+  pull-requests: read   # without it, PRs are left out of GDAL issue listings
 
 jobs:
   watch:
