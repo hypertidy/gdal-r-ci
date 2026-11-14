@@ -267,6 +267,15 @@ Core packages are tested fortnightly against both release and dev images:
 
 Failures open issues automatically in this repo.
 
+## GDAL CI watch
+
+A separate read-only watcher follows OSGeo/gdal's own master CI every 3 hours.
+When a job there goes red, it opens an issue in this repo with the error
+sites, the package versions that changed since the last green run, where
+GDAL's CI installs those packages, and any open GDAL PRs that may already
+fix it. It writes nothing to OSGeo/gdal and mentions no one there. Details in
+[docs/gdal-ci-watch.md](docs/gdal-ci-watch.md).
+
 ## Package lists
 
 Package contents are explicit — no kitchen sink in the CI-contractual layers.
