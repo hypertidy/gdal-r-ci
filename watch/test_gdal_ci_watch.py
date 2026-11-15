@@ -37,6 +37,30 @@ CMAKE_LOG = "\n".join(TS + l for l in [
 ])
 
 
+# Docker build: BuildKit steps interleave; #12 is a passing apt step whose
+# package list contains "error", #45 is the step that failed.
+DOCKER_LOG = "\n".join(TS + l for l in [
+    "##[group]Run set -e",
+    "set -e",
+    "./build.sh --gdal local",
+    "##[endgroup]",
+    'Using PROJ_VERSION={"message":"API rate limit exceeded for 20.1.2.3."}',
+    "#12 [builder 3/36] RUN apt-get install -y libgpgme-dev",
+    "#12 41.2   libglycin-2-0 libgpg-error-dev libgpgme-dev libgpgme45 libgpgmepp-dev",
+    "#45 [builder 31/36] RUN . /buildscripts/bh-set-envvars.sh && /buildscripts/bh-proj.sh",
+    "#12 44.0 Setting up libgpg-error-dev:amd64 (1.51-4) ...",
+    "#45 0.054 curl: (3) URL rejected: Malformed input to a URL function",
+    "#45 9.151 curl: (22) The requested URL returned error: 404",
+    "#45 18.16 ",
+    "#45 18.16 tar: Error is not recoverable: exiting now",
+    '#45 ERROR: process "/bin/sh -c /buildscripts/bh-proj.sh" did not complete successfully: exit code: 2',
+    "#46 CANCELED",
+    "------",
+    'ERROR: failed to build: failed to solve: process "/bin/sh -c /buildscripts/bh-proj.sh" did not complete successfully: exit code: 2',
+    "##[error]Process completed with exit code 1.",
+])
+
+
 class Quiet(unittest.TestCase):
     loud = [
         "see OSGeo/gdal#15528",
@@ -117,6 +141,34 @@ class Logs(unittest.TestCase):
     def test_signature_none(self):
         self.assertEqual(w.signature(["ok", "##[error]Process completed with exit code 1."]),
                          (None, None, None))
+
+    def test_generic_skips_package_names(self):
+        sec = ["  libglycin-2-0 libgpg-error-dev libgpgme-dev",
+               "-- Looking for strerror_r - found",
+               "tar: Error is not recoverable: exiting now"]
+        self.assertEqual(w.signature(sec)[0], "tar: Error is not recoverable: exiting now")
+
+    def test_buildkit_failed_step(self):
+        step = w.buildkit_step(w.clean(DOCKER_LOG, keep_prefix=True))
+        self.assertEqual(step[0], "[builder 31/36] RUN . /buildscripts/bh-set-envvars.sh"
+                                  " && /buildscripts/bh-proj.sh")
+        self.assertFalse(any("libgpg" in l for l in step))
+        self.assertIn("", step)  # "#45 18.16 " leaves no timestamp behind
+        sig, cat, _ = w.signature(step)
+        self.assertEqual((sig, cat), ("curl: (3) URL rejected: Malformed input to a URL function",
+                                      "fetch"))
+        self.assertIsNone(w.buildkit_step(w.clean(CMAKE_LOG, keep_prefix=True)))
+
+    def test_analyse_docker_log(self):
+        class FakeGH:
+            def log(self, job_id):
+                return DOCKER_LOG
+        a = w.analyse_log(FakeGH(), {"latest": {"job_id": 1}})
+        self.assertEqual(a["category"], "fetch")
+        label, phrase, line = a["transient"]
+        self.assertEqual((label, phrase), ("rate limit", "rate limit"))
+        self.assertIn("API rate limit exceeded", line)
+        self.assertIsNone(w.transient(w.failing_section(self.lines)))
 
     def test_normalise_is_stable_across_paths_and_numbers(self):
         a = w.normalise(r"D:\a\gdal\gdal\port\x.cpp(12): error C2065: 'y'")
@@ -199,7 +251,8 @@ class Render(unittest.TestCase):
                "latest": pt, "red_runs": 2, "red_shas": [], "first_red": pt,
                "last_green": dict(pt, sha="b" * 40), "pr_authors": ["u1", "u2"],
                "analysis": {"signature": "error at #12 by @me", "category": "generic",
-                            "sites": {"x.cpp:1": 2}, "excerpt": "@me fixed #12\n~~~~"}}
+                            "sites": {"x.cpp:1": 2}, "excerpt": "@me fixed #12\n~~~~",
+                            "transient": ("rate limit", "rate limit", "limit for #1 @x `")}}
         g = {"fp": "f" * 12, "norm": "n", "signature": "error at #12 by @me",
              "category": "generic", "jobs": [job], "primary": job}
         ctx = {"env": [{"mgr": "conda", "name": "cmake", "green": "4.4", "red": "4.5",
@@ -221,6 +274,7 @@ class Render(unittest.TestCase):
         w.check_quiet(body)
         w.check_quiet(w.title_for(g))
         self.assertEqual(meta["fp"], "f" * 12)
+        self.assertIn("**Likely:** likely transient (rate limit)", body)
 
 
 class OpenOnGdal(unittest.TestCase):
