@@ -39,11 +39,13 @@ either: code spans don't stop a commit message from creating a backlink.
    same job failing. Several authors hitting it is the clearest sign of an
    environment break, and of contributors being held up by it.
 4. The failing step is read from the job log: from the end of the echoed
-   command to the first `##[error]`. The most specific error line becomes the
-   signature (CMake error, compiler error, resolver error, runner annotation,
-   pytest/ctest failure, then anything with "error"). Paths and numbers are
-   normalised, so one root cause across jobs and workflows becomes a single
-   issue.
+   command to the first `##[error]`. For a Docker build, only the BuildKit
+   step that failed is used, since parallel steps interleave in the log. The
+   most specific error line becomes the signature (CMake error, compiler
+   error, resolver error, runner annotation, pytest/ctest failure, curl
+   error, then the word "error" on its own, not inside a name like
+   `libgpg-error-dev`). Paths and numbers are normalised, so one root cause
+   across jobs and workflows becomes a single issue.
 5. An issue is opened when a signature has been red on 2 or more master runs,
    or on PRs from 2 or more authors, or when the same commit went from green
    to red. Once an issue is open it is updated while the signature stays red.
@@ -52,10 +54,13 @@ either: code spans don't stop a commit message from creating a backlink.
 
 All of it is produced by the script; no LLM is involved.
 
-- **Likely:** one line of verdict. Possible verdicts: same commit was green
-  (environment); failed while installing dependencies; CI/build files changed
-  in between; no CI/build files changed but package versions did (drift);
-  only source changed (possible code regression).
+- **Likely:** one line of verdict. Possible verdicts: transient (the step
+  logged an API rate limit, DNS or connection failure, 502/503/504, or a lost
+  runner; a re-run may pass, but a step that hits it often may need making
+  more robust); same commit was green (environment); failed while installing
+  dependencies; CI/build files changed in between; no CI/build files changed
+  but package versions did (drift); only source changed (possible code
+  regression).
 - Jobs, failing steps, red since, master runs red, PR authors red, last
   green, with links to the job logs.
 - **Error sites:** distinct `file:line` (or test) locations from the log.

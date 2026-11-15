@@ -231,15 +231,30 @@ class GH:
 TS_RE = re.compile(r"^\ufeff?\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(?:\.\d+)?Z ?")
 ANSI_RE = re.compile(r"\x1b\[[0-9;?]*[A-Za-z]")
 # BuildKit step prefix ("#12 3.4 ") and ctest -V test number ("41: ")
-PREFIX_RE = re.compile(r"^(?:#\d+ \d+(?:\.\d+)? |\d{1,4}: )")
+PREFIX_RE = re.compile(r"^(?:#\d+ \d+(?:\.\d+)?(?: |$)|\d{1,4}:(?: |$))")
 WORKSPACE_RE = re.compile(
     r"(?:[A-Za-z]:)?(?:/[^\s/:()'\"]+)*?/gdal/gdal/|"
     r"(?:[A-Za-z]:)?/(?:__w|home/runner/work|Users/runner/work|a)/[^/\s]+/[^/\s]+/")
 
 
-def clean(text):
-    return [PREFIX_RE.sub("", ANSI_RE.sub("", TS_RE.sub("", l))).rstrip()
-            for l in text.splitlines()]
+BK_ERR_RE = re.compile(r"^#(\d+) ERROR: ")
+BK_PREFIX_RE = re.compile(r"^#\d+ (?:\d+(?:\.\d+)?(?: |$))?")
+
+
+def clean(text, keep_prefix=False):
+    lines = [ANSI_RE.sub("", TS_RE.sub("", l)).rstrip() for l in text.splitlines()]
+    return lines if keep_prefix else [PREFIX_RE.sub("", l) for l in lines]
+
+
+def buildkit_step(lines):
+    """Output of the first BuildKit step that failed, or None. Takes lines
+    from clean(keep_prefix=True): parallel steps interleave, so only the
+    '#N ' prefix tells them apart."""
+    n = next((m.group(1) for m in map(BK_ERR_RE.match, lines) if m), None)
+    if n is None:
+        return None
+    tag = "#%s " % n
+    return [BK_PREFIX_RE.sub("", l) for l in lines if l.startswith(tag)]
 
 
 def strip_paths(s):
@@ -275,7 +290,20 @@ SIG_PATTERNS = [
     ("ctest", re.compile(
         r"^\s*\d+ - \S+ \((?:Failed|Timeout|SEGFAULT|Subprocess aborted|Exception|Not Run)\)")),
     ("pytest-E", re.compile(r"^E\s{2,}\S")),
-    ("generic", re.compile(r"(?i)\bfatal error\b|\berror:|^error\b|\bERROR\b")),
+    ("fetch", re.compile(r"^curl: \(\d+\) ")),
+    # not inside names such as libgpg-error-dev or strerror_r
+    ("generic", re.compile(r"(?i)\bfatal error\b|(?<![\w-])error(?![\w-])")),
+]
+# Failures a re-run may clear: (label, phrase to look for on GDAL or None, pattern)
+TRANSIENT = [
+    ("rate limit", "rate limit",
+     re.compile(r"(?i)API rate limit exceeded|secondary rate limit")),
+    ("DNS", "resolve host",
+     re.compile(r"(?i)Could not resolve host|Temporary failure in name resolution")),
+    ("network", None, re.compile(r"(?i)Connection (?:timed out|reset by peer)")),
+    ("server", None, re.compile(r"\b50[234] (?:Bad Gateway|Service Unavailable|Gateway Time-?out)")),
+    ("runner lost", None,
+     re.compile(r"runner has received a shutdown signal|lost communication with the server")),
 ]
 IGNORE_SIG_RE = re.compile(
     r"^##\[(?!error\])|Process completed with exit code|-W(?:no-)?error|WERROR|"
@@ -289,6 +317,15 @@ def signature(section):
             if pat.search(l) and not IGNORE_SIG_RE.search(l):
                 return re.sub(r"^##\[error\]", "", l).strip(), cat, i
     return None, None, None
+
+
+def transient(lines):
+    """(label, phrase or None, line) for the first transient-failure marker, or None."""
+    for l in lines:
+        for label, phrase, pat in TRANSIENT:
+            if pat.search(l):
+                return label, phrase, strip_paths(l).strip()[:160]
+    return None
 
 
 def normalise(line):
@@ -600,10 +637,11 @@ def analyse_log(gh, rec, key="latest"):
     text = gh.log(rec[key]["job_id"])
     if text is None:
         return None
-    lines = clean(text)
-    section = failing_section(lines)
+    raw = clean(text, keep_prefix=True)
+    step_out = failing_section([PREFIX_RE.sub("", l) for l in raw])
+    section = buildkit_step(raw) or step_out
     sig, cat, idx = signature(section)
-    return {"signature": sig, "category": cat,
+    return {"signature": sig, "category": cat, "transient": transient(step_out),
             "sites": error_sites(section), "excerpt": excerpt(section, idx)}
 
 
@@ -773,6 +811,9 @@ def build_context(gh, g, ci):
     direct = [r for r in ctx["env"] if r["hits"]]
     terms = [("words", (r["name"], mm(r["red"]))) for r in direct[:2] if mm(r["red"])]
     terms += [("phrase", t) for t in distinctive_tokens(g["signature"])]
+    tr = (primary.get("analysis") or {}).get("transient")
+    if tr and tr[1]:
+        terms.append(("phrase", tr[1]))
     red_since = (fr or primary["latest"])["created"]
     terms.append(("ci-pr-since", red_since[:10]))
     terms = list(dict.fromkeys(terms))
@@ -798,6 +839,10 @@ def verdict(g, ctx):
     cmp_ = ctx["compare"]
     n_env = len(ctx["env"])
     n_direct = sum(1 for r in ctx["env"] if r["hits"])
+    tr = (p.get("analysis") or {}).get("transient")
+    if tr:
+        return ("likely transient (%s): the failing step logged %s; a re-run may pass"
+                % (tr[0], code(tr[2])))
     if not lg:
         return "no green run of this job in the lookback window; nothing to compare against"
     if fr and lg["sha"] == fr["sha"]:
