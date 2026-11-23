@@ -1,0 +1,88 @@
+# GDAL version tags on GHCR: gdal-X.Y.Z and gdal-X.Y for every image
+#
+# build-scripts/gdal-tags.py reconciles the tags against the whole registry:
+# it lists every version of each package (untagged ones too), reads the GDAL
+# release each build contains, and points gdal-X.Y.Z / gdal-X.Y at the newest
+# build of that release. Runs are idempotent, so the same job did the
+# backfill and keeps the tags current; a missed run is repaired by the next.
+# gdal-X.Y stops moving once GDAL X.(Y+1) ships: that is the final X.Y build.
+#
+# Writes: after each successful build (workflow_run) and weekly. Manual runs
+# and pull requests only print the plan unless `write` is set.
+
+name: GDAL version tags
+
+on:
+  workflow_run:
+    workflows:
+      - Build gdal-system
+      - Build gdal-r
+      - Build gdal-r-full
+      - Build gdal-r-python
+      - Build gdal-r-python-extras
+      - Build gdal-r-python-extras-rust
+      - Build gdal-r-esmf
+      - Build gdal-r-mesh
+      - Build gdal-conda
+    types: [completed]
+  schedule:
+    - cron: '17 2 * * 2'   # Tue 02:17 UTC, safety net after the weekly release builds
+  pull_request:
+    paths:
+      - 'build-scripts/gdal-tags.py'
+      - '.github/workflows/gdal-tags.yml'
+  workflow_dispatch:
+    inputs:
+      write:
+        description: 'Apply the tags (unset: print the plan only)'
+        required: false
+        default: false
+        type: boolean
+      images:
+        description: 'Space-separated image names (empty: all)'
+        required: false
+        default: ''
+        type: string
+
+# A run reconciles everything, so a newer run supersedes a running one.
+concurrency:
+  group: gdal-tags
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  tags:
+    # skip pull-request builds of gdal-r-esmf / gdal-r-mesh (nothing pushed)
+    if: >-
+      github.event_name != 'workflow_run' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.event != 'pull_request')
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      packages: write   # list package versions, push tags
+    steps:
+      # full history: gdal-conda's GDAL is read from conda/pixi.lock at each
+      # image's revision label
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Reconcile GDAL version tags
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          EVENT: ${{ github.event_name }}
+          WRITE_INPUT: ${{ inputs.write }}
+          IMAGES: ${{ inputs.images }}
+        run: |
+          set -f   # IMAGES is split on spaces, never globbed; the script validates names
+          ARGS=()
+          if [ "$EVENT" = "workflow_run" ] || [ "$EVENT" = "schedule" ] ||
+             { [ "$EVENT" = "workflow_dispatch" ] && [ "$WRITE_INPUT" = "true" ]; }; then
+            ARGS+=(--write)
+          fi
+          # shellcheck disable=SC2086
+          python3 build-scripts/gdal-tags.py "${ARGS[@]}" $IMAGES
