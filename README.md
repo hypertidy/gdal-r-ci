@@ -204,6 +204,45 @@ It is built by [`.github/workflows/report.yml`](.github/workflows/report.yml)
 from the scripts in [`report/`](report/) after each cascade, weekly, and on
 demand; history accumulates on the `report-data` branch.
 
+## GDAL version tags
+
+Besides the moving `:latest` and `:dev`, every image is tagged for the GDAL
+release it contains:
+
+| Tag | Points at |
+|-----|-----------|
+| `:gdal-X.Y.Z` | the newest build of that image with GDAL X.Y.Z |
+| `:gdal-X.Y` | the newest build of that image with any GDAL X.Y.x |
+
+```bash
+# the last gdal-r-full built on GDAL 3.12 (3.12.4, May 2026)
+docker run --rm -ti ghcr.io/hypertidy/gdal-r-full:gdal-3.12
+```
+
+Release builds are rebuilt weekly, so these tags keep moving while that GDAL
+release is current. They pick up new R packages, apt updates and PROJ/GEOS
+releases along the way. When the next GDAL release ships, release builds stop
+containing the old one and its tags freeze. So `:gdal-3.12` *is* the final
+3.12 build: no separate "final" marker is needed. `:dev` (GDAL master) gets no
+version tag.
+
+The version comes from the image itself. For the Docker chain that is the
+`GDAL_VERSION` build arg in the image history, which every image built on
+`gdal-system` inherits. For `gdal-conda` it is `libgdal-core` in
+`conda/pixi.lock` at the image's revision, because the release environment
+installs that lock exactly. Images that are rebuilt less often, such as
+`gdal-r-python-extras-rust` and `gdal-r-esmf`, only carry tags for the GDAL
+releases they were actually built on.
+
+[`build-scripts/gdal-tags.py`](build-scripts/gdal-tags.py) reconciles the tags
+against the whole registry. It lists every package version, including untagged
+ones back to the first push, finds the newest build for each release and
+re-points only the tags that differ. [`gdal-tags.yml`](.github/workflows/gdal-tags.yml)
+runs it after every successful build and weekly. A manual run without `write`
+only prints the plan table, with each tag marked `current` or `final`. Because
+every run starts from the registry, a missed or failed run is repaired by the
+next one, and the same job backfilled the history.
+
 ## Quick start
 
 ```bash
@@ -417,6 +456,8 @@ The infrastructure is designed to run itself:
 - The cascade to `gdal-r-python-extras` only fires for the release variant,
   since extras has no `:dev` tag
 - `scheduled-canary.yml` runs fortnightly, opens issues on failure
+- `gdal-tags.yml` keeps the `:gdal-X.Y[.Z]` tags in step with the registry
+  after every build (see [GDAL version tags](#gdal-version-tags))
 
 When something needs human attention:
 
