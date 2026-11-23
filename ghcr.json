@@ -1,20 +1,36 @@
 {
  "gdal-system": [
   {
-   "digest": "sha256:1b28146d3e365420ecfedf579c44569e4c4c28dd8b46ee7ee2a0cc5faa8e1724",
-   "created": "2026-11-22T22:40:20Z",
+   "digest": "sha256:5a2916b400f890710a0c72d9c583192e52e8dc52d6941a3d6499388268c3a0e7",
+   "created": "2026-11-23T22:09:22Z",
    "tags": [
+    "dev"
+   ],
+   "variant": "dev",
+   "compressed": 1603554920
+  },
+  {
+   "digest": "sha256:9b62b8418dd2f56e696dc35d34fa27801482a4ebcc152f350a0c42db5563e05f",
+   "created": "2026-11-23T22:05:48Z",
+   "tags": [
+    "gdal-3.13.3",
+    "gdal-3.13",
     "latest"
    ],
+   "variant": "latest",
+   "compressed": 1594328062
+  },
+  {
+   "digest": "sha256:1b28146d3e365420ecfedf579c44569e4c4c28dd8b46ee7ee2a0cc5faa8e1724",
+   "created": "2026-11-22T22:40:20Z",
+   "tags": [],
    "variant": "latest",
    "compressed": 1594300903
   },
   {
    "digest": "sha256:bac4e1038acd849aefd6be60e728cc15815205685d962d4f803a63bae2f835b3",
    "created": "2026-11-22T22:37:17Z",
-   "tags": [
-    "dev"
-   ],
+   "tags": [],
    "variant": "dev",
    "compressed": 1603521483
   },
@@ -87,38 +103,40 @@
    "tags": [],
    "variant": "dev",
    "compressed": 1595923396
-  },
-  {
-   "digest": "sha256:d32bcd19cf25328f5b972c81e98a13ba80bde0981ef60356f14980c83671fea1",
-   "created": "2026-11-10T01:26:00Z",
-   "tags": [],
-   "variant": "dev",
-   "compressed": 1587923182
-  },
-  {
-   "digest": "sha256:ad1fc9ef9534e70b3a8c448d2d9faccdd9bedb20a9a9433b3e2290b8339d8c18",
-   "created": "2026-11-10T01:24:00Z",
-   "tags": [],
-   "variant": "latest",
-   "compressed": 1578727418
   }
  ],
  "gdal-r": [
   {
-   "digest": "sha256:995e6a5e3174a65757333a8d3aeba399fe4a252f507fbe4eef3394e38bd0abf5",
-   "created": "2026-11-22T22:49:23Z",
+   "digest": "sha256:777dc647656a3c6dd9a7e597b5968d4e4b41fd46fc8f551e15772a91bd64274a",
+   "created": "2026-11-23T22:18:54Z",
    "tags": [
+    "dev"
+   ],
+   "variant": "dev",
+   "compressed": 1933276850
+  },
+  {
+   "digest": "sha256:48e3d4c8e4b91b961777d49481ea7a5df731026fa8390562af2f1df1366f60b9",
+   "created": "2026-11-23T22:15:53Z",
+   "tags": [
+    "gdal-3.13.3",
+    "gdal-3.13",
     "latest"
    ],
+   "variant": "latest",
+   "compressed": 1924048107
+  },
+  {
+   "digest": "sha256:995e6a5e3174a65757333a8d3aeba399fe4a252f507fbe4eef3394e38bd0abf5",
+   "created": "2026-11-22T22:49:23Z",
+   "tags": [],
    "variant": "latest",
    "compressed": 1924018744
   },
   {
    "digest": "sha256:8586164c4eaba4e234b3ba921001860f8f17bd6d70377befa23b7995881413fc",
    "created": "2026-11-22T22:48:28Z",
-   "tags": [
-    "dev"
-   ],
+   "tags": [],
    "variant": "dev",
    "compressed": 1933229969
   },
@@ -191,29 +209,31 @@
    "tags": [],
    "variant": "latest",
    "compressed": 1917933810
-  },
-  {
-   "digest": "sha256:52d7b7c086f6ae192632705ecb2b8b31d857bfc860840b9e654dc641981ecadc",
-   "created": "2026-11-10T01:43:55Z",
-   "tags": [],
-   "variant": "dev",
-   "compressed": 1918657973
-  },
-  {
-   "digest": "sha256:a95ea13d7b299565f4bdaf8b48a714b3ea5fc0a5c127542a6400bb69f27fb8a4",
-   "created": "2026-11-10T01:43:02Z",
-   "tags": [],
-   "variant": "latest",
-   "compressed": 1909460685
   }
  ],
  "gdal-r-full": [
   {
-   "digest": "sha256:01b5836f061857a3e89051cd8b1800ea1153de059ea30753468ff7c9784ed47a",
-   "created": "2026-11-22T23:20:29Z",
+   "digest": "sha256:dd9b86c400c2429632071ac63851d4630bb2209ee1fe4c7e0eeda5bda45fcd19",
+   "created": "2026-11-23T22:47:28Z",
+   "tags": [
+    "latest"
+   ],
+   "variant": "latest",
+   "compressed": 2295108345
+  },
+  {
+   "digest": "sha256:bde0dd0c1be3be56ab9a68e90795cb35d66859bd44f040237199e52c5c45417f",
+   "created": "2026-11-23T22:30:32Z",
    "tags": [
     "dev"
    ],
+   "variant": "dev",
+   "compressed": 2277913006
+  },
+  {
+   "digest": "sha256:01b5836f061857a3e89051cd8b1800ea1153de059ea30753468ff7c9784ed47a",
+   "created": "2026-11-22T23:20:29Z",
+   "tags": [],
    "variant": "dev",
    "compressed": 2304272373
   },
@@ -221,7 +241,8 @@
    "digest": "sha256:f2c0b7e54de3e06ee5278c6cba84de29bc6e90e392e627170e73c7fe75b104e9",
    "created": "2026-11-22T23:18:14Z",
    "tags": [
-    "latest"
+    "gdal-3.13.3",
+    "gdal-3.13"
    ],
    "variant": "latest",
    "compressed": 2295063974
@@ -295,29 +316,22 @@
    "tags": [],
    "variant": "dev",
    "compressed": 2284611655
-  },
-  {
-   "digest": "sha256:50733afee288990ade543922d3fb222aa1fa162783bed36db7894d241a777ba3",
-   "created": "2026-11-10T02:16:25Z",
-   "tags": [],
-   "variant": "latest",
-   "compressed": 2266838035
-  },
-  {
-   "digest": "sha256:ca2629a520a923446183c3e06314f3a10a712acaf84b7b5f62bf92468380556a",
-   "created": "2026-11-10T02:15:38Z",
-   "tags": [],
-   "variant": "dev",
-   "compressed": 2276147601
   }
  ],
  "gdal-r-python": [
   {
-   "digest": "sha256:b6c5f92ba22190c71d7414726f67681ee1571be5a48e16dbb81c69eabd991717",
-   "created": "2026-11-22T23:35:56Z",
+   "digest": "sha256:15b4ddd4c9f60d6cc18bb5c806e69b203532f8207370799dd615ec9ee8466336",
+   "created": "2026-11-23T22:42:22Z",
    "tags": [
     "dev"
    ],
+   "variant": "dev",
+   "compressed": 3137562837
+  },
+  {
+   "digest": "sha256:b6c5f92ba22190c71d7414726f67681ee1571be5a48e16dbb81c69eabd991717",
+   "created": "2026-11-22T23:35:56Z",
+   "tags": [],
    "variant": "dev",
    "compressed": 3163315570
   },
@@ -325,6 +339,8 @@
    "digest": "sha256:244c26763d516ec335fc5238134cd040cf9493156af2d395a359e428ee1ed92d",
    "created": "2026-11-22T23:33:03Z",
    "tags": [
+    "gdal-3.13.3",
+    "gdal-3.13",
     "latest"
    ],
    "variant": "latest",
@@ -406,13 +422,6 @@
    "tags": [],
    "variant": "dev",
    "compressed": 3131176364
-  },
-  {
-   "digest": "sha256:c118eab3dbbb252e4200c4246c6782815f403bea4987a0f1a5a5b233086b1f88",
-   "created": "2026-11-10T02:35:48Z",
-   "tags": [],
-   "variant": "latest",
-   "compressed": 3121843123
   }
  ],
  "gdal-r-python-extras": [
@@ -420,6 +429,8 @@
    "digest": "sha256:2d48046b3d6821fd49eb3883837597368be802cc649dec0c511bf96914069326",
    "created": "2026-11-22T23:53:45Z",
    "tags": [
+    "gdal-3.13.3",
+    "gdal-3.13",
     "latest"
    ],
    "variant": "latest",
@@ -522,6 +533,8 @@
    "digest": "sha256:34bd45954aa87048306d8a39510b779f4853943044aa09173bf9f2f6576998a0",
    "created": "2026-10-29T03:16:44Z",
    "tags": [
+    "gdal-3.13.3",
+    "gdal-3.13",
     "latest"
    ],
    "variant": "latest",
@@ -530,7 +543,9 @@
   {
    "digest": "sha256:a3580428d7fe4581a75e65202abc2ac1eb5a4c58b705c6dffbe903a9ada3c461",
    "created": "2026-07-29T08:46:56Z",
-   "tags": [],
+   "tags": [
+    "gdal-3.13.1"
+   ],
    "variant": "latest",
    "compressed": 4362020771
   }
@@ -540,6 +555,8 @@
    "digest": "sha256:4db49b588cb56e60b0ac6e4c3ba6a34441417d3ea61df3207dc87b2c62b614e2",
    "created": "2026-11-22T00:06:14Z",
    "tags": [
+    "gdal-3.13.3",
+    "gdal-3.13",
     "latest"
    ],
    "variant": "latest",
@@ -614,6 +631,8 @@
    "digest": "sha256:5d5e2aedd8f1a197f0c4458173c17b33dc36742f05ca3e03b6e0ab7f55b7224e",
    "created": "2026-11-17T02:09:30Z",
    "tags": [
+    "gdal-3.13.3",
+    "gdal-3.13",
     "latest"
    ],
    "variant": "latest",
