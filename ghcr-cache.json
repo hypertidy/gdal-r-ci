@@ -1653,6 +1653,12 @@
   "compressed": null,
   "kind": "attestation"
  },
+ "gdal-r-python-extras@sha256:374382886c6c0d6c8f9127a30d6f969c8542fc2c260a62ddb3f4fbaa5cec7955": {
+  "children": [],
+  "compressed": 4953273710,
+  "kind": "image",
+  "variant": "latest"
+ },
  "gdal-r-python-extras@sha256:3ae59a0d4f16282f2cd8b86d02f449aba3e77978f275b813568668adc0654d6f": {
   "children": [],
   "compressed": null,
@@ -1827,6 +1833,11 @@
   "kind": "index",
   "variant": "latest"
  },
+ "gdal-r-python-extras@sha256:91ed5300e450be6f6e2ad1541046c6c6c766acf3300626dfaf93fcb24d4262d9": {
+  "children": [],
+  "compressed": null,
+  "kind": "attestation"
+ },
  "gdal-r-python-extras@sha256:9201e0008285893bbdc7ea8c4dd48937dd6d8503fc60e2f21cda19c7cc1c1fc7": {
   "children": [],
   "compressed": 3844800259,
@@ -1935,6 +1946,16 @@
   "children": [],
   "compressed": 4187780234,
   "kind": "image",
+  "variant": "latest"
+ },
+ "gdal-r-python-extras@sha256:cc879220ea204a871eacacb62781159bc18576a722d81979bc0c2f33d26317ce": {
+  "children": [
+   "sha256:374382886c6c0d6c8f9127a30d6f969c8542fc2c260a62ddb3f4fbaa5cec7955",
+   "sha256:91ed5300e450be6f6e2ad1541046c6c6c766acf3300626dfaf93fcb24d4262d9"
+  ],
+  "compressed": 4953273710,
+  "image_digest": "sha256:374382886c6c0d6c8f9127a30d6f969c8542fc2c260a62ddb3f4fbaa5cec7955",
+  "kind": "index",
   "variant": "latest"
  },
  "gdal-r-python-extras@sha256:cd05c0d7989acd3d3c2054ce451c5d47f74f27c09cbb05acd80520a664640912": {
