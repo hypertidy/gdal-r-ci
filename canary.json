@@ -283,16 +283,16 @@
   }
  ],
  "conda_run": {
-  "id": 44964213886,
-  "created": "2026-11-21T23:56:40Z",
+  "id": 45326521390,
+  "created": "2026-11-24T04:27:27Z",
   "conclusion": "skipped",
-  "url": "https://github.com/hypertidy/gdal-r-ci/actions/runs/44964213886",
+  "url": "https://github.com/hypertidy/gdal-r-ci/actions/runs/45326521390",
   "event": "workflow_run",
   "cells": [
    {
     "name": "${{ matrix.package }} (${{ matrix.source }}) / ${{ matrix.image }}:${{ matrix.gdal-variant }}",
     "conclusion": "skipped",
-    "url": "https://github.com/hypertidy/gdal-r-ci/actions/runs/44964213886/job/137029466588"
+    "url": "https://github.com/hypertidy/gdal-r-ci/actions/runs/45326521390/job/138217329789"
    }
   ]
  }
