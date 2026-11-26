@@ -1,0 +1,49 @@
+# Docker Compose file for the hypertidy gdal-r-ci images.
+#
+# Copy this file into a project directory, then from that directory:
+#
+#   docker compose run --rm gdal        # interactive shell: R, Python, GDAL CLI
+#   docker compose run --rm gdal Rscript -e 'sf::sf_extSoftVersion()'
+#   docker compose up jupyter           # JupyterLab on http://127.0.0.1:8888
+#   docker compose pull                 # refresh the image
+#
+# Choose the image and tag with GDAL_IMAGE / GDAL_TAG, set in the environment
+# or in a .env file next to this one:
+#
+#   GDAL_IMAGE=gdal-r-full GDAL_TAG=gdal-3.12 docker compose run --rm gdal
+#
+# See the "Docker Compose" section of the README for details.
+
+x-gdal: &gdal
+  image: ghcr.io/hypertidy/${GDAL_IMAGE:-gdal-r-python-extras}:${GDAL_TAG:-latest}
+  working_dir: /work
+  volumes:
+    - .:/work                    # this directory, live-edited on the host
+    - r-overlay:/opt/r-overlay   # runtime-installed R packages, kept across runs
+  environment:
+    R_LIBS_USER: /opt/r-overlay
+  # Containers run as root, so files written to /work are root-owned on the
+  # host. To write as yourself, set your own uid:gid (see `id -u`, `id -g`):
+  # user: "1000:1000"
+
+services:
+  # A shell with the whole toolchain. Use `run`, not `up`: the images have no
+  # long-running service of their own, their command is just `bash`. The
+  # profile keeps this one out of a bare `docker compose up`.
+  gdal:
+    <<: *gdal
+    profiles: [shell]
+    stdin_open: true
+    tty: true
+
+  # JupyterLab, in the images that have it (gdal-r-python and those built on
+  # it). The login URL with its token is printed in the log; stop it with
+  # Ctrl-C, or `docker compose down` if started with `up -d`.
+  jupyter:
+    <<: *gdal
+    command: jupyter lab --ip=0.0.0.0 --port=8888 --no-browser --allow-root
+    ports:
+      - "127.0.0.1:${JUPYTER_PORT:-8888}:8888"
+
+volumes:
+  r-overlay:
