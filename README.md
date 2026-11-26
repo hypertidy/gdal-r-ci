@@ -69,6 +69,10 @@ CRAN packages are source-built; everything else takes Posit Public Package
 Manager binaries. The set is curated rather than exhaustive — anything WIP or
 rarely reached for stays out and is installed on demand into a writable overlay.
 
+It also adds [xclim](https://xclim.readthedocs.io/) (climate indices on
+xarray) to the `/opt/gdal-py` venv, with the numpy, xarray, dask and pyarrow
+from `gdal-r-python` left as they are.
+
 ### gdal-r-python-extras-rust
 
 Extends `gdal-r-python-extras` with a pinned Rust dev toolchain
