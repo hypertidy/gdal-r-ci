@@ -273,6 +273,70 @@ image; the banner links back to the relevant section of this README.
 See [docs/rcmd-check-notes.md](docs/rcmd-check-notes.md) for check args and
 per-package notes (extra deps needed for sf, terra, etc).
 
+## Docker Compose
+
+[`compose.yaml`](compose.yaml) is the `docker run` invocations above written
+down as a file: image, mounts, environment and ports in one place. Nothing in
+the images needs Compose; it saves retyping the flags and gives a project a
+setup that anyone can reproduce. Copy the file into a project directory and
+run from there:
+
+```bash
+# Interactive shell (R, Python, GDAL CLI) with the directory mounted at /work
+docker compose run --rm gdal
+
+# One-off command
+docker compose run --rm gdal Rscript -e 'sf::sf_extSoftVersion()'
+
+# JupyterLab on http://127.0.0.1:8888 (the URL with its token is in the log)
+docker compose up jupyter
+
+# Refresh the image
+docker compose pull
+```
+
+The shell is started with `run`, not `up`. Compose is built around
+long-running services, and these images have none of their own (their command
+is `bash`), so `run --rm` gives a container for one session that is removed on
+exit. The `gdal` service carries a profile so that a bare `docker compose up`
+starts only JupyterLab and `docker compose down` stops it again.
+
+The default image is `gdal-r-python-extras:latest`. Set `GDAL_IMAGE` and
+`GDAL_TAG` in the environment, or in a `.env` file next to `compose.yaml`, to
+use another:
+
+```bash
+GDAL_IMAGE=gdal-r-full GDAL_TAG=gdal-3.12 docker compose run --rm gdal
+```
+
+What the file sets up:
+
+- The project directory is bind-mounted at `/work`, which is also the working
+  directory.
+- A named volume `r-overlay` is mounted at `/opt/r-overlay` and set as
+  `R_LIBS_USER`, so R packages installed at runtime persist across runs (see
+  [Overlaying packages at runtime](#overlaying-packages-at-runtime)). Volumes
+  are per project: Compose prefixes the name with the directory name.
+- Containers run as root, so files written to `/work` are root-owned on the
+  host. Uncomment `user:` in the file to write as yourself; see
+  [File ownership](#file-ownership).
+- JupyterLab is published on the Docker host's loopback interface only. Set
+  `JUPYTER_PORT` to move it off 8888. To reach it from another machine, tunnel
+  with `ssh -L 8888:localhost:8888 <host>`.
+
+### Notebooks and IDEs
+
+JupyterLab, JupyterHub and marimo are installed in `gdal-r-python` and every
+image built on it (`gdal-r-python-extras`, `gdal-r-python-extras-rust`,
+`gdal-r-esmf`). The only Jupyter kernel is Python; there is no R kernel
+(IRkernel is not installed). `gdal-system`, `gdal-r`, `gdal-r-full`,
+`gdal-r-mesh` and `gdal-conda` have no notebook server, so the `jupyter`
+service fails to start with those.
+
+RStudio Server is not in any image. `jupyter-rsession-proxy` is installed, but
+it only launches an RStudio Server that is already present, so it does nothing
+here.
+
 ## Reusable workflow for package CI
 
 Add to your package's `.github/workflows/`:
