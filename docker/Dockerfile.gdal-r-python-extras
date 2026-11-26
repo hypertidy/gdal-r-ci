@@ -6,7 +6,7 @@
 # duckdb, targets ecosystem, tidy core (à la carte — no `tidyverse`
 # meta), and dev tooling. Spatial + hypertidy CRAN are source-built
 # against this image's GDAL stack; everything else takes PPM binaries
-# for speed.
+# for speed. A few Python extras (xclim) go into the inherited venv.
 #
 # No `:dev` variant on purpose. By the time you're at this layer, the
 # GDAL story is settled at gdal-r-python:dev and the cost of rebuilding
@@ -54,6 +54,20 @@ RUN --mount=type=cache,target=/root/.cache/R,sharing=locked \
     Rscript /opt/scripts/install-extras.R && \
     bash /opt/scripts/strip-r-libs.sh /tmp/r-stamp && \
     rm -f /root/.Renviron
+
+# ── Python extras ────────────────────────────────────────────────────────────
+# After the R layer, so a change here does not rebuild the kitchen sink.
+# xclim: climate indices on xarray. Pure Python; it brings numba, pint,
+# cf-xarray and scikit-learn as wheels. numpy, xarray and dask are already in
+# the venv and are kept as they are, and the constraint keeps the source-built
+# pyarrow. The alignment check from gdal-r-python is run again afterwards.
+RUN --mount=type=cache,target=/root/.cache/uv,sharing=locked \
+    uv pip install --python /opt/gdal-py/bin/python \
+        --constraint /opt/pyarrow-constraint.txt --no-binary pyarrow \
+        xclim \
+ && /opt/gdal-py/bin/python /opt/scripts/check-python-versions.py \
+ && /opt/gdal-py/bin/python -c "import xclim, numba; print('xclim', xclim.__version__, ' numba', numba.__version__)" \
+ && find /opt/gdal-py -type d -name __pycache__ -exec rm -rf {} +
 
 # ── Refresh MOTD for the leaf image ──────────────────────────────────────────
 RUN { \
