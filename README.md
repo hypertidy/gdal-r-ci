@@ -379,6 +379,11 @@ GDAL's CI installs those packages, and any open GDAL PRs that may already
 fix it. It writes nothing to OSGeo/gdal and mentions no one there. Details in
 [docs/gdal-ci-watch.md](docs/gdal-ci-watch.md).
 
+A companion script, run by hand, looks back over GDAL's pull request CI and
+measures what each job catches: how many failures a pull request inherits
+from master, and how much a reduced set of jobs would still catch. Method and
+results in [docs/gdal-ci-history.md](docs/gdal-ci-history.md).
+
 ## Package lists
 
 Package contents are explicit — no kitchen sink in the CI-contractual layers.
