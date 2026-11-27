@@ -1566,6 +1566,12 @@
   "compressed": null,
   "kind": "attestation"
  },
+ "gdal-r-python-extras-rust@sha256:3246967bd1c0dea8b77ba2e1341faf5ca0855aa7ebd40a16c7379af9b23aa6a6": {
+  "children": [],
+  "compressed": 4428158481,
+  "kind": "image",
+  "variant": "latest"
+ },
  "gdal-r-python-extras-rust@sha256:34bd45954aa87048306d8a39510b779f4853943044aa09173bf9f2f6576998a0": {
   "children": [
    "sha256:adc724c33c3cb4b1a5cac55ac3deafb54532579645c406ac894cf04985163765",
@@ -1581,10 +1587,25 @@
   "compressed": null,
   "kind": "attestation"
  },
+ "gdal-r-python-extras-rust@sha256:535c8177f16c9f29a35b8e0cc5fba7c992edd226bae8a87dafe33d9131c12f88": {
+  "children": [],
+  "compressed": null,
+  "kind": "attestation"
+ },
  "gdal-r-python-extras-rust@sha256:576960e57b798229a3b311dd514ee9c5f095690f65324fdf442343f4bab3e761": {
   "children": [],
   "compressed": null,
   "kind": "attestation"
+ },
+ "gdal-r-python-extras-rust@sha256:8fdd0c43d0299925bce5db1b74dc07e1c05553661eba5e9fea9996ae40a8e410": {
+  "children": [
+   "sha256:3246967bd1c0dea8b77ba2e1341faf5ca0855aa7ebd40a16c7379af9b23aa6a6",
+   "sha256:535c8177f16c9f29a35b8e0cc5fba7c992edd226bae8a87dafe33d9131c12f88"
+  ],
+  "compressed": 4428158481,
+  "image_digest": "sha256:3246967bd1c0dea8b77ba2e1341faf5ca0855aa7ebd40a16c7379af9b23aa6a6",
+  "kind": "index",
+  "variant": "latest"
  },
  "gdal-r-python-extras-rust@sha256:a3580428d7fe4581a75e65202abc2ac1eb5a4c58b705c6dffbe903a9ada3c461": {
   "children": [
@@ -1896,6 +1917,11 @@
   "compressed": null,
   "kind": "attestation"
  },
+ "gdal-r-python-extras@sha256:86d1693a65ed8e13e4d3d4738d2b832890a39447b220100ca4b98f46b759b960": {
+  "children": [],
+  "compressed": null,
+  "kind": "attestation"
+ },
  "gdal-r-python-extras@sha256:8e0f765625c4e4e0ead4f52a7acb0e45f146a7a2b8c96cb99ef71ebf7f135292": {
   "children": [],
   "compressed": 4546966449,
@@ -2006,6 +2032,12 @@
   "children": [],
   "compressed": null,
   "kind": "attestation"
+ },
+ "gdal-r-python-extras@sha256:b77dd55f53ac320fc49ee688399d0a22c5f6946aa224688b508f340d41722323": {
+  "children": [],
+  "compressed": 4160957308,
+  "kind": "image",
+  "variant": "latest"
  },
  "gdal-r-python-extras@sha256:b8847cdc8fba267824ac6256d403570b1161c20dc6c01e0e99ca60062462587f": {
   "children": [],
@@ -2119,6 +2151,16 @@
   ],
   "compressed": 5102029860,
   "image_digest": "sha256:7d68553fc30890fb97276e7b94462971e64c989d945eb8308681681320c7e658",
+  "kind": "index",
+  "variant": "latest"
+ },
+ "gdal-r-python-extras@sha256:ea7b01253e07ea3c4b77446535d113d36e657acd326b9b1c447eb49ef9e4011f": {
+  "children": [
+   "sha256:b77dd55f53ac320fc49ee688399d0a22c5f6946aa224688b508f340d41722323",
+   "sha256:86d1693a65ed8e13e4d3d4738d2b832890a39447b220100ca4b98f46b759b960"
+  ],
+  "compressed": 4160957308,
+  "image_digest": "sha256:b77dd55f53ac320fc49ee688399d0a22c5f6946aa224688b508f340d41722323",
   "kind": "index",
   "variant": "latest"
  },
