@@ -58,15 +58,22 @@ RUN --mount=type=cache,target=/root/.cache/R,sharing=locked \
 # ── Python extras ────────────────────────────────────────────────────────────
 # After the R layer, so a change here does not rebuild the kitchen sink.
 # xclim: climate indices on xarray. Pure Python; it brings numba, pint,
-# cf-xarray and scikit-learn as wheels. numpy, xarray and dask are already in
-# the venv and are kept as they are, and the constraint keeps the source-built
-# pyarrow. The alignment check from gdal-r-python is run again afterwards.
+# cf-xarray and scikit-learn as wheels. xarray and dask are already in the venv
+# and are kept as they are, and the constraint keeps the source-built pyarrow.
+# numpy is pinned to the version already in the venv, the one gdal-r-python
+# built GDAL's bindings against, so this step cannot change it. The numba floor
+# is there because older numba releases declare no upper limit on numpy: without
+# it a numba that lags numpy resolves to one of those instead of failing.
+# The alignment check from gdal-r-python is run again afterwards; gdal_array is
+# imported too, because osgeo.gdal alone does not load numpy's compiled code.
 RUN --mount=type=cache,target=/root/.cache/uv,sharing=locked \
-    uv pip install --python /opt/gdal-py/bin/python \
-        --constraint /opt/pyarrow-constraint.txt --no-binary pyarrow \
-        xclim \
+    /opt/gdal-py/bin/python -c "import numpy; print(f'numpy=={numpy.__version__}')" > /tmp/numpy-pin.txt \
+ && uv pip install --python /opt/gdal-py/bin/python \
+        --constraint /opt/pyarrow-constraint.txt --constraint /tmp/numpy-pin.txt --no-binary pyarrow \
+        xclim "numba>=0.68" \
+ && rm /tmp/numpy-pin.txt \
  && /opt/gdal-py/bin/python /opt/scripts/check-python-versions.py \
- && /opt/gdal-py/bin/python -c "import xclim, numba; print('xclim', xclim.__version__, ' numba', numba.__version__)" \
+ && /opt/gdal-py/bin/python -c "import xclim, numba; from osgeo import gdal_array; print('xclim', xclim.__version__, ' numba', numba.__version__)" \
  && find /opt/gdal-py -type d -name __pycache__ -exec rm -rf {} +
 
 # ── Refresh MOTD for the leaf image ──────────────────────────────────────────
