@@ -1,8 +1,8 @@
 # Build and push ghcr.io/hypertidy/gdal-r-esmf
 #
-# Triggered manually, by repository_dispatch (gdal-r-python-extras-rust-updated,
-# for when the extras chain dispatches again), and on pull requests that
-# touch its files (build and smoke test, no push).
+# Triggered by repository_dispatch from build-gdal-r-python-extras-rust on
+# every successful build, manually, and on pull requests that touch its
+# files (build and smoke test, no push).
 #
 # Adds the regridding oracles on top of gdal-r-python-extras-rust: ESMF
 # (ESMF_RegridWeightGen), ESMPy, xESMF and TempestRemap.
