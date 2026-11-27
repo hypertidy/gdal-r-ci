@@ -525,9 +525,10 @@ The infrastructure is designed to run itself:
 - `build-gdal-system.yml` runs weekly for release, daily for dev
 - Each image only rebuilds if its upstream digest changed, using
   `repository_dispatch` to cascade through
-  `gdal-system → gdal-r → gdal-r-full → gdal-r-python → gdal-r-python-extras`
-- The cascade to `gdal-r-python-extras` only fires for the release variant,
-  since extras has no `:dev` tag
+  `gdal-system → gdal-r → gdal-r-full → gdal-r-python → gdal-r-python-extras
+  → gdal-r-python-extras-rust → gdal-r-esmf`
+- The cascade from `gdal-r-python-extras` on only fires for the release
+  variant, since those images have no `:dev` tag
 - `scheduled-canary.yml` runs fortnightly, opens issues on failure
 - `gdal-tags.yml` keeps the `:gdal-X.Y[.Z]` tags in step with the registry
   after every build (see [GDAL version tags](#gdal-version-tags))

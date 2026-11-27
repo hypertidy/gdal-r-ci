@@ -6,7 +6,8 @@
 # Adds a pinned Rust dev toolchain (1.86.0) with clippy, rustfmt,
 # rust-analyzer, lld, and cargo-nextest on top of gdal-r-python-extras.
 #
-# Leaf image of the chain — only :latest, no :dev variant.
+# Only :latest, no :dev variant. On a successful build this workflow
+# dispatches gdal-r-python-extras-rust-updated to trigger gdal-r-esmf.
 
 name: Build gdal-r-python-extras-rust
 
@@ -75,3 +76,19 @@ jobs:
             echo "Base: gdal-r-python-extras:${{ steps.vars.outputs.tag_suffix }}"
             echo "Rust: 1.86.0 (clippy, rustfmt, rust-analyzer, lld, cargo-nextest)"
           } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Trigger gdal-r-esmf build
+        # Needs WORKFLOW_TRIGGER_TOKEN: the job's GITHUB_TOKEN has contents: read
+        # and cannot create a dispatch event.
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.WORKFLOW_TRIGGER_TOKEN }}
+          script: |
+            await github.rest.repos.createDispatchEvent({
+              owner: context.repo.owner,
+              repo:  context.repo.repo,
+              event_type: 'gdal-r-python-extras-rust-updated',
+              client_payload: {
+                no_cache: '${{ steps.vars.outputs.no_cache }}'
+              }
+            })
